@@ -19,9 +19,17 @@ install -m 0644 "$ROOT/App/Info.plist" "$CONTENTS/Info.plist"
 install -m 0755 "$BIN_DIR/$PRODUCT" "$MACOS/$PRODUCT"
 sh "$SCRIPT_DIR/import-brand-icon.sh" probierz-desktop "$RESOURCES/AppIcon.icns"
 
-if command -v codesign >/dev/null 2>&1; then
-    codesign --force --deep --sign - "$BUNDLE"
+CODESIGN_IDENTITY=${WISENT_CODESIGN_IDENTITY:-}
+if [ -z "$CODESIGN_IDENTITY" ]; then
+    CODESIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null \
+        | awk -F '"' '/Apple Development:/ { print $2; exit }')
 fi
+if [ -z "$CODESIGN_IDENTITY" ] || [ "$CODESIGN_IDENTITY" = "-" ]; then
+    printf '%s\n' "Stable Apple Development signing identity is required; refusing ad-hoc signing." >&2
+    exit 1
+fi
+codesign --force --deep --sign "$CODESIGN_IDENTITY" --timestamp=none "$BUNDLE"
+codesign --verify --strict --deep "$BUNDLE"
 
 printf 'Built %s\n' "$BUNDLE"
 
