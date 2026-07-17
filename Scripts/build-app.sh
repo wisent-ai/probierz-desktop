@@ -24,3 +24,8 @@ if command -v codesign >/dev/null 2>&1; then
 fi
 
 printf 'Built %s\n' "$BUNDLE"
+
+RESTART_APP=${WISENT_RESTART_APP:-"$SCRIPT_DIR/wisent-restart-app"}
+if [ "${WISENT_RESTART_AFTER_BUILD:-1}" != 0 ] && [ -x "$RESTART_APP" ]; then
+    "$RESTART_APP" --if-running "$BUNDLE"
+fi
