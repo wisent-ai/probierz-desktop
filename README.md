@@ -1,5 +1,13 @@
 # Probierz Desktop
 
+<!-- wisent-readme-signals:start -->
+[![Release](https://img.shields.io/github/v/release/wisent-ai/probierz-desktop?display_name=tag&sort=semver)](https://github.com/wisent-ai/probierz-desktop/releases)
+[![Downloads](https://img.shields.io/github/downloads/wisent-ai/probierz-desktop/total)](https://github.com/wisent-ai/probierz-desktop/releases)
+[![License](https://img.shields.io/github/license/wisent-ai/probierz-desktop)](https://github.com/wisent-ai/probierz-desktop)
+[![Discord](https://img.shields.io/badge/Discord-Join%20Wisent-5865F2?logo=discord&logoColor=white)](https://discord.gg/qRjpkthq54)
+<!-- wisent-readme-signals:end -->
+
+
 Probierz Desktop is the native macOS viewer for local Probierz contracts, configurations, run history, and evidence artifacts.
 
 ## Scope
