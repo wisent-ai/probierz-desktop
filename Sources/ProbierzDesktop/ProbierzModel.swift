@@ -7,6 +7,7 @@ final class ProbierzModel: ObservableObject {
     @Published private(set) var snapshot: ProbierzSnapshot?
     @Published private(set) var isRefreshing = false
     @Published private(set) var errorMessage: String?
+    @Published private(set) var inspectedEvidenceBundle: ArtifactMetadata?
     @Published var query = ""
     @Published var statusFilter: RunStatus?
 
@@ -71,6 +72,18 @@ final class ProbierzModel: ObservableObject {
         statusFilter = nil
     }
 
+    func inspectEvidenceBundle(id: ArtifactMetadata.ID) {
+        guard let artifact = snapshot?.artifacts.first(where: { $0.id == id }),
+              artifact.kind == .protectedBundle,
+              artifact.isAvailableOnDisk
+        else { return }
+        inspectedEvidenceBundle = artifact
+    }
+
+    func closeEvidenceBundleInspector() {
+        inspectedEvidenceBundle = nil
+    }
+
     func refresh() async {
         guard !isRefreshing else { return }
         guard let workspaceRoot else {
@@ -79,6 +92,7 @@ final class ProbierzModel: ObservableObject {
         }
         guard WorkspaceLocator.isWorkspace(workspaceRoot) else {
             snapshot = nil
+            inspectedEvidenceBundle = nil
             errorMessage = "The saved workspace no longer contains the Probierz metadata boundary."
             return
         }
@@ -94,6 +108,14 @@ final class ProbierzModel: ObservableObject {
         }.value
         guard generation == currentGeneration, !Task.isCancelled else { return }
         snapshot = loaded
+        if let inspectedEvidenceBundle,
+           !loaded.artifacts.contains(where: {
+               $0.id == inspectedEvidenceBundle.id
+                   && $0.kind == .protectedBundle
+                   && $0.isAvailableOnDisk
+           }) {
+            self.inspectedEvidenceBundle = nil
+        }
         errorMessage = nil
     }
 
@@ -106,6 +128,7 @@ final class ProbierzModel: ObservableObject {
         generation &+= 1
         workspaceRoot = standardized
         snapshot = nil
+        inspectedEvidenceBundle = nil
         errorMessage = nil
         defaults.set(standardized.path, forKey: workspaceKey)
         Task { await refresh() }

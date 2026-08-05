@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ProbierzRootView: View {
     @ObservedObject var model: ProbierzModel
+    @ObservedObject var onboarding: ProbierzOnboarding
     @State private var destination: ProbierzDestination? = .overview
 
     var body: some View {
@@ -25,6 +26,15 @@ struct ProbierzRootView: View {
                     errorBanner(errorMessage)
                         .padding(.horizontal, ProbierzTheme.Space.x6)
                         .padding(.top, ProbierzTheme.Space.x3)
+                }
+                if let screen = onboarding.screen {
+                    ProbierzOnboardingCard(
+                        screen: screen,
+                        isWorking: onboarding.isWorking,
+                        action: performOnboardingAction
+                    )
+                    .padding(.horizontal, ProbierzTheme.Space.x6)
+                    .padding(.top, ProbierzTheme.Space.x3)
                 }
                 Group {
                     if let snapshot = model.snapshot {
@@ -60,6 +70,20 @@ struct ProbierzRootView: View {
                 .keyboardShortcut("r", modifiers: .command)
                 .help("Refresh local metadata")
             }
+        }
+        .task {
+            await onboarding.start()
+            if model.snapshot == nil, model.workspaceRoot != nil {
+                await model.refresh()
+            }
+        }
+        .sheet(item: evidenceBundleInspectorBinding) { artifact in
+            EvidenceBundleInspector(artifact: artifact)
+                .onAppear {
+                    Task {
+                        await onboarding.observeEvidenceBundleInspected(artifact)
+                    }
+                }
         }
     }
 
@@ -410,6 +434,19 @@ struct ProbierzRootView: View {
                         }
                     }
                     .width(min: 150, ideal: 170)
+                    TableColumn("Evidence") { artifact in
+                        if artifact.kind == .protectedBundle, artifact.isAvailableOnDisk {
+                            Button("Inspect") {
+                                model.inspectEvidenceBundle(id: artifact.id)
+                            }
+                            .buttonStyle(.borderless)
+                            .help("Open the read-only evidence bundle inspector")
+                        } else {
+                            Text("—")
+                                .foregroundStyle(ProbierzTheme.muted)
+                        }
+                    }
+                    .width(min: 72, ideal: 82)
                     TableColumn("Run ID") { artifact in
                         Text(artifact.runID)
                             .font(.caption.monospaced())
@@ -433,7 +470,7 @@ struct ProbierzRootView: View {
                 VStack(alignment: .leading, spacing: ProbierzTheme.Space.x1) {
                     Text("Read-only metadata boundary")
                         .font(.headline)
-                    Text("Probierz Desktop reads configuration-name presence and the documented run-manifest projection. It never opens screenshots, videos, traces, logs, protected bundles, prompts, responses, payloads, account data, recipient data, credentials, or secret values.")
+                    Text("Probierz Desktop reads configuration-name presence and the documented run-manifest projection. It never reads screenshots, videos, traces, logs, protected bundle contents, prompts, responses, payloads, account data, recipient data, credentials, or secret values.")
                         .font(.subheadline)
                         .foregroundStyle(ProbierzTheme.secondary)
                 }
@@ -493,6 +530,28 @@ struct ProbierzRootView: View {
         return "\(minutes)m \(remainder)s"
     }
 
+    private var evidenceBundleInspectorBinding: Binding<ArtifactMetadata?> {
+        Binding(
+            get: { model.inspectedEvidenceBundle },
+            set: { artifact in
+                if artifact == nil {
+                    model.closeEvidenceBundleInspector()
+                }
+            }
+        )
+    }
+
+    private func performOnboardingAction() {
+        Task {
+            switch await onboarding.performPrimaryAction() {
+            case .showEvidenceBundles:
+                destination = .artifacts
+            case .advanced, .unavailable:
+                break
+            }
+        }
+    }
+
     private func chooseWorkspace() {
         let panel = NSOpenPanel()
         panel.title = "Choose the Wisent workspace"
@@ -503,6 +562,84 @@ struct ProbierzRootView: View {
         panel.directoryURL = model.workspaceRoot
         if panel.runModal() == .OK, let url = panel.url {
             model.selectWorkspace(url)
+        }
+    }
+}
+
+private struct EvidenceBundleInspector: View {
+    @Environment(\.dismiss) private var dismiss
+    let artifact: ArtifactMetadata
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ProbierzTheme.Space.x5) {
+            HStack(alignment: .top, spacing: ProbierzTheme.Space.x3) {
+                Image(systemName: "lock.doc")
+                    .font(.title)
+                    .foregroundStyle(ProbierzTheme.accent)
+                VStack(alignment: .leading, spacing: ProbierzTheme.Space.x1) {
+                    Text("Protected evidence bundle")
+                        .font(.title2.weight(.semibold))
+                    Text("Opened for read-only provenance inspection")
+                        .foregroundStyle(ProbierzTheme.secondary)
+                }
+            }
+
+            ProbierzPanel {
+                Grid(alignment: .leading, horizontalSpacing: ProbierzTheme.Space.x5, verticalSpacing: ProbierzTheme.Space.x3) {
+                    inspectorRow("Source run", artifact.runID, monospaced: true)
+                    inspectorRow("Format", artifact.fileExtension, monospaced: true)
+                    inspectorRow(
+                        "Size",
+                        ByteCountFormatter.string(fromByteCount: artifact.bytes, countStyle: .file)
+                    )
+                    inspectorRow("SHA-256 field", artifact.hasSHA256 ? "Recorded" : "Unavailable")
+                    inspectorRow(
+                        "Modified",
+                        artifact.modifiedAt?.formatted(
+                            .dateTime.year().month().day().hour().minute().second()
+                        ) ?? "Unavailable"
+                    )
+                }
+            }
+
+            Label(
+                "The run manifest references a regular, non-symlink .pev file inside its run directory.",
+                systemImage: "checkmark.shield"
+            )
+            .font(.subheadline)
+            .foregroundStyle(ProbierzTheme.success)
+
+            Text("Probierz Desktop does not read or decrypt the bundle payload, and it does not expose the local path. This inspector is the bundle's provenance projection only.")
+                .font(.subheadline)
+                .foregroundStyle(ProbierzTheme.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack {
+                Spacer()
+                Button("Done") {
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(ProbierzTheme.Space.x6)
+        .frame(width: 580)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Protected evidence bundle inspector")
+    }
+
+    private func inspectorRow(_ label: String, _ value: String, monospaced: Bool = false) -> some View {
+        GridRow {
+            Text(label)
+                .foregroundStyle(ProbierzTheme.secondary)
+            if monospaced {
+                Text(value)
+                    .font(.body.monospaced())
+                    .textSelection(.enabled)
+            } else {
+                Text(value)
+                    .textSelection(.enabled)
+            }
         }
     }
 }

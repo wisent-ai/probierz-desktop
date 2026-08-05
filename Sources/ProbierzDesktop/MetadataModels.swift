@@ -104,6 +104,7 @@ struct ArtifactMetadata: Identifiable, Sendable {
     let bytes: Int64
     let hasSHA256: Bool
     let modifiedAt: Date?
+    let isAvailableOnDisk: Bool
 }
 
 struct StatusSummary: Sendable {

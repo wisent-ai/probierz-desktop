@@ -207,7 +207,8 @@ struct MetadataLoader: Sendable {
             fileExtension: fileExtension.isEmpty ? "—" : fileExtension.uppercased(),
             bytes: max(0, artifact.bytes ?? diskBytes),
             hasSHA256: !(artifact.sha256 ?? "").isEmpty,
-            modifiedAt: isSafeFile ? values?.contentModificationDate : nil
+            modifiedAt: isSafeFile ? values?.contentModificationDate : nil,
+            isAvailableOnDisk: isSafeFile
         )
     }
 
@@ -258,15 +259,28 @@ struct MetadataLoader: Sendable {
     }
 
     private func safeURL(_ relativePath: String, root: URL) -> URL? {
+        let components = relativePath.split(separator: "/", omittingEmptySubsequences: false)
         guard !relativePath.hasPrefix("/"),
-              !relativePath.split(separator: "/").contains("..") else {
+              !components.isEmpty,
+              !components.contains(".."),
+              !components.contains("")
+        else {
             return nil
         }
-        let candidate = root.appendingPathComponent(relativePath).standardizedFileURL
-        let normalizedRoot = root.standardizedFileURL
+
+        var candidate = root
+        for component in components {
+            candidate.appendPathComponent(String(component))
+            if (try? candidate.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true {
+                return nil
+            }
+        }
+
+        let normalizedRoot = root.resolvingSymlinksInPath().standardizedFileURL
+        let normalizedCandidate = candidate.resolvingSymlinksInPath().standardizedFileURL
         let prefix = normalizedRoot.path + "/"
-        guard candidate.path == normalizedRoot.path || candidate.path.hasPrefix(prefix) else { return nil }
-        return candidate
+        guard normalizedCandidate.path.hasPrefix(prefix) else { return nil }
+        return candidate.standardizedFileURL
     }
 }
 
