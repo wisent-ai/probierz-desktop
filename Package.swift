@@ -9,14 +9,16 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/wisent-ai/wisent-desktop-auth.git", from: "0.1.0"),
-        .package(path: "../echo-web"),
+        .package(url: "https://github.com/wisent-ai/wisent-desktop-update.git", exact: "0.1.0"),
+        .package(url: "https://github.com/wisent-ai/echo.git", exact: "0.1.1"),
     ],
     targets: [
         .executableTarget(
             name: "ProbierzDesktop",
             dependencies: [
                 .product(name: "WisentAuth", package: "wisent-desktop-auth"),
-                .product(name: "WisentOnboarding", package: "echo-web"),
+                .product(name: "WisentDesktopUpdate", package: "wisent-desktop-update"),
+                .product(name: "WisentOnboarding", package: "echo"),
             ]
         ),
     ]

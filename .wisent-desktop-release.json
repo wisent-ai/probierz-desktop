@@ -1,0 +1,11 @@
+{
+  "$schema": "https://github.com/wisent-ai/wisent-desktop-update/raw/main/release-manifest.schema.json",
+  "schema": 1,
+  "product": "Probierz",
+  "bundle_id": "ai.wisent.probierz.desktop",
+  "bundle_path": ".build/Probierz.app",
+  "build_command": "./Scripts/build-app.sh",
+  "archive_name": "Probierz-{version}.zip",
+  "feed_url": "https://github.com/wisent-ai/probierz-desktop/releases/latest/download/appcast.xml",
+  "minimum_system_version": "14.0"
+}

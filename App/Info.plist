@@ -39,5 +39,19 @@
     <string>14.0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>SUFeedURL</key>
+    <string></string>
+    <key>SUPublicEDKey</key>
+    <string>eOOZ1GL/WixchYYsL4Wt7AKPt5d8nuG6S7630rlsa+U=</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUScheduledCheckInterval</key>
+    <integer>86400</integer>
+    <key>SUVerifyUpdateBeforeExtraction</key>
+    <true/>
+    <key>SURequireSignedFeed</key>
+    <true/>
+    <key>SUAutomaticallyUpdate</key>
+    <true/>
 </dict>
 </plist>

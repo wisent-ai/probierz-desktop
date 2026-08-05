@@ -1,5 +1,5 @@
 import Combine
-import Foundation
+@preconcurrency import Foundation
 import SwiftUI
 import WisentOnboarding
 

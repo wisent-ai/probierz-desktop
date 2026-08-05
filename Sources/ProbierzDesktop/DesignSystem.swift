@@ -13,6 +13,7 @@ enum ProbierzTheme {
         static let x2: CGFloat = 8
         static let x3: CGFloat = 12
         static let x4: CGFloat = 16
+        static let x5: CGFloat = 20
         static let x6: CGFloat = 24
         static let x8: CGFloat = 32
     }
