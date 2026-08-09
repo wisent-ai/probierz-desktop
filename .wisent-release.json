@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "product": "probierz-desktop",
+  "releases": true,
+  "version_source": {
+    "kind": "regex",
+    "path": "App/Info.plist",
+    "pattern": "(?s)<key>CFBundleShortVersionString</key>\\s*<string>(?<version>[0-9]+\\.[0-9]+\\.[0-9]+)</string>"
+  },
+  "platforms": {
+    "darwin-arm64": {
+      "runner_platform": "darwin-arm64",
+      "quality": [
+        {
+          "name": "compile",
+          "argv": ["bash", "release/stado-release.sh", "compile"]
+        }
+      ],
+      "build": {
+        "argv": ["bash", "release/stado-release.sh", "build"]
+      },
+      "stage": {
+        "release/Probierz.app": "Probierz.app",
+        "release/Probierz.zip": "Probierz.zip",
+        "release/Probierz.zip.sparkle-signature": "Probierz.zip.sparkle-signature",
+        "release/appcast.xml": "appcast.xml",
+        "evidence/release.json": "evidence/release.json",
+        "evidence/notary.json": "evidence/notary.json",
+        "evidence/DIGESTS": "evidence/DIGESTS"
+      },
+      "secret_env": {
+        "MACOS_CERT_P12": "wisent-apple-developer-id#certificate_p12_base64",
+        "MACOS_CERT_PASSWORD": "wisent-apple-developer-id#certificate_password",
+        "MACOS_SIGN_IDENTITY": "wisent-apple-developer-id#sign_identity",
+        "AC_API_KEY_ID": "wisent-apple-notary#key_id",
+        "AC_API_ISSUER_ID": "wisent-apple-notary#issuer_id",
+        "AC_API_KEY_P8": "wisent-apple-notary#private_key_p8_base64",
+        "SPARKLE_PRIVATE_KEY": "probierz-desktop-sparkle#private_key"
+      }
+    }
+  },
+  "inputs": {
+    "wisent-desktop-update": {
+      "uri": "stado://sources/wisent-desktop-update/sha256/1f3c919e7e15ef6736a7c9c841ca185cb487e502c0da39be68aa1aa8b487af47/source.tar.gz",
+      "sha256": "1f3c919e7e15ef6736a7c9c841ca185cb487e502c0da39be68aa1aa8b487af47",
+      "mount": "wisent-desktop-update.tar.gz"
+    },
+    "swiftpm-cache": {
+      "uri": "stado://sources/probierz-swiftpm-cache/sha256/1afb0215091d97ef0a1c05ce93035d91e83af8b09eaaa48d369ba1f3c7c769f4/source.tar.gz",
+      "sha256": "1afb0215091d97ef0a1c05ce93035d91e83af8b09eaaa48d369ba1f3c7c769f4",
+      "mount": "swiftpm-cache.tar.gz"
+    }
+  },
+  "promotion": {
+    "channels": ["candidate", "stable"],
+    "reconcile": false
+  },
+  "deliveries": [
+    {
+      "name": "sparkle-appcast",
+      "platform": "darwin-arm64",
+      "argv": ["python3", "release/deliver-sparkle.py"],
+      "required": true,
+      "secret_env": {
+        "WISENT_SPARKLE_UPLOAD_BASE_URL": "probierz-desktop-sparkle#upload_base_url",
+        "WISENT_SPARKLE_TOKEN": "probierz-desktop-sparkle#delivery_token"
+      }
+    }
+  ]
+}
