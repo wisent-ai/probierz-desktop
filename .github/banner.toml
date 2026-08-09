@@ -1,0 +1,15 @@
+[automation]
+managed = true
+source_fingerprint = "b2ff6a84a8913c2d"
+category = "benchmark"
+
+[banner]
+title = "Inspect test runs and evidence on macOS."
+description = "Native viewer for Probierz contracts, run status, manifests, and artifact metadata."
+product = "Wisent"
+url = "wisent.ai"
+theme = "dark"
+layout = "benchmark-left"
+art_seed = "probierz-desktop"
+width = 1584
+height = 396
