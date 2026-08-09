@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "releases": false,
+  "reason": "The README states that a source build does not promise a signed/notarized public binary and that no supported public binary is currently promised."
+}
