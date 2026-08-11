@@ -10,9 +10,16 @@
 
 # Probierz Desktop
 
-**Probierz Desktop is a read-only native macOS viewer for local Probierz product
-contracts, configuration presence, run-manifest metadata, status summaries, and
-artifact metadata.**
+The Best Way to Improve Your AI-Generated Code Is to Have an AI Test It.
+
+Probierz gives you the proof your software works as your AI intended. On every
+commit it autonomously creates the journeys of your users and tests them directly
+where your product lives. Be it the terminal, the browser, a desktop or mobile
+app — Probierz tests it all. Every run gives you the evidence you need — reports,
+screenshots and videos so that you can see exactly what is broken in the pipeline.
+
+AI Agent That Tests All of Your Releases. This is the read-only macOS viewer for
+what it recorded on your own machine.
 
 It helps an operator inspect one local Wisent workspace without executing a test,
 opening artifact contents, deciding a quality gate, uploading evidence, or
