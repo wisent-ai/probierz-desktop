@@ -2,6 +2,7 @@ import Combine
 @preconcurrency import Foundation
 import SwiftUI
 import WisentOnboarding
+import WisentDesignSystem
 
 private struct ProbierzJourneyTransport: JourneyTransport {
     private let base: EnvironmentJourneyTransport
@@ -193,24 +194,40 @@ struct ProbierzOnboardingCard: View {
     let action: () -> Void
 
     var body: some View {
-        ProbierzPanel {
-            HStack(alignment: .top, spacing: ProbierzTheme.Space.x4) {
+        WisentPanel {
+            HStack(alignment: .top, spacing: WisentDesign.Space.x4) {
                 Image(systemName: symbol)
-                    .font(.title2)
-                    .foregroundStyle(ProbierzTheme.accent)
-                    .frame(width: 28)
-                VStack(alignment: .leading, spacing: ProbierzTheme.Space.x2) {
+                    .font(.system(size: WisentDesign.Space.x5, weight: .semibold))
+                    .foregroundStyle(WisentDesign.brand)
+                    .frame(width: WisentDesign.Space.x10, height: WisentDesign.Space.x10)
+                    .background(
+                        WisentDesign.brandSoft,
+                        in: RoundedRectangle(cornerRadius: WisentDesign.Radius.medium)
+                    )
+                VStack(alignment: .leading, spacing: WisentDesign.Space.x2) {
+                    WisentBadge("Getting started", symbol: "sparkles", tone: .brand)
                     Text(title)
-                        .font(.headline)
+                        .font(WisentTypography.heading(18))
+                        .foregroundStyle(WisentDesign.ink)
                     Text(bodyText)
-                        .font(.subheadline)
-                        .foregroundStyle(ProbierzTheme.secondary)
+                        .font(WisentTypography.body(13))
+                        .foregroundStyle(WisentDesign.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer(minLength: ProbierzTheme.Space.x4)
-                Button(actionLabel, action: action)
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isWorking)
+                .layoutPriority(1)
+                Spacer(minLength: WisentDesign.Space.x4)
+                Button(action: action) {
+                    HStack(spacing: WisentDesign.Space.x2) {
+                        if isWorking {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        Text(actionLabel)
+                    }
+                }
+                .buttonStyle(WisentPrimaryButtonStyle())
+                .disabled(isWorking)
+                .opacity(isWorking ? 0.62 : 1)
             }
         }
         .accessibilityElement(children: .contain)

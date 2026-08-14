@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import WisentDesignSystem
 
 struct ProbierzRootView: View {
     @ObservedObject var model: ProbierzModel
@@ -8,24 +9,52 @@ struct ProbierzRootView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(ProbierzDestination.allCases, selection: $destination) { item in
-                Label(item.title, systemImage: item.symbol)
-                    .tag(item)
-            }
-            .navigationTitle("Probierz")
-            .navigationSplitViewColumnWidth(
-                min: ProbierzTheme.sidebarMinimumWidth,
-                ideal: ProbierzTheme.sidebarIdealWidth
-            )
-            .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 0) {
+                HStack(spacing: WisentDesign.Space.x3) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: WisentDesign.Space.x4, weight: .semibold))
+                        .foregroundStyle(WisentDesign.brandStrong)
+                        .frame(width: WisentDesign.Space.x10, height: WisentDesign.Space.x10)
+                        .background(
+                            WisentDesign.brandSoft,
+                            in: RoundedRectangle(cornerRadius: WisentDesign.Radius.medium)
+                        )
+                    VStack(alignment: .leading, spacing: WisentDesign.Space.x1) {
+                        Text("Probierz")
+                            .font(WisentTypography.heading(18))
+                            .foregroundStyle(WisentDesign.ink)
+                        Text("QUALITY EVIDENCE")
+                            .font(WisentTypography.monoMedium(9))
+                            .tracking(0.7)
+                            .foregroundStyle(WisentDesign.muted)
+                    }
+                    Spacer()
+                }
+                .padding(WisentDesign.Space.x4)
+
+                Divider()
+
+                List(ProbierzDestination.allCases, selection: $destination) { item in
+                    Label(item.title, systemImage: item.symbol)
+                        .padding(.vertical, WisentDesign.Space.x1)
+                        .tag(item)
+                }
+                .font(WisentTypography.bodyMedium(13))
+                .scrollContentBackground(.hidden)
+
                 sidebarFooter
             }
+            .background(WisentDesign.canvasMuted)
+            .navigationSplitViewColumnWidth(
+                min: WisentDesign.Layout.sidebarMinimumWidth,
+                ideal: WisentDesign.Layout.sidebarIdealWidth
+            )
         } detail: {
             VStack(spacing: 0) {
                 if let errorMessage = model.errorMessage {
                     errorBanner(errorMessage)
-                        .padding(.horizontal, ProbierzTheme.Space.x6)
-                        .padding(.top, ProbierzTheme.Space.x3)
+                        .padding(.horizontal, WisentDesign.Space.x6)
+                        .padding(.top, WisentDesign.Space.x3)
                 }
                 if let screen = onboarding.screen {
                     ProbierzOnboardingCard(
@@ -33,21 +62,24 @@ struct ProbierzRootView: View {
                         isWorking: onboarding.isWorking,
                         action: performOnboardingAction
                     )
-                    .padding(.horizontal, ProbierzTheme.Space.x6)
-                    .padding(.top, ProbierzTheme.Space.x3)
+                    .padding(.horizontal, WisentDesign.Space.x6)
+                    .padding(.top, WisentDesign.Space.x3)
                 }
                 Group {
                     if let snapshot = model.snapshot {
                         destinationView(snapshot)
+                    } else if model.isRefreshing {
+                        loadingWorkspace
                     } else {
                         unavailableWorkspace
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .background(ProbierzTheme.canvas)
+            .background { WisentCanvasBackground() }
         }
-        .frame(minWidth: ProbierzTheme.minimumWidth, minHeight: ProbierzTheme.minimumHeight)
+        .frame(minWidth: ProbierzLayout.minimumWindowWidth, minHeight: ProbierzLayout.minimumWindowHeight)
+        .tint(WisentDesign.brand)
         .searchable(text: $model.query, prompt: "Filter local metadata")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
@@ -103,20 +135,34 @@ struct ProbierzRootView: View {
 
     private func overview(_ snapshot: ProbierzSnapshot) -> some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: ProbierzTheme.Space.x6) {
-                overviewHeader(snapshot)
+            VStack(alignment: .leading, spacing: WisentDesign.Space.x6) {
+                WisentPageHeader(
+                    eyebrow: "Quality evidence",
+                    title: "Probierz",
+                    detail: "Cross-platform verification readiness, source identity, and evidence metadata.",
+                    symbol: "checkmark.seal.fill"
+                )
                 aggregateStatus(snapshot)
 
-                VStack(alignment: .leading, spacing: ProbierzTheme.Space.x3) {
-                    Text("Surface readiness")
-                        .font(.title3.weight(.semibold))
+                VStack(alignment: .leading, spacing: WisentDesign.Space.x3) {
+                    WisentSectionHeader(
+                        "Surface readiness",
+                        detail: "Declared product surfaces and their local execution contracts.",
+                        trailing: "\(model.filteredContracts.count) surfaces"
+                    )
                     if model.filteredContracts.isEmpty, model.hasActiveFilter {
                         EmptyFilterView(clear: model.clearFilters)
                             .frame(minHeight: 240)
+                    } else if snapshot.contracts.isEmpty {
+                        WisentEmptyState(
+                            title: "No surface contracts",
+                            detail: "This workspace does not declare any Probierz product surfaces yet.",
+                            symbol: "rectangle.3.group"
+                        )
                     } else {
                         LazyVGrid(
-                            columns: [GridItem(.adaptive(minimum: 300), spacing: ProbierzTheme.Space.x3)],
-                            spacing: ProbierzTheme.Space.x3
+                            columns: [GridItem(.adaptive(minimum: 300), spacing: WisentDesign.Space.x3)],
+                            spacing: WisentDesign.Space.x3
                         ) {
                             ForEach(model.filteredContracts) { contract in
                                 contractRow(contract)
@@ -126,119 +172,96 @@ struct ProbierzRootView: View {
                 }
                 privacyBoundary
             }
-            .frame(maxWidth: ProbierzTheme.contentMaximumWidth, alignment: .leading)
-            .padding(ProbierzTheme.Space.x6)
+            .frame(maxWidth: WisentDesign.Layout.contentMaximumWidth, alignment: .leading)
+            .padding(WisentDesign.Space.x6)
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .navigationTitle("Overview")
     }
 
-    private func overviewHeader(_ snapshot: ProbierzSnapshot) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: ProbierzTheme.Space.x4) {
-            VStack(alignment: .leading, spacing: ProbierzTheme.Space.x1) {
-                Label("Probierz", systemImage: "checkmark.seal")
-                    .font(.largeTitle.weight(.semibold))
-                    .foregroundStyle(ProbierzTheme.accent)
-                Text("Cross-platform verification readiness and evidence metadata.")
-                    .font(.subheadline)
-                    .foregroundStyle(ProbierzTheme.secondary)
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: ProbierzTheme.Space.x1) {
-                Text("Updated")
-                    .font(.caption)
-                    .foregroundStyle(ProbierzTheme.secondary)
-                Text(snapshot.loadedAt, style: .relative)
-                    .font(.caption.weight(.semibold))
-            }
-        }
-    }
 
     private func aggregateStatus(_ snapshot: ProbierzSnapshot) -> some View {
-        ProbierzPanel {
-            Grid(alignment: .leading, horizontalSpacing: ProbierzTheme.Space.x8, verticalSpacing: ProbierzTheme.Space.x2) {
-                GridRow {
-                    summaryMetric(
-                        title: "Contracts",
-                        value: "\(snapshot.availableContractCount)/\(snapshot.contracts.count)",
-                        detail: "available locally"
-                    )
-                    summaryMetric(
-                        title: "Configuration",
-                        value: "\(snapshot.configuredCount)/\(snapshot.configurations.count)",
-                        detail: "names present"
-                    )
-                    summaryMetric(
-                        title: "Recorded runs",
-                        value: snapshot.summary.total.formatted(),
-                        detail: "manifest records"
-                    )
-                    summaryMetric(
-                        title: "Artifact inventory",
-                        value: snapshot.artifacts.count.formatted(),
-                        detail: ByteCountFormatter.string(fromByteCount: snapshot.artifactBytes, countStyle: .file)
-                    )
-                }
+        VStack(alignment: .leading, spacing: WisentDesign.Space.x3) {
+            WisentSectionHeader(
+                "Workspace snapshot",
+                detail: "Readiness and inventory from the current local metadata projection.",
+                trailing: "Updated \(snapshot.loadedAt.formatted(date: .abbreviated, time: .shortened))"
+            )
+            LazyVGrid(columns: metricColumns, spacing: WisentDesign.Space.x3) {
+                WisentMetricCard(
+                    title: "Contracts",
+                    value: "\(snapshot.availableContractCount)/\(snapshot.contracts.count)",
+                    detail: "available locally",
+                    symbol: "checkmark.seal",
+                    tone: snapshot.availableContractCount == snapshot.contracts.count ? .success : .warning
+                )
+                WisentMetricCard(
+                    title: "Configuration",
+                    value: "\(snapshot.configuredCount)/\(snapshot.configurations.count)",
+                    detail: "declared names present",
+                    symbol: "key.horizontal",
+                    tone: snapshot.configuredCount == snapshot.configurations.count ? .success : .warning
+                )
+                WisentMetricCard(
+                    title: "Recorded runs",
+                    value: snapshot.summary.total.formatted(),
+                    detail: "manifest records",
+                    symbol: "checklist",
+                    tone: snapshot.summary.failed > 0 ? .danger : .brand
+                )
+                WisentMetricCard(
+                    title: "Artifact inventory",
+                    value: snapshot.artifacts.count.formatted(),
+                    detail: ByteCountFormatter.string(fromByteCount: snapshot.artifactBytes, countStyle: .file),
+                    symbol: "archivebox",
+                    tone: .info
+                )
             }
-            Divider()
-                .padding(.vertical, ProbierzTheme.Space.x2)
-            HStack(spacing: ProbierzTheme.Space.x4) {
-                summaryStatus(status: .passed, count: snapshot.summary.passed)
-                summaryStatus(status: .failed, count: snapshot.summary.failed)
-                summaryStatus(status: .blocked, count: snapshot.summary.blocked)
-                summaryStatus(status: .canceled, count: snapshot.summary.canceled)
-                summaryStatus(status: .incomplete, count: snapshot.summary.incomplete)
-                Spacer()
-                if snapshot.manifestsTruncated {
-                    Label("Inventory limit reached", systemImage: "exclamationmark.triangle")
-                        .font(.caption)
-                        .foregroundStyle(ProbierzTheme.warning)
+            WisentPanel {
+                HStack(spacing: WisentDesign.Space.x2) {
+                    summaryStatus(status: .passed, count: snapshot.summary.passed)
+                    summaryStatus(status: .failed, count: snapshot.summary.failed)
+                    summaryStatus(status: .blocked, count: snapshot.summary.blocked)
+                    summaryStatus(status: .canceled, count: snapshot.summary.canceled)
+                    summaryStatus(status: .incomplete, count: snapshot.summary.incomplete)
+                    Spacer(minLength: 0)
+                    if snapshot.manifestsTruncated {
+                        WisentBadge(
+                            "Inventory limit reached",
+                            symbol: "exclamationmark.triangle.fill",
+                            tone: .warning
+                        )
+                    }
                 }
             }
         }
-    }
-
-    private func summaryMetric(title: String, value: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: ProbierzTheme.Space.x1) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(ProbierzTheme.secondary)
-            Text(value)
-                .font(.title2.weight(.semibold).monospacedDigit())
-            Text(detail)
-                .font(.caption2)
-                .foregroundStyle(ProbierzTheme.muted)
-        }
-        .accessibilityElement(children: .combine)
     }
 
     private func summaryStatus(status: RunStatus, count: Int) -> some View {
-        Label {
-            Text("\(count) \(status.title.lowercased())")
-                .monospacedDigit()
-        } icon: {
-            Image(systemName: status.symbol)
-        }
-        .font(.caption.weight(.medium))
-        .foregroundStyle(ProbierzTheme.color(for: status))
-        .accessibilityElement(children: .combine)
+        WisentBadge(
+            "\(count) \(status.title.lowercased())",
+            symbol: status.symbol,
+            tone: status.wisentTone
+        )
     }
 
     private func contractRow(_ contract: ContractItem) -> some View {
-        ProbierzPanel {
-            HStack(alignment: .top, spacing: ProbierzTheme.Space.x3) {
-                VStack(alignment: .leading, spacing: ProbierzTheme.Space.x2) {
+        WisentPanel {
+            HStack(alignment: .top, spacing: WisentDesign.Space.x3) {
+                VStack(alignment: .leading, spacing: WisentDesign.Space.x2) {
                     Text(contract.title)
-                        .font(.headline)
+                        .font(WisentTypography.bodyMedium(14))
+                        .foregroundStyle(WisentDesign.ink)
                     Text(contract.detail)
-                        .font(.subheadline)
-                        .foregroundStyle(ProbierzTheme.secondary)
+                        .font(WisentTypography.body(13))
+                        .foregroundStyle(WisentDesign.secondary)
                     Text(contract.relativePath)
-                        .font(.caption.monospaced())
-                        .foregroundStyle(ProbierzTheme.muted)
+                        .font(WisentTypography.mono(11))
+                        .foregroundStyle(WisentDesign.muted)
+                        .textSelection(.enabled)
                 }
-                Spacer(minLength: ProbierzTheme.Space.x3)
-                VStack(alignment: .trailing, spacing: ProbierzTheme.Space.x2) {
+                Spacer(minLength: WisentDesign.Space.x3)
+                VStack(alignment: .trailing, spacing: WisentDesign.Space.x2) {
                     AvailabilityBadge(
                         isAvailable: contract.isAvailable,
                         availableTitle: "Available",
@@ -246,8 +269,8 @@ struct ProbierzRootView: View {
                     )
                     if let modifiedAt = contract.modifiedAt {
                         Text(modifiedAt, format: .dateTime.year().month().day().hour().minute())
-                            .font(.caption2)
-                            .foregroundStyle(ProbierzTheme.muted)
+                            .font(WisentTypography.mono(10))
+                            .foregroundStyle(WisentDesign.muted)
                     }
                 }
             }
@@ -256,47 +279,80 @@ struct ProbierzRootView: View {
 
     private func configuration(_ snapshot: ProbierzSnapshot) -> some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: ProbierzTheme.Space.x6) {
-                SectionHeading(
-                    title: "Configuration inventory",
-                    detail: "Presence only. Values are never retained or displayed."
+            VStack(alignment: .leading, spacing: WisentDesign.Space.x6) {
+                WisentPageHeader(
+                    eyebrow: "Local inventory",
+                    title: "Configuration",
+                    detail: "Presence only. Values are never retained or displayed.",
+                    symbol: "gearshape.2"
                 )
-                ProbierzPanel {
-                    VStack(alignment: .leading, spacing: ProbierzTheme.Space.x3) {
-                        Label("Workspace", systemImage: "folder")
-                            .font(.headline)
-                        Text(snapshot.repositoryRoot.path)
-                            .font(.caption.monospaced())
-                            .foregroundStyle(ProbierzTheme.secondary)
-                            .textSelection(.enabled)
-                        Divider()
-                        LabeledContent("Declared names", value: snapshot.configurations.count.formatted())
-                        LabeledContent("Present names", value: snapshot.configuredCount.formatted())
+                LazyVGrid(columns: metricColumns, spacing: WisentDesign.Space.x3) {
+                    WisentMetricCard(
+                        title: "Declared names",
+                        value: snapshot.configurations.count.formatted(),
+                        detail: "configuration keys in scope",
+                        symbol: "list.bullet.rectangle",
+                        tone: .brand
+                    )
+                    WisentMetricCard(
+                        title: "Present names",
+                        value: snapshot.configuredCount.formatted(),
+                        detail: "values detected without reading them",
+                        symbol: "checkmark.shield",
+                        tone: snapshot.configuredCount == snapshot.configurations.count ? .success : .warning
+                    )
+                }
+                WisentPanel {
+                    VStack(alignment: .leading, spacing: WisentDesign.Space.x3) {
+                        WisentSectionHeader("Workspace", detail: "Current metadata source")
+                        Label {
+                            Text(snapshot.repositoryRoot.path)
+                                .font(WisentTypography.mono(11))
+                                .foregroundStyle(WisentDesign.secondary)
+                                .textSelection(.enabled)
+                        } icon: {
+                            Image(systemName: "folder")
+                                .foregroundStyle(WisentDesign.brand)
+                        }
                     }
                 }
-
-                if model.filteredConfigurations.isEmpty, model.hasActiveFilter {
-                    EmptyFilterView(clear: model.clearFilters)
-                        .frame(minHeight: 320)
-                } else {
-                    ProbierzPanel {
-                        VStack(spacing: 0) {
-                            ForEach(Array(model.filteredConfigurations.enumerated()), id: \.element.id) { index, item in
-                                HStack(spacing: ProbierzTheme.Space.x3) {
-                                    Image(systemName: "key.horizontal")
-                                        .foregroundStyle(ProbierzTheme.secondary)
-                                    Text(item.name)
-                                        .font(.callout.monospaced())
-                                    Spacer()
-                                    AvailabilityBadge(
-                                        isAvailable: item.isPresent,
-                                        availableTitle: "Present",
-                                        unavailableTitle: "Not present"
-                                    )
-                                }
-                                .padding(.vertical, ProbierzTheme.Space.x3)
-                                if index < model.filteredConfigurations.count - 1 {
-                                    Divider()
+                VStack(alignment: .leading, spacing: WisentDesign.Space.x3) {
+                    WisentSectionHeader(
+                        "Declared configuration",
+                        detail: "Only the name and presence state cross the read-only boundary.",
+                        trailing: "\(model.filteredConfigurations.count) names"
+                    )
+                    if snapshot.configurations.isEmpty {
+                        WisentEmptyState(
+                            title: "No configuration names",
+                            detail: "This workspace does not declare configuration metadata for Probierz.",
+                            symbol: "key.slash"
+                        )
+                    } else if model.filteredConfigurations.isEmpty, model.hasActiveFilter {
+                        EmptyFilterView(clear: model.clearFilters)
+                            .frame(minHeight: 280)
+                    } else {
+                        WisentPanel {
+                            VStack(spacing: 0) {
+                                ForEach(Array(model.filteredConfigurations.enumerated()), id: \.element.id) { index, item in
+                                    HStack(spacing: WisentDesign.Space.x3) {
+                                        Image(systemName: "key.horizontal")
+                                            .foregroundStyle(WisentDesign.brand)
+                                            .frame(width: WisentDesign.Space.x5)
+                                        Text(item.name)
+                                            .font(WisentTypography.monoMedium(12))
+                                            .foregroundStyle(WisentDesign.ink)
+                                        Spacer()
+                                        AvailabilityBadge(
+                                            isAvailable: item.isPresent,
+                                            availableTitle: "Present",
+                                            unavailableTitle: "Not present"
+                                        )
+                                    }
+                                    .padding(.vertical, WisentDesign.Space.x3)
+                                    if index < model.filteredConfigurations.count - 1 {
+                                        Divider()
+                                    }
                                 }
                             }
                         }
@@ -304,21 +360,23 @@ struct ProbierzRootView: View {
                 }
                 privacyBoundary
             }
-            .frame(maxWidth: ProbierzTheme.contentMaximumWidth, alignment: .leading)
-            .padding(ProbierzTheme.Space.x6)
+            .frame(maxWidth: WisentDesign.Layout.contentMaximumWidth, alignment: .leading)
+            .padding(WisentDesign.Space.x6)
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .navigationTitle("Configuration")
     }
 
     private func runs(_ snapshot: ProbierzSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: ProbierzTheme.Space.x4) {
-            HStack(alignment: .bottom, spacing: ProbierzTheme.Space.x4) {
-                SectionHeading(
+        VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
+            HStack(alignment: .bottom, spacing: WisentDesign.Space.x4) {
+                WisentPageHeader(
+                    eyebrow: "Manifest inventory",
                     title: "Run status",
-                    detail: "Normalized from the read-only run-manifest metadata boundary."
+                    detail: "Normalized from the read-only run-manifest metadata boundary.",
+                    symbol: "checklist"
                 )
-                Spacer()
+                Spacer(minLength: WisentDesign.Space.x4)
                 Picker("Status", selection: $model.statusFilter) {
                     Text("All statuses").tag(RunStatus?.none)
                     ForEach(RunStatus.allCases) { status in
@@ -327,198 +385,280 @@ struct ProbierzRootView: View {
                 }
                 .frame(width: 190)
                 .labelsHidden()
+                .accessibilityLabel("Filter runs by status")
             }
-
+            LazyVGrid(columns: metricColumns, spacing: WisentDesign.Space.x3) {
+                WisentMetricCard(
+                    title: "Recorded",
+                    value: snapshot.summary.total.formatted(),
+                    detail: "run manifests",
+                    symbol: "doc.text.magnifyingglass",
+                    tone: .brand
+                )
+                WisentMetricCard(
+                    title: "Needs attention",
+                    value: (snapshot.summary.failed + snapshot.summary.blocked + snapshot.summary.incomplete).formatted(),
+                    detail: "failed, blocked, or incomplete",
+                    symbol: "exclamationmark.triangle.fill",
+                    tone: snapshot.summary.failed > 0 ? .danger : .warning
+                )
+            }
             if snapshot.runs.isEmpty {
-                ContentUnavailableView(
-                    "No run metadata",
-                    systemImage: "checklist",
-                    description: Text("Probierz has not recorded a run manifest in this workspace.")
+                WisentEmptyState(
+                    title: "No run metadata",
+                    detail: "Probierz has not recorded a run manifest in this workspace.",
+                    symbol: "checklist"
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if model.filteredRuns.isEmpty {
                 EmptyFilterView(clear: model.clearFilters)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                Table(model.filteredRuns) {
-                    TableColumn("Status") { run in
-                        StatusBadge(status: run.status)
-                    }
-                    .width(min: 104, ideal: 112)
-                    TableColumn("Target") { run in
-                        Text(run.target)
-                            .lineLimit(1)
-                    }
-                    .width(min: 120, ideal: 160)
-                    TableColumn("Started") { run in
-                        if let date = run.startedAt {
-                            Text(date, format: .dateTime.year().month().day().hour().minute())
-                        } else {
-                            Text("Unavailable")
-                                .foregroundStyle(ProbierzTheme.muted)
+                WisentPanel(padding: 0) {
+                    Table(model.filteredRuns) {
+                        TableColumn("Status") { run in
+                            StatusBadge(status: run.status)
                         }
+                        .width(min: 96, ideal: 104)
+                        TableColumn("Target") { run in
+                            Text(run.target)
+                                .lineLimit(1)
+                                .help(run.target)
+                        }
+                        .width(min: 104, ideal: 140)
+                        TableColumn("Started") { run in
+                            if let date = run.startedAt {
+                                Text(date, format: .dateTime.year().month().day().hour().minute())
+                            } else {
+                                Text("Unavailable")
+                                    .foregroundStyle(WisentDesign.muted)
+                            }
+                        }
+                        .width(min: 126, ideal: 150)
+                        TableColumn("Duration") { run in
+                            Text(durationLabel(run.durationMilliseconds))
+                                .monospacedDigit()
+                        }
+                        .width(min: 66, ideal: 82)
+                        TableColumn("Artifacts") { run in
+                            Text(run.artifactCount.formatted())
+                                .monospacedDigit()
+                        }
+                        .width(min: 58, ideal: 72)
+                        TableColumn("Run ID") { run in
+                            Text(run.runID)
+                                .font(WisentTypography.mono(11))
+                                .lineLimit(1)
+                                .help(run.runID)
+                        }
+                        .width(min: 160, ideal: 260)
                     }
-                    .width(min: 150, ideal: 170)
-                    TableColumn("Duration") { run in
-                        Text(durationLabel(run.durationMilliseconds))
-                            .monospacedDigit()
-                    }
-                    .width(min: 80, ideal: 96)
-                    TableColumn("Artifacts") { run in
-                        Text(run.artifactCount.formatted())
-                            .monospacedDigit()
-                    }
-                    .width(min: 72, ideal: 80)
-                    TableColumn("Run ID") { run in
-                        Text(run.runID)
-                            .font(.caption.monospaced())
-                            .lineLimit(1)
-                            .help(run.runID)
-                    }
-                    .width(min: 220, ideal: 320)
+                    .font(WisentTypography.body(12))
+                    .accessibilityLabel("Probierz run metadata")
                 }
-                .accessibilityLabel("Probierz run metadata")
+                .clipShape(RoundedRectangle(cornerRadius: WisentDesign.Radius.large))
             }
         }
-        .padding(ProbierzTheme.Space.x6)
+        .frame(maxWidth: WisentDesign.Layout.contentMaximumWidth, alignment: .leading)
+        .padding(WisentDesign.Space.x6)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .navigationTitle("Runs")
     }
 
     private func artifacts(_ snapshot: ProbierzSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: ProbierzTheme.Space.x4) {
-            SectionHeading(
-                title: "Artifact metadata",
-                detail: "Type, size, integrity availability, and timestamp only. Names, paths, and contents are excluded."
+        VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
+            WisentPageHeader(
+                eyebrow: "Evidence inventory",
+                title: "Artifacts",
+                detail: "Type, size, integrity availability, and timestamp only. Names, paths, and contents are excluded.",
+                symbol: "archivebox"
             )
-
+            LazyVGrid(columns: metricColumns, spacing: WisentDesign.Space.x3) {
+                WisentMetricCard(
+                    title: "Descriptors",
+                    value: snapshot.artifacts.count.formatted(),
+                    detail: "artifact metadata records",
+                    symbol: "archivebox",
+                    tone: .brand
+                )
+                WisentMetricCard(
+                    title: "Inventory size",
+                    value: ByteCountFormatter.string(fromByteCount: snapshot.artifactBytes, countStyle: .file),
+                    detail: "declared bytes",
+                    symbol: "externaldrive",
+                    tone: .info
+                )
+            }
             if snapshot.artifacts.isEmpty {
-                ContentUnavailableView(
-                    "No artifact metadata",
-                    systemImage: "archivebox",
-                    description: Text("No artifact descriptors are available in local run manifests.")
+                WisentEmptyState(
+                    title: "No artifact metadata",
+                    detail: "No artifact descriptors are available in local run manifests.",
+                    symbol: "archivebox"
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if model.filteredArtifacts.isEmpty {
                 EmptyFilterView(clear: model.clearFilters)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                Table(model.filteredArtifacts) {
-                    TableColumn("Kind") { artifact in
-                        Label(artifact.kind.title, systemImage: artifact.kind.symbol)
-                    }
-                    .width(min: 124, ideal: 150)
-                    TableColumn("Format") { artifact in
-                        Text(artifact.fileExtension)
-                            .font(.caption.monospaced())
-                    }
-                    .width(min: 64, ideal: 80)
-                    TableColumn("Size") { artifact in
-                        Text(ByteCountFormatter.string(fromByteCount: artifact.bytes, countStyle: .file))
-                            .monospacedDigit()
-                    }
-                    .width(min: 90, ideal: 110)
-                    TableColumn("SHA-256") { artifact in
-                        AvailabilityBadge(
-                            isAvailable: artifact.hasSHA256,
-                            availableTitle: "Recorded",
-                            unavailableTitle: "Unavailable"
-                        )
-                    }
-                    .width(min: 110, ideal: 128)
-                    TableColumn("Modified") { artifact in
-                        if let date = artifact.modifiedAt {
-                            Text(date, format: .dateTime.year().month().day().hour().minute())
-                        } else {
-                            Text("Unavailable")
-                                .foregroundStyle(ProbierzTheme.muted)
+                WisentPanel(padding: 0) {
+                    Table(model.filteredArtifacts) {
+                        TableColumn("Kind") { artifact in
+                            Label(artifact.kind.title, systemImage: artifact.kind.symbol)
+                                .lineLimit(1)
+                                .help(artifact.kind.title)
                         }
-                    }
-                    .width(min: 150, ideal: 170)
-                    TableColumn("Evidence") { artifact in
-                        if artifact.kind == .protectedBundle, artifact.isAvailableOnDisk {
-                            Button("Inspect") {
-                                model.inspectEvidenceBundle(id: artifact.id)
+                        .width(min: 96, ideal: 120)
+                        TableColumn("Format") { artifact in
+                            Text(artifact.fileExtension)
+                                .font(WisentTypography.mono(11))
+                        }
+                        .width(min: 50, ideal: 64)
+                        TableColumn("Size") { artifact in
+                            Text(ByteCountFormatter.string(fromByteCount: artifact.bytes, countStyle: .file))
+                                .monospacedDigit()
+                        }
+                        .width(min: 70, ideal: 88)
+                        TableColumn("SHA-256") { artifact in
+                            AvailabilityBadge(
+                                isAvailable: artifact.hasSHA256,
+                                availableTitle: "Recorded",
+                                unavailableTitle: "Unavailable"
+                            )
+                        }
+                        .width(min: 92, ideal: 112)
+                        TableColumn("Modified") { artifact in
+                            if let date = artifact.modifiedAt {
+                                Text(date, format: .dateTime.year().month().day().hour().minute())
+                            } else {
+                                Text("Unavailable")
+                                    .foregroundStyle(WisentDesign.muted)
                             }
-                            .buttonStyle(.borderless)
-                            .help("Open the read-only evidence bundle inspector")
-                        } else {
-                            Text("—")
-                                .foregroundStyle(ProbierzTheme.muted)
                         }
+                        .width(min: 122, ideal: 146)
+                        TableColumn("Evidence") { artifact in
+                            if artifact.kind == .protectedBundle, artifact.isAvailableOnDisk {
+                                Button("Inspect") {
+                                    model.inspectEvidenceBundle(id: artifact.id)
+                                }
+                                .buttonStyle(.borderless)
+                                .help("Open the read-only evidence bundle inspector")
+                            } else {
+                                Text("—")
+                                    .foregroundStyle(WisentDesign.muted)
+                            }
+                        }
+                        .width(min: 60, ideal: 72)
+                        TableColumn("Run ID") { artifact in
+                            Text(artifact.runID)
+                                .font(WisentTypography.mono(11))
+                                .lineLimit(1)
+                                .help(artifact.runID)
+                        }
+                        .width(min: 146, ideal: 240)
                     }
-                    .width(min: 72, ideal: 82)
-                    TableColumn("Run ID") { artifact in
-                        Text(artifact.runID)
-                            .font(.caption.monospaced())
-                            .lineLimit(1)
-                            .help(artifact.runID)
-                    }
-                    .width(min: 220, ideal: 320)
+                    .font(WisentTypography.body(12))
+                    .accessibilityLabel("Probierz artifact metadata")
                 }
-                .accessibilityLabel("Probierz artifact metadata")
+                .clipShape(RoundedRectangle(cornerRadius: WisentDesign.Radius.large))
             }
         }
-        .padding(ProbierzTheme.Space.x6)
+        .frame(maxWidth: WisentDesign.Layout.contentMaximumWidth, alignment: .leading)
+        .padding(WisentDesign.Space.x6)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .navigationTitle("Artifacts")
     }
 
     private var privacyBoundary: some View {
-        ProbierzPanel {
-            HStack(alignment: .top, spacing: ProbierzTheme.Space.x3) {
-                Image(systemName: "hand.raised.fill")
-                    .foregroundStyle(ProbierzTheme.accent)
-                VStack(alignment: .leading, spacing: ProbierzTheme.Space.x1) {
+        WisentPanel {
+            Label {
+                VStack(alignment: .leading, spacing: WisentDesign.Space.x1) {
                     Text("Read-only metadata boundary")
-                        .font(.headline)
+                        .font(WisentTypography.bodyMedium(13))
+                        .foregroundStyle(WisentDesign.ink)
                     Text("Probierz Desktop reads configuration-name presence and the documented run-manifest projection. It never reads screenshots, videos, traces, logs, protected bundle contents, prompts, responses, payloads, account data, recipient data, credentials, or secret values.")
-                        .font(.subheadline)
-                        .foregroundStyle(ProbierzTheme.secondary)
+                        .font(WisentTypography.body(12))
+                        .foregroundStyle(WisentDesign.secondary)
                 }
+            } icon: {
+                Image(systemName: "hand.raised.fill")
+                    .foregroundStyle(WisentDesign.brand)
             }
         }
         .accessibilityElement(children: .combine)
     }
 
     private var sidebarFooter: some View {
-        VStack(alignment: .leading, spacing: ProbierzTheme.Space.x2) {
-            Divider()
-            Label("Local inventory", systemImage: "internaldrive")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(ProbierzTheme.accent)
+        VStack(alignment: .leading, spacing: WisentDesign.Space.x2) {
+            WisentBadge("Local inventory", symbol: "internaldrive", tone: .brand)
             Text("Metadata only")
-                .font(.caption)
-                .foregroundStyle(ProbierzTheme.secondary)
+                .font(WisentTypography.body(11))
+                .foregroundStyle(WisentDesign.secondary)
             Text("No artifact contents")
-                .font(.caption2)
-                .foregroundStyle(ProbierzTheme.muted)
+                .font(WisentTypography.mono(10))
+                .foregroundStyle(WisentDesign.muted)
         }
-        .padding(ProbierzTheme.Space.x4)
-        .background(.bar)
+        .padding(WisentDesign.Space.x4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(WisentDesign.surface)
         .accessibilityElement(children: .combine)
     }
 
+    private var loadingWorkspace: some View {
+        WisentPanel {
+            HStack(spacing: WisentDesign.Space.x3) {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(WisentDesign.brand)
+                VStack(alignment: .leading, spacing: WisentDesign.Space.x1) {
+                    Text("Loading workspace metadata")
+                        .font(WisentTypography.bodyMedium(14))
+                        .foregroundStyle(WisentDesign.ink)
+                    Text("Reading the documented local projection without opening artifact contents.")
+                        .font(WisentTypography.body(12))
+                        .foregroundStyle(WisentDesign.secondary)
+                }
+            }
+        }
+        .padding(WisentDesign.Space.x6)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Loading Probierz workspace metadata")
+    }
+
     private var unavailableWorkspace: some View {
-        ContentUnavailableView {
-            Label("Probierz metadata unavailable", systemImage: "questionmark.folder")
-        } description: {
-            Text("Choose the Wisent workspace containing probierz/package.json and agent/history.mjs.")
-        } actions: {
+        VStack(spacing: WisentDesign.Space.x4) {
+            WisentEmptyState(
+                title: "Probierz metadata unavailable",
+                detail: "Choose the Wisent workspace containing probierz/package.json and agent/history.mjs.",
+                symbol: "questionmark.folder"
+            )
             Button("Choose Workspace", action: chooseWorkspace)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(WisentPrimaryButtonStyle())
         }
     }
 
     private func errorBanner(_ message: String) -> some View {
-        Label(message, systemImage: "exclamationmark.triangle.fill")
-            .font(.caption)
-            .foregroundStyle(ProbierzTheme.warning)
-            .padding(ProbierzTheme.Space.x3)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                ProbierzTheme.warning.opacity(0.1),
-                in: RoundedRectangle(cornerRadius: ProbierzTheme.Radius.small)
-            )
-            .accessibilityElement(children: .combine)
+        WisentPanel(padding: WisentDesign.Space.x3) {
+            HStack(alignment: .top, spacing: WisentDesign.Space.x3) {
+                WisentBadge(
+                    "Refresh failed",
+                    symbol: "exclamationmark.triangle.fill",
+                    tone: .danger
+                )
+                Text(message)
+                    .font(WisentTypography.body(12))
+                    .foregroundStyle(WisentDesign.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var metricColumns: [GridItem] {
+        [
+            GridItem(.flexible(), spacing: WisentDesign.Space.x3),
+            GridItem(.flexible(), spacing: WisentDesign.Space.x3),
+        ]
     }
 
     private func durationLabel(_ milliseconds: Double) -> String {
@@ -571,59 +711,64 @@ private struct EvidenceBundleInspector: View {
     let artifact: ArtifactMetadata
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ProbierzTheme.Space.x5) {
-            HStack(alignment: .top, spacing: ProbierzTheme.Space.x3) {
-                Image(systemName: "lock.doc")
-                    .font(.title)
-                    .foregroundStyle(ProbierzTheme.accent)
-                VStack(alignment: .leading, spacing: ProbierzTheme.Space.x1) {
-                    Text("Protected evidence bundle")
-                        .font(.title2.weight(.semibold))
-                    Text("Opened for read-only provenance inspection")
-                        .foregroundStyle(ProbierzTheme.secondary)
+        ZStack {
+            WisentCanvasBackground()
+            VStack(alignment: .leading, spacing: WisentDesign.Space.x5) {
+                WisentPageHeader(
+                    eyebrow: "Read-only provenance",
+                    title: "Protected evidence bundle",
+                    detail: "Inspect the manifest projection without opening or decrypting the bundle payload.",
+                    symbol: "lock.doc"
+                )
+                WisentPanel {
+                    Grid(
+                        alignment: .leading,
+                        horizontalSpacing: WisentDesign.Space.x5,
+                        verticalSpacing: WisentDesign.Space.x3
+                    ) {
+                        inspectorRow("Source run", artifact.runID, monospaced: true)
+                        inspectorRow("Format", artifact.fileExtension, monospaced: true)
+                        inspectorRow(
+                            "Size",
+                            ByteCountFormatter.string(fromByteCount: artifact.bytes, countStyle: .file)
+                        )
+                        inspectorRow("SHA-256 field", artifact.hasSHA256 ? "Recorded" : "Unavailable")
+                        inspectorRow(
+                            "Modified",
+                            artifact.modifiedAt?.formatted(
+                                .dateTime.year().month().day().hour().minute().second()
+                            ) ?? "Unavailable"
+                        )
+                    }
                 }
-            }
-
-            ProbierzPanel {
-                Grid(alignment: .leading, horizontalSpacing: ProbierzTheme.Space.x5, verticalSpacing: ProbierzTheme.Space.x3) {
-                    inspectorRow("Source run", artifact.runID, monospaced: true)
-                    inspectorRow("Format", artifact.fileExtension, monospaced: true)
-                    inspectorRow(
-                        "Size",
-                        ByteCountFormatter.string(fromByteCount: artifact.bytes, countStyle: .file)
+                HStack(spacing: WisentDesign.Space.x2) {
+                    WisentBadge(
+                        artifact.hasSHA256 ? "Integrity field recorded" : "Integrity field unavailable",
+                        symbol: artifact.hasSHA256 ? "checkmark.shield.fill" : "shield.slash",
+                        tone: artifact.hasSHA256 ? .success : .warning
                     )
-                    inspectorRow("SHA-256 field", artifact.hasSHA256 ? "Recorded" : "Unavailable")
-                    inspectorRow(
-                        "Modified",
-                        artifact.modifiedAt?.formatted(
-                            .dateTime.year().month().day().hour().minute().second()
-                        ) ?? "Unavailable"
+                    WisentBadge(
+                        "Regular non-symlink file",
+                        symbol: "doc.badge.checkmark",
+                        tone: .success
                     )
                 }
-            }
-
-            Label(
-                "The run manifest references a regular, non-symlink .pev file inside its run directory.",
-                systemImage: "checkmark.shield"
-            )
-            .font(.subheadline)
-            .foregroundStyle(ProbierzTheme.success)
-
-            Text("Probierz Desktop does not read or decrypt the bundle payload, and it does not expose the local path. This inspector is the bundle's provenance projection only.")
-                .font(.subheadline)
-                .foregroundStyle(ProbierzTheme.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            HStack {
-                Spacer()
-                Button("Done") {
-                    dismiss()
+                Text("The run manifest references a regular, non-symlink .pev file inside its run directory. Probierz Desktop does not read or decrypt the bundle payload, and it does not expose the local path.")
+                    .font(WisentTypography.body(13))
+                    .foregroundStyle(WisentDesign.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Spacer()
+                    Button("Done") {
+                        dismiss()
+                    }
+                    .buttonStyle(WisentPrimaryButtonStyle())
+                    .keyboardShortcut(.defaultAction)
                 }
-                .keyboardShortcut(.defaultAction)
             }
+            .padding(WisentDesign.Space.x6)
         }
-        .padding(ProbierzTheme.Space.x6)
-        .frame(width: 580)
+        .frame(width: ProbierzLayout.inspectorWidth)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Protected evidence bundle inspector")
     }
@@ -631,13 +776,17 @@ private struct EvidenceBundleInspector: View {
     private func inspectorRow(_ label: String, _ value: String, monospaced: Bool = false) -> some View {
         GridRow {
             Text(label)
-                .foregroundStyle(ProbierzTheme.secondary)
+                .font(WisentTypography.body(12))
+                .foregroundStyle(WisentDesign.secondary)
             if monospaced {
                 Text(value)
-                    .font(.body.monospaced())
+                    .font(WisentTypography.mono(12))
+                    .foregroundStyle(WisentDesign.ink)
                     .textSelection(.enabled)
             } else {
                 Text(value)
+                    .font(WisentTypography.bodyMedium(12))
+                    .foregroundStyle(WisentDesign.ink)
                     .textSelection(.enabled)
             }
         }

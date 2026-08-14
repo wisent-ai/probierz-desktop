@@ -15,7 +15,7 @@ struct ProbierzDesktopApp: App {
                 ProbierzRootView(model: model, onboarding: onboarding)
             }
         }
-        .defaultSize(width: ProbierzTheme.minimumWidth, height: ProbierzTheme.minimumHeight)
+        .defaultSize(width: ProbierzLayout.minimumWindowWidth, height: ProbierzLayout.minimumWindowHeight)
         .windowResizability(.contentMinSize)
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)

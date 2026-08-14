@@ -39,6 +39,10 @@ if [ -f "$ROOT/App/AppIcon.icns" ]; then
 else
     sh "$SCRIPT_DIR/import-brand-icon.sh" "$ICON_PRODUCT" "$RESOURCES/AppIcon.icns"
 fi
+for resource_bundle in "$BIN_DIR"/*.bundle; do
+    [ -d "$resource_bundle" ] || continue
+    ditto "$resource_bundle" "$RESOURCES/$(basename "$resource_bundle")"
+done
 
 CODESIGN_IDENTITY=${WISENT_CODESIGN_IDENTITY:-}
 if [ -z "$CODESIGN_IDENTITY" ]; then
