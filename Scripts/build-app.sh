@@ -57,12 +57,12 @@ if [ -z "$CODESIGN_IDENTITY" ] || [ "$CODESIGN_IDENTITY" = "-" ]; then
 fi
 if [ "${CODESIGN_IDENTITY#Developer ID Application:}" != "$CODESIGN_IDENTITY" ]; then
     codesign --force --deep --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$FRAMEWORKS/Sparkle.framework"
-    codesign --force --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$MACOS/$PRODUCT"
-    codesign --force --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$BUNDLE"
+    codesign --force --options runtime --timestamp --entitlements "$ROOT/App/WisentDesktop.entitlements" --sign "$CODESIGN_IDENTITY" "$MACOS/$PRODUCT"
+    codesign --force --options runtime --timestamp --entitlements "$ROOT/App/WisentDesktop.entitlements" --sign "$CODESIGN_IDENTITY" "$BUNDLE"
 else
     codesign --force --deep --timestamp=none --sign "$CODESIGN_IDENTITY" "$FRAMEWORKS/Sparkle.framework"
-    codesign --force --timestamp=none --sign "$CODESIGN_IDENTITY" "$MACOS/$PRODUCT"
-    codesign --force --timestamp=none --sign "$CODESIGN_IDENTITY" "$BUNDLE"
+    codesign --force --timestamp=none --entitlements "$ROOT/App/WisentDesktop.entitlements" --sign "$CODESIGN_IDENTITY" "$MACOS/$PRODUCT"
+    codesign --force --timestamp=none --entitlements "$ROOT/App/WisentDesktop.entitlements" --sign "$CODESIGN_IDENTITY" "$BUNDLE"
 fi
 codesign --verify --strict --deep "$BUNDLE"
 printf 'Built %s\n' "$BUNDLE"
