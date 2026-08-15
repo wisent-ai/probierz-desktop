@@ -45,7 +45,6 @@ for resource_bundle in "$BIN_DIR"/*.bundle; do
 done
 
 CODESIGN_IDENTITY=${WISENT_CODESIGN_IDENTITY:-}
-APP_PROVISIONING_PROFILE=${WISENT_APP_PROVISIONING_PROFILE:-}
 if [ -z "$CODESIGN_IDENTITY" ]; then
     CODESIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | awk -F '"' '/Developer ID Application:/ { print $2; exit }')
 fi
@@ -56,30 +55,18 @@ if [ -z "$CODESIGN_IDENTITY" ] || [ "$CODESIGN_IDENTITY" = "-" ]; then
     printf '%s\n' "Stable Developer ID Application or Apple Development signing identity is required; refusing ad-hoc signing." >&2
     exit 1
 fi
-APP_ENTITLEMENTS=
-if [ -n "$APP_PROVISIONING_PROFILE" ]; then
-    if [ ! -f "$APP_PROVISIONING_PROFILE" ]; then
-        printf 'App provisioning profile not found: %s\n' "$APP_PROVISIONING_PROFILE" >&2
-        exit 1
-    fi
-    install -m 0644 "$APP_PROVISIONING_PROFILE" "$CONTENTS/embedded.provisionprofile"
-    APP_ENTITLEMENTS="$ROOT/App/WisentDesktop.entitlements"
-fi
-codesign_app() {
-    if [ -n "$APP_ENTITLEMENTS" ]; then
-        codesign "$@" --entitlements "$APP_ENTITLEMENTS"
-    else
-        codesign "$@"
-    fi
-}
+IDENTITY_HELPER="$CONTENTS/Helpers/WisentIdentityKeychainHelper"
+"$ROOT/.build/checkouts/wisent-desktop-auth/scripts/build-keychain-helper.sh" "$IDENTITY_HELPER"
 if [ "${CODESIGN_IDENTITY#Developer ID Application:}" != "$CODESIGN_IDENTITY" ]; then
     codesign --force --deep --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$FRAMEWORKS/Sparkle.framework"
-    codesign_app --force --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$MACOS/$PRODUCT"
-    codesign_app --force --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$BUNDLE"
+    codesign --force --options runtime --timestamp --identifier ai.wisent.identity.keychain-helper --sign "$CODESIGN_IDENTITY" "$IDENTITY_HELPER"
+    codesign --force --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$MACOS/$PRODUCT"
+    codesign --force --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$BUNDLE"
 else
     codesign --force --deep --timestamp=none --sign "$CODESIGN_IDENTITY" "$FRAMEWORKS/Sparkle.framework"
-    codesign_app --force --timestamp=none --sign "$CODESIGN_IDENTITY" "$MACOS/$PRODUCT"
-    codesign_app --force --timestamp=none --sign "$CODESIGN_IDENTITY" "$BUNDLE"
+    codesign --force --timestamp=none --identifier ai.wisent.identity.keychain-helper --sign "$CODESIGN_IDENTITY" "$IDENTITY_HELPER"
+    codesign --force --timestamp=none --sign "$CODESIGN_IDENTITY" "$MACOS/$PRODUCT"
+    codesign --force --timestamp=none --sign "$CODESIGN_IDENTITY" "$BUNDLE"
 fi
 codesign --verify --strict --deep "$BUNDLE"
 printf 'Built %s\n' "$BUNDLE"
