@@ -253,19 +253,33 @@ struct ProbierzRootView: View {
 
     // MARK: - Detail
 
+    /// The detail column is bound to the window, like every screen inside it.
+    ///
+    /// Measured before this: the onboarding card and the screen sat as siblings
+    /// in an unbounded `VStack`, so their combined intrinsic height pushed the
+    /// whole split view off the top edge — the accessibility frames put the
+    /// sidebar's last row above the window origin, 442 pt out of a 860 pt
+    /// window. `WisentScreen` bounds itself; a container that stacks something
+    /// above it has to do the same.
     private var detail: some View {
-        VStack(spacing: 0) {
-            if let screen = onboarding.screen {
-                ProbierzOnboardingCard(
-                    screen: screen,
-                    isWorking: onboarding.isWorking,
-                    action: performOnboardingAction
-                )
-                .padding(.horizontal, WisentDesign.Space.x5)
-                .padding(.top, WisentDesign.Space.x4)
-                .background(WisentDesign.canvas)
+        GeometryReader { proxy in
+            VStack(spacing: 0) {
+                if let screen = onboarding.screen {
+                    ProbierzOnboardingCard(
+                        screen: screen,
+                        isWorking: onboarding.isWorking,
+                        action: performOnboardingAction
+                    )
+                    .padding(.horizontal, WisentDesign.Space.x5)
+                    .padding(.top, WisentDesign.Space.x4)
+                    .background(WisentDesign.canvas)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+                destinationView
+                    .frame(maxHeight: .infinity)
             }
-            destinationView
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
+            .clipped()
         }
         .background { WisentCanvasBackground() }
     }
