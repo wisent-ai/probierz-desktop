@@ -1,5 +1,6 @@
 import SwiftUI
 import WisentAuth
+import WisentDesignSystem
 import WisentDesktopUpdate
 
 @main
@@ -15,7 +16,10 @@ struct ProbierzDesktopApp: App {
                 ProbierzRootView(model: model, onboarding: onboarding)
             }
         }
-        .defaultSize(width: ProbierzLayout.minimumWindowWidth, height: ProbierzLayout.minimumWindowHeight)
+        // The sidebar, facet rail and inspector claim 236 + 168 + 320 pt, which
+        // leaves the table 276 pt at the 1000 pt minimum. The default opens wide
+        // enough for the five run columns to fit without compressing.
+        .defaultSize(width: 1_320, height: 860)
         .windowResizability(.contentMinSize)
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
