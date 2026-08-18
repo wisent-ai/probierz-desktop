@@ -7,6 +7,10 @@ CONFIGURATION=${CONFIGURATION:-release}
 PRODUCT=ProbierzDesktop
 APP_NAME=Probierz
 ICON_PRODUCT=probierz-desktop
+# Where the operator launches the app from. A bundle left in .build is not
+# launchable in practice: build directories get deleted, which strands the app.
+INSTALLED_BUNDLE=${PROBIERZ_INSTALL_APP_PATH:-"$HOME/Applications/$APP_NAME.app"}
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 
 swift build --package-path "$ROOT" --configuration "$CONFIGURATION" --product "$PRODUCT"
 BIN_DIR=$(swift build --package-path "$ROOT" --configuration "$CONFIGURATION" --show-bin-path)
@@ -75,4 +79,22 @@ RESTART_APP=${WISENT_RESTART_APP:-"$SCRIPT_DIR/wisent-restart-app"}
 if [ "${WISENT_RESTART_AFTER_BUILD:-1}" != 0 ] && [ -x "$RESTART_APP" ]; then
     "$RESTART_APP" --if-running "$BUNDLE"
 fi
+
+if [ "${PROBIERZ_INSTALL_AFTER_BUILD:-yes}" = no ]; then
+    exit
+fi
+
+# Staged, then moved into place: a half-copied bundle at the launch path is worse
+# than an old one, because it fails at exec instead of at build.
+mkdir -p "$(dirname "$INSTALLED_BUNDLE")"
+STAGING=$(mktemp -d "$(dirname "$INSTALLED_BUNDLE")/.$APP_NAME.installing.XXXXXXXX")
+trap 'rm -rf "$STAGING"' EXIT INT TERM
+ditto "$BUNDLE" "$STAGING/$APP_NAME.app"
+codesign --verify --strict --deep "$STAGING/$APP_NAME.app"
+rm -rf "$INSTALLED_BUNDLE"
+mv "$STAGING/$APP_NAME.app" "$INSTALLED_BUNDLE"
+rm -rf "$STAGING"
+trap - EXIT INT TERM
+"$LSREGISTER" -f "$INSTALLED_BUNDLE"
+printf 'Installed %s\n' "$INSTALLED_BUNDLE"
 
