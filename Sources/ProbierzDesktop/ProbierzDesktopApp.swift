@@ -1,19 +1,41 @@
+import AppKit
 import SwiftUI
 import WisentAuth
 import WisentDesignSystem
 import WisentDesktopUpdate
 
+/// Guarantees Probierz has a window at launch: when SwiftUI finds persistent state
+/// naming a root view tree that no longer exists (`hasPersistentStateToRestore=1`
+/// followed by `window=0x0`, as observed after the interface redesign), restoration
+/// fails and no fresh window is ever opened. This delegate owns the app's observable
+/// state so the fallback window renders exactly what the `WindowGroup` renders.
+@MainActor
+final class ProbierzAppDelegate: NSObject, NSApplicationDelegate {
+    let model = ProbierzModel()
+    let onboarding = ProbierzOnboarding()
+    let auth = WisentAuthStore(productName: "Probierz")
+    let updater = WisentUpdater()
+    private var fallbackWindow: NSWindow?
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        DispatchQueue.main.async { [self] in
+            fallbackWindow = wisentEnsureWindow(title: "Probierz") {
+                WisentAuthGate(store: self.auth) {
+                    ProbierzRootView(model: self.model, onboarding: self.onboarding)
+                }
+            }
+        }
+    }
+}
+
 @main
 struct ProbierzDesktopApp: App {
-    @StateObject private var model = ProbierzModel()
-    @StateObject private var onboarding = ProbierzOnboarding()
-    @StateObject private var auth = WisentAuthStore(productName: "Probierz")
-    @StateObject private var updater = WisentUpdater()
+    @NSApplicationDelegateAdaptor(ProbierzAppDelegate.self) private var delegate
 
     var body: some Scene {
         WindowGroup("Probierz") {
-            WisentAuthGate(store: auth) {
-                ProbierzRootView(model: model, onboarding: onboarding)
+            WisentAuthGate(store: delegate.auth) {
+                ProbierzRootView(model: delegate.model, onboarding: delegate.onboarding)
             }
         }
         // The sidebar, facet rail and inspector claim 236 + 168 + 320 pt, which
@@ -25,7 +47,7 @@ struct ProbierzDesktopApp: App {
         .windowToolbarStyle(.unified)
         .commands {
             CommandGroup(after: .appInfo) {
-                WisentCheckForUpdatesCommand(updater: updater)
+                WisentCheckForUpdatesCommand(updater: delegate.updater)
             }
         }
     }
