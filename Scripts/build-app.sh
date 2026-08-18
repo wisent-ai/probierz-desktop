@@ -75,11 +75,6 @@ fi
 codesign --verify --strict --deep "$BUNDLE"
 printf 'Built %s\n' "$BUNDLE"
 
-RESTART_APP=${WISENT_RESTART_APP:-"$SCRIPT_DIR/wisent-restart-app"}
-if [ "${WISENT_RESTART_AFTER_BUILD:-1}" != 0 ] && [ -x "$RESTART_APP" ]; then
-    "$RESTART_APP" --if-running "$BUNDLE"
-fi
-
 if [ "${PROBIERZ_INSTALL_AFTER_BUILD:-yes}" = no ]; then
     exit
 fi
@@ -95,6 +90,14 @@ rm -rf "$INSTALLED_BUNDLE"
 mv "$STAGING/$APP_NAME.app" "$INSTALLED_BUNDLE"
 rm -rf "$STAGING"
 trap - EXIT INT TERM
+# A bundle left in .build is not what the operator launches, and while it stays
+# registered it competes for the ai.wisent.*.desktop sign-in URL scheme.
+"$LSREGISTER" -u "$BUNDLE" >/dev/null 2>&1 || true
 "$LSREGISTER" -f "$INSTALLED_BUNDLE"
 printf 'Installed %s\n' "$INSTALLED_BUNDLE"
+
+RESTART_APP=${WISENT_RESTART_APP:-"$SCRIPT_DIR/wisent-restart-app"}
+if [ "${WISENT_RESTART_AFTER_BUILD:-1}" != 0 ] && [ -x "$RESTART_APP" ]; then
+    "$RESTART_APP" --if-running "$INSTALLED_BUNDLE"
+fi
 
