@@ -99,13 +99,21 @@ struct FailureEntry: Identifiable, Sendable {
 /// The intake owns the files; the desktop only reads them.
 ///
 /// `probierz intake` appends one envelope per line to
-/// `probierz/test-results/failures/<service>.jsonl`, caps the line at 64 KB
+/// `~/.probierz/failures/<service>.jsonl` (PROBIERZ_FAILURES_DIR overrides —
+/// the store lives outside TCC-protected directories so a launchd listener
+/// can write it), caps the line at 64 KB
 /// and rotates the file at 10 MB, so reading a whole file is bounded by the
 /// writer's own rules. A malformed line is skipped, never reported: a failure
 /// index must never fail either.
 enum FailureIntakeStore {
     static func directory(workspaceRoot: URL) -> URL {
-        workspaceRoot.appendingPathComponent("probierz/test-results/failures", isDirectory: true)
+        // workspaceRoot stays in the signature for the caller's sake; the store
+        // itself is the operator-home path the intake writes.
+        if let override = ProcessInfo.processInfo.environment["PROBIERZ_FAILURES_DIR"], !override.isEmpty {
+            return URL(fileURLWithPath: override, isDirectory: true)
+        }
+        return FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".probierz/failures", isDirectory: true)
     }
 
     static func load(workspaceRoot: URL) -> [FailureEntry] {
