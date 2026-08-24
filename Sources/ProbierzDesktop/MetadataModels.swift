@@ -386,6 +386,7 @@ struct ProbierzSnapshot: Sendable {
 enum ProbierzDestination: String, CaseIterable, Identifiable, Hashable {
     case posture
     case runs
+    case failures
     case artifacts
     case verdicts
     case surfaces
@@ -399,6 +400,7 @@ enum ProbierzDestination: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .posture: "Posture"
         case .runs: "Runs"
+        case .failures: "Failures"
         case .artifacts: "Artifacts"
         case .verdicts: "Verdicts"
         case .surfaces: "Surfaces"
@@ -412,6 +414,7 @@ enum ProbierzDestination: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .posture: "shield.lefthalf.filled"
         case .runs: "list.bullet.rectangle"
+        case .failures: "exclamationmark.triangle"
         case .artifacts: "archivebox"
         case .verdicts: "checkmark.seal"
         case .surfaces: "square.stack.3d.up"
@@ -430,7 +433,7 @@ struct DestinationGroup: Identifiable, Sendable {
     /// Grouped by the decision the operator makes there, not by the table the
     /// metadata happens to live in.
     static let all: [DestinationGroup] = [
-        DestinationGroup(title: "Work", destinations: [.posture, .runs]),
+        DestinationGroup(title: "Work", destinations: [.posture, .runs, .failures]),
         DestinationGroup(title: "Evidence", destinations: [.artifacts, .verdicts]),
         DestinationGroup(title: "Specs", destinations: [.surfaces, .journeys]),
         DestinationGroup(title: "System", destinations: [.preflight, .workspace]),

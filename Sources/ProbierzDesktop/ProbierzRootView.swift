@@ -265,6 +265,8 @@ struct ProbierzRootView: View {
             PostureView(model: model, chooseWorkspace: chooseWorkspace)
         case .runs:
             RunsView(model: model)
+        case .failures:
+            FailuresView(model: model)
         case .artifacts:
             ArtifactsView(model: model, onboarding: onboarding)
         case .verdicts:

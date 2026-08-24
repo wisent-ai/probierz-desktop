@@ -62,6 +62,13 @@ final class ProbierzModel: ObservableObject {
     @Published var selectedVerdictID: VerdictRecord.ID?
     @Published var selectedSurfaceID: SurfaceRecord.ID?
     @Published var selectedPreflightID: PreflightRecord.ID?
+    /// Envelopes desktop apps reported to the Probierz intake, read straight
+    /// from probierz/test-results/failures — a local file read, no backend.
+    @Published private(set) var failures: [FailureEntry] = []
+    @Published private(set) var failuresLoadedAt: Date?
+    @Published var failureServiceFilter: String?
+    @Published var failureCodeFilter: String?
+    @Published var selectedFailureID: FailureEntry.ID?
 
     /// Scoped projections, recomputed once per load or scope change rather than
     /// on every render of a table that asks for them.
@@ -105,6 +112,71 @@ final class ProbierzModel: ObservableObject {
     var freshnessLabel: String? {
         guard let snapshot else { return nil }
         return "Read \(snapshot.loadedAt.formatted(.dateTime.hour().minute().second()))"
+    }
+    var failuresFreshnessLabel: String? {
+        guard let failuresLoadedAt else { return nil }
+        return "Read \(failuresLoadedAt.formatted(.dateTime.hour().minute().second()))"
+    }
+
+    // MARK: - Reported failures
+
+    var visibleFailures: [FailureEntry] {
+        failures.filter { entry in
+            guard failureServiceFilter == nil || entry.envelope.service == failureServiceFilter else {
+                return false
+            }
+            guard failureCodeFilter == nil || entry.envelope.errorCode == failureCodeFilter else { return false }
+            return true
+        }
+    }
+
+    var hasFailureFilter: Bool {
+        failureServiceFilter != nil || failureCodeFilter != nil
+    }
+
+    func clearFailureFilters() {
+        failureServiceFilter = nil
+        failureCodeFilter = nil
+    }
+
+    /// (value, count) pairs, most reported first — the facet rail's labels.
+    var failureServiceCounts: [(service: String, count: Int)] {
+        failureCounts(\.envelope.service).map { (service: $0.value, count: $0.count) }
+    }
+
+    var failureCodeCounts: [(code: String, count: Int)] {
+        failureCounts(\.envelope.errorCode).map { (code: $0.value, count: $0.count) }
+    }
+
+    private func failureCounts(_ keyPath: KeyPath<FailureEntry, String>) -> [(value: String, count: Int)] {
+        var counts: [String: Int] = [:]
+        for entry in failures { counts[entry[keyPath: keyPath], default: 0] += 1 }
+        return counts
+            .map { (value: $0.key, count: $0.value) }
+            .sorted { $0.count != $1.count ? $0.count > $1.count : $0.value < $1.value }
+    }
+
+    var selectedFailure: FailureEntry? {
+        guard let selectedFailureID else { return nil }
+        return failures.first { $0.id == selectedFailureID }
+    }
+
+    func refreshFailures() async {
+        guard let workspaceRoot else {
+            failures = []
+            failuresLoadedAt = nil
+            selectedFailureID = nil
+            return
+        }
+        let loaded = await Task.detached(priority: .userInitiated) {
+            FailureIntakeStore.load(workspaceRoot: workspaceRoot)
+        }.value
+        guard !Task.isCancelled else { return }
+        failures = loaded
+        failuresLoadedAt = Date()
+        if let selectedFailureID, !loaded.contains(where: { $0.id == selectedFailureID }) {
+            self.selectedFailureID = nil
+        }
     }
 
     // MARK: - Runs
@@ -328,6 +400,11 @@ final class ProbierzModel: ObservableObject {
         workspaceRoot = standardized
         snapshot = nil
         applyScope()
+        failures = []
+        failuresLoadedAt = nil
+        selectedFailureID = nil
+        failureServiceFilter = nil
+        failureCodeFilter = nil
         errorMessage = nil
         defaults.set(standardized.path, forKey: workspaceKey)
         Task { await refresh() }
