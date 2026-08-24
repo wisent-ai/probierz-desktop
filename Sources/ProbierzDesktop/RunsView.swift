@@ -32,16 +32,25 @@ struct RunsView: View {
             scrolls: false,
             constrainsWidth: false
         ) {
-            HStack(spacing: 0) {
-                WisentFacetRail(
-                    groups: facetGroups,
-                    footerTitle: "Selection",
-                    footerDetail: "\(visible.count.formatted(.number)) of \(model.runs.count.formatted(.number)) manifests"
-                )
-                centre(visible: visible)
-                inspector
+            VStack(spacing: 0) {
+                if model.repairOutcome != .idle {
+                    WisentMutationBar(outcome: model.repairOutcome) {
+                        model.clearRepairOutcome()
+                    }
+                    .padding(.horizontal, WisentDesign.Space.x4)
+                    .padding(.top, WisentDesign.Space.x3)
+                }
+                HStack(spacing: 0) {
+                    WisentFacetRail(
+                        groups: facetGroups,
+                        footerTitle: "Selection",
+                        footerDetail: "\(visible.count.formatted(.number)) of \(model.runs.count.formatted(.number)) manifests"
+                    )
+                    centre(visible: visible)
+                    inspector
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .searchable(
             text: $model.query,
@@ -261,6 +270,17 @@ struct RunsView: View {
             detail: failure.sentence,
             command: failure.command
         )
+        if run.status == .failed {
+            WisentAction(
+                "Repair through Brama",
+                symbol: "wrench.and.screwdriver",
+                kind: .primary,
+                isEnabled: !model.repairOutcome.isWorking
+            ) {
+                model.repair(run)
+            }
+            .asButton()
+        }
         if failure.reasons.count > 1 {
             WisentField(
                 label: "Every recorded reason",

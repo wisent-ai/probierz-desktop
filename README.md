@@ -18,12 +18,11 @@ where your product lives. Be it the terminal, the browser, a desktop or mobile
 app — Probierz tests it all. Every run gives you the evidence you need — reports,
 screenshots and videos so that you can see exactly what is broken in the pipeline.
 
-AI Agent That Tests All of Your Releases. This is the read-only macOS viewer for
-what it recorded on your own machine.
-
-It helps an operator inspect one local Wisent workspace without executing a test,
-opening artifact contents, deciding a quality gate, uploading evidence, or
-changing Probierz state.
+AI Agent That Tests All of Your Releases. The macOS client inspects evidence
+recorded on this machine and can dispatch Probierz's bounded Brama repair for a
+failed run. It never edits a run manifest or opens protected artifact contents;
+the mutation goes through the canonical `probierz repair` command and publishes
+a repair branch or verified spec fix.
 
 [Quick start](#quick-start) · [Inspected contracts](#primary-interfaces) ·
 [Safety boundary](#security-and-privacy) ·
@@ -43,7 +42,7 @@ do referenced artifacts have size and SHA-256 metadata?
 
 Probierz Desktop serves:
 
-- **local developers** checking the metadata boundary of a Probierz workspace;
+- **local developers** checking a Probierz workspace and repairing a failed run;
 - **release and quality operators** filtering run summaries by product, target,
   kind, status, and identifier;
 - **incident responders** confirming whether local run/artifact metadata is
@@ -66,11 +65,12 @@ Probierz Desktop serves:
 - run filtering/search and artifact type, size, modification, and hash-presence
   metadata;
 - stable Apple Development-signed local app-bundle script.
+- one-click repair dispatch for failed runs through the canonical Probierz CLI;
 
 ### Explicit non-goals and limitations
 
 - Probierz Desktop does not execute tests, specs, journeys, probes, or device
-  actions.
+  actions itself; it delegates repairs to Probierz core.
 - It does not author or approve a quality policy or return a gate verdict.
 - It does not open, decrypt, render, upload, delete, or verify artifact bytes.
 - `hasSHA256` means the manifest contains a non-empty hash field; the viewer does
@@ -151,13 +151,13 @@ WorkspaceLocator -> <workspace>/probierz
 ```
 
 The local Probierz repository and run manifests remain authoritative. Probierz
-core owns execution, evidence, receipts, and gate evaluation. The desktop viewer
-owns only the read-only projection shown in its current process.
+core owns execution, evidence, repair dispatch, receipts, and gate evaluation.
+The desktop client owns the projection and the explicit repair action only.
 
 ## Quick start
 
-The simplest development path runs the viewer directly from Swift Package
-Manager. It does not execute a Probierz test.
+The simplest development path runs the desktop client directly from Swift
+Package Manager. Test execution remains in Probierz core.
 
 ### Prerequisites
 
@@ -254,25 +254,25 @@ with an explicit fallback.
 ## Operational model
 
 - **Configuration:** shared Wisent auth, saved workspace path,
-  `WISENT_WORKSPACE_ROOT`, and presence-only local Probierz variables.
-- **State:** selected workspace in user defaults; current filtered snapshot in
-  memory.
-- **Credentials:** owned by `WisentAuth`; artifact-encryption key values are not
-  read or displayed by the metadata loader.
-- **Observability:** contract availability, configuration presence, summary
-  counts, run fields, artifact metadata, scan truncation, and refresh errors.
-- **Recovery:** select the canonical workspace and refresh; use Probierz core for
-  evidence recovery, rerun, or gate repair.
-- **Cost:** no checkout or metering in the viewer; hosted execution, devices,
-  evidence retention, analytics, and support are separate managed costs.
+  `WISENT_WORKSPACE_ROOT`, local Probierz conditions, and the Brama router
+  coordinates used by `probierz repair`.
+- **State:** selected workspace in user defaults; snapshot and repair outcome in memory.
+- **Credentials:** owned by `WisentAuth` and the invoked Probierz process; the
+  desktop client never reads or displays router or artifact-encryption values.
+- **Observability:** contract availability, run evidence, scan truncation,
+  refresh errors, and the working/succeeded/failed repair result.
+- **Recovery:** select the canonical workspace and refresh; a refused repair
+  remains visible and can be retried from the failed run.
+- **Cost:** Brama model inference may be consumed by a repair. Hosted execution,
+  devices, evidence retention, analytics, and support remain separate costs.
 
 ## Project status and support
 
-- **Maturity:** public development viewer for macOS 14+.
+- **Maturity:** public development operational client for macOS 14+.
 - **Distribution:** source build and stable development signing; no supported
   signed/notarized public binary is currently promised.
-- **Execution boundary:** read-only metadata projection; no test execution or
-  quality decision.
+- **Execution boundary:** evidence projection plus bounded repair dispatch;
+  tests and quality decisions stay in Probierz core.
 - **Issues:** [`wisent-ai/probierz-desktop`](https://github.com/wisent-ai/probierz-desktop/issues).
 - **Security:** use private GitHub Security Advisories; never attach workspace
   paths, run IDs, target names, artifact metadata/content, encryption material,

@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import WisentDesignSystem
 
 @MainActor
 final class ProbierzModel: ObservableObject {
@@ -41,6 +42,7 @@ final class ProbierzModel: ObservableObject {
     @Published private(set) var snapshot: ProbierzSnapshot?
     @Published private(set) var isRefreshing = false
     @Published private(set) var errorMessage: String?
+    @Published private(set) var repairOutcome: WisentMutationOutcome = .idle
 
     @Published var destination: ProbierzDestination = .posture
     @Published var query = ""
@@ -74,6 +76,7 @@ final class ProbierzModel: ObservableObject {
     private let workspaceKey = "probierzDesktop.workspaceRoot"
     private let scopeKey = "probierzDesktop.productScope"
     private var generation = 0
+    private let commandClient = ProbierzCommandClient()
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -133,6 +136,41 @@ final class ProbierzModel: ObservableObject {
     var selectedRun: RunRecord? {
         guard let selectedRunID else { return nil }
         return runs.first { $0.id == selectedRunID }
+    }
+
+    func repair(_ run: RunRecord) {
+        guard !repairOutcome.isWorking else { return }
+        guard run.status == .failed else {
+            repairOutcome = .failed("Only a failed run can be repaired.")
+            return
+        }
+        guard let repositoryRoot = snapshot?.repositoryRoot else {
+            repairOutcome = .failed("Select a Probierz workspace before repairing a run.")
+            return
+        }
+        repairOutcome = .working("Dispatching a repair through Brama…")
+        let commandClient = commandClient
+        Task {
+            do {
+                let message = try await Task.detached(priority: .userInitiated) {
+                    try await commandClient.repair(
+                        repositoryRoot: repositoryRoot,
+                        appID: run.appID,
+                        runID: run.runID
+                    )
+                }.value
+                repairOutcome = .succeeded(message)
+                await refresh()
+            } catch {
+                repairOutcome = .failed(
+                    (error as? LocalizedError)?.errorDescription ?? String(describing: error)
+                )
+            }
+        }
+    }
+
+    func clearRepairOutcome() {
+        repairOutcome = .idle
     }
 
     /// The failures the operator has not resolved, newest first. Drives the
@@ -258,7 +296,7 @@ final class ProbierzModel: ObservableObject {
         guard WorkspaceLocator.isWorkspace(workspaceRoot) else {
             snapshot = nil
             applyScope()
-            errorMessage = "The saved workspace no longer contains the Probierz metadata boundary."
+            errorMessage = "The saved workspace no longer contains the Probierz repository."
             return
         }
 

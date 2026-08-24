@@ -237,7 +237,7 @@ struct ProbierzOnboardingCard: View {
     private var title: String {
         switch screen.titleKey {
         case "probierz.first_use.read_only.title":
-            "Evidence stays read-only"
+            "Evidence stays inspectable"
         case "probierz.first_use.provenance.title":
             "Every bundle has provenance"
         case "probierz.first_use.inspect.title":
@@ -250,14 +250,14 @@ struct ProbierzOnboardingCard: View {
     private var bodyText: String {
         switch screen.bodyKey {
         case "probierz.first_use.read_only.body":
-            "Probierz Desktop presents a read-only projection. It never executes a verification, changes a run, or decrypts protected evidence contents."
+            "Probierz Desktop presents recorded evidence and can dispatch a bounded repair through Brama for a failed run. Protected bundle contents remain sealed."
         case "probierz.first_use.provenance.body":
             "Bundle records come from a real run manifest. The viewer accepts only regular, non-symlink files contained by that run directory, then exposes provenance metadata without revealing a path or payload."
         case "probierz.first_use.inspect.body":
             "Open Artifacts and inspect an available Protected bundle. The journey finishes only when its real metadata inspector is on screen."
         default:
             screen.transitions.isEmpty
-                ? "Inspect an available protected evidence bundle to see its read-only provenance record."
+                ? "Inspect an available protected evidence bundle to see its provenance record."
                 : "Continue through the product-owned explanation before inspecting evidence."
         }
     }

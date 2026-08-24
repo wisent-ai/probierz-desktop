@@ -57,7 +57,6 @@ struct ProbierzRootView: View {
                 .padding(.vertical, WisentDesign.Space.x4)
             }
             Spacer(minLength: 0)
-            boundaryFooter
         }
         .frame(minWidth: WisentAppLayout.sidebarWidth, idealWidth: WisentAppLayout.sidebarWidth)
         .background(WisentDesign.canvasMuted)
@@ -225,31 +224,6 @@ struct ProbierzRootView: View {
         model.snapshot?.preflights.filter { !$0.isReady }.count ?? 0
     }
 
-    /// Stated once, in the one place on screen from every destination. The
-    /// baseline declared it on two screens, in three screen subtitles and again
-    /// inside the bundle inspector.
-    private var boundaryFooter: some View {
-        VStack(alignment: .leading, spacing: WisentDesign.Space.x2) {
-            Divider()
-            HStack(spacing: WisentDesign.Space.x2) {
-                Image(systemName: "eye.slash.fill")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(WisentDesign.brand)
-                    .accessibilityHidden(true)
-                Text("Metadata only")
-                    .font(WisentTypography.bodyMedium(11))
-                    .foregroundStyle(WisentDesign.secondary)
-            }
-            .padding(.horizontal, WisentDesign.Space.x4)
-            Text("Probierz Desktop reads the documented run-manifest projection and never opens a screenshot, video, trace, log, report or protected bundle payload, and never runs a verification.")
-                .font(WisentTypography.body(10))
-                .foregroundStyle(WisentDesign.muted)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, WisentDesign.Space.x4)
-                .padding(.bottom, WisentDesign.Space.x4)
-        }
-        .accessibilityElement(children: .contain)
-    }
 
     // MARK: - Detail
 
