@@ -1,13 +1,15 @@
 [automation]
 managed = true
-source_fingerprint = "b2ff6a84a8913c2d"
+source_fingerprint = "186bc4f449f01e87"
 category = "benchmark"
+copy_status = "missing"
+approved_in = ""
 
 [banner]
-title = "Inspect test runs and evidence on macOS."
-description = "Native viewer for Probierz contracts, run status, manifests, and artifact metadata."
+title = "Probierz Desktop"
+description = ""
 product = "Wisent"
-url = "wisent.ai"
+url = "wisent.com"
 theme = "dark"
 layout = "benchmark-left"
 art_seed = "probierz-desktop"
