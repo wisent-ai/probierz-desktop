@@ -42,8 +42,8 @@ struct PreflightView: View {
 
     private var preflights: [PreflightRecord] { model.snapshot?.preflights ?? [] }
 
-    /// A blocked toolchain is a failure and gets a full-width panel with the
-    /// remediation command the backend itself printed.
+    /// A blocked toolchain is a failure and gets a full-width panel carrying
+    /// the remediation the backend itself printed, in `detail(for:)`.
     @ViewBuilder
     private var blockedPanels: some View {
         let blocked = preflights.filter { !$0.isReady }
@@ -59,7 +59,6 @@ struct PreflightView: View {
                 tone: .warning,
                 title: "\(preflight.target) was blocked before the suite started",
                 detail: detail(for: preflight),
-                command: preflight.remediation.first,
                 actions: [
                     WisentAction("Open Run", symbol: "list.bullet.rectangle", kind: .secondary) {
                         model.selectedRunID = preflight.runID

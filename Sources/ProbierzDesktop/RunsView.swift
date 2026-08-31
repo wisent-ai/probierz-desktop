@@ -272,9 +272,11 @@ struct RunsView: View {
         WisentAlertPanel(
             tone: run.status == .blocked ? .warning : .danger,
             title: failure.headline,
-            detail: failure.sentence,
-            command: failure.command
+            detail: failure.sentence
         )
+        if let command = failure.command {
+            RecordedCommandRow(command: command)
+        }
         if run.status == .failed {
             WisentAction(
                 "Repair through Brama",

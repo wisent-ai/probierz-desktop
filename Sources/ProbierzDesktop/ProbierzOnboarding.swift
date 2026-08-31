@@ -217,17 +217,15 @@ struct ProbierzOnboardingCard: View {
                 .layoutPriority(1)
                 Spacer(minLength: WisentDesign.Space.x4)
                 Button(action: action) {
-                    HStack(spacing: WisentDesign.Space.x2) {
-                        if isWorking {
-                            ProgressView()
-                                .controlSize(.small)
-                        }
-                        Text(actionLabel)
-                    }
+                    // The button keeps its words while the step is in flight;
+                    // they are dimmed rather than swapped for a spinning
+                    // circle, so the control never changes size and keeps its
+                    // accessible name.
+                    Text(actionLabel)
+                        .opacity(isWorking ? 0.35 : 1)
                 }
                 .buttonStyle(WisentPrimaryButtonStyle())
                 .disabled(isWorking)
-                .opacity(isWorking ? 0.62 : 1)
             }
         }
         .accessibilityElement(children: .contain)

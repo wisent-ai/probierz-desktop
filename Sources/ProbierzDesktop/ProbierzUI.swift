@@ -108,13 +108,17 @@ struct RunFailurePanel: View {
     var action: WisentAction?
 
     var body: some View {
-        WisentAlertPanel(
-            tone: run.status == .blocked ? .warning : .danger,
-            title: "\(failure.headline) — \(run.target)",
-            detail: detail,
-            command: failure.command,
-            actions: action.map { [$0] } ?? []
-        )
+        VStack(alignment: .leading, spacing: WisentDesign.Space.x2) {
+            WisentAlertPanel(
+                tone: run.status == .blocked ? .warning : .danger,
+                title: "\(failure.headline) — \(run.target)",
+                detail: detail,
+                actions: action.map { [$0] } ?? []
+            )
+            if let command = failure.command {
+                RecordedCommandRow(command: command)
+            }
+        }
     }
 
     private var detail: String {
@@ -125,6 +129,32 @@ struct RunFailurePanel: View {
         if let code = failure.code { lines.append("reason: \(code)") }
         if !failure.facts.isEmpty { lines.append(failure.facts.joined(separator: " · ")) }
         return lines.joined(separator: "\n")
+    }
+}
+
+/// The command the run manifest recorded, quoted.
+///
+/// `WisentAlertPanel` used to carry this row and dropped it, because a desktop
+/// app states a capability as prose rather than as a shell line for the
+/// operator to run. This is not a capability: it is the evidence Probierz
+/// exists to show, copied out of the manifest, and it belongs to this app
+/// rather than to the shared panel.
+struct RecordedCommandRow: View {
+    let command: String
+
+    var body: some View {
+        Text(command)
+            .font(WisentTypeScale.identifierSmall())
+            .foregroundStyle(WisentDesign.secondary)
+            .textSelection(.enabled)
+            .padding(.horizontal, WisentDesign.Space.x3)
+            .padding(.vertical, WisentDesign.Space.x1 + 2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                WisentDesign.canvasMuted,
+                in: RoundedRectangle(cornerRadius: WisentDesign.Radius.small)
+            )
+            .accessibilityLabel("Recorded command: \(command)")
     }
 }
 
@@ -152,7 +182,8 @@ extension View {
 }
 
 /// Loading, no-workspace and ready are three different states, and the loading
-/// one names the directory it is reading instead of showing a bare spinner.
+/// one names the directory it is reading and draws a skeleton of the rows it is
+/// about to render, instead of showing a bare spinner.
 struct ProbierzSnapshotGate<Content: View>: View {
     @ObservedObject var model: ProbierzModel
     let readingTitle: String
