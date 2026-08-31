@@ -346,6 +346,11 @@ struct FailuresView: View {
             }
             .tableStyle(.inset)
             .accessibilityLabel("Failures reported to Probierz")
+            // A click in this table already means "select this failure" and a
+            // drag means "extend that selection", so selectable cell text would
+            // compete with both. The index opts out of the window's selection
+            // rule; the inspector beside it states the same values selectably.
+            .textSelection(.disabled)
         }
     }
 

@@ -20,11 +20,39 @@ final class ProbierzAppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         DispatchQueue.main.async { [self] in
             fallbackWindow = wisentEnsureWindow(title: "Probierz") {
-                WisentAuthGate(store: self.auth) {
-                    ProbierzRootView(model: self.model, onboarding: self.onboarding)
-                }
+                ProbierzRootContent(model: model, onboarding: onboarding, auth: auth)
             }
         }
+    }
+}
+
+/// The one description of Probierz's window contents, rendered by both the
+/// `WindowGroup` scene and the delegate's fallback window so the two can never
+/// disagree about what the app shows — including whether its text can be
+/// selected.
+private struct ProbierzRootContent: View {
+    @ObservedObject var model: ProbierzModel
+    @ObservedObject var onboarding: ProbierzOnboarding
+    @ObservedObject var auth: WisentAuthStore
+
+    var body: some View {
+        WisentAuthGate(store: auth) {
+            ProbierzRootView(model: model, onboarding: onboarding)
+        }
+        // Every fact Probierz reports is selectable, and therefore copyable.
+        // The app exists to state things an operator then quotes somewhere
+        // else — a run id, a failure envelope, a verdict, a workspace path —
+        // and SwiftUI's `Text` refuses selection on macOS unless a view asks
+        // for it, which left all 53 text sites in this window dead to Cmd-C.
+        //
+        // `.textSelection` travels through the environment, so one call here
+        // covers every screen, present and future. It sits outside
+        // `WisentAuthGate`'s closure rather than inside it because the sign-in
+        // and error branches the gate renders are siblings of the shell, not
+        // children of it, and an operator quoting an auth failure needs the
+        // same reach. The tables opt out explicitly: there a click already
+        // means "select this row".
+        .textSelection(.enabled)
     }
 }
 
@@ -34,9 +62,11 @@ struct ProbierzDesktopApp: App {
 
     var body: some Scene {
         WindowGroup("Probierz") {
-            WisentAuthGate(store: delegate.auth) {
-                ProbierzRootView(model: delegate.model, onboarding: delegate.onboarding)
-            }
+            ProbierzRootContent(
+                model: delegate.model,
+                onboarding: delegate.onboarding,
+                auth: delegate.auth
+            )
         }
         // The sidebar, facet rail and inspector claim 236 + 168 + 320 pt, which
         // leaves the table 276 pt at the 1000 pt minimum. The default opens wide

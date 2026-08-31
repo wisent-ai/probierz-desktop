@@ -202,6 +202,11 @@ struct RunsView: View {
             }
             .tableStyle(.inset)
             .accessibilityLabel("Probierz run manifests")
+            // A click in this table already means "select this run" and a drag
+            // means "extend that selection", so selectable cell text would
+            // compete with both. The index opts out of the window's selection
+            // rule; the inspector beside it states the same values selectably.
+            .textSelection(.disabled)
         }
     }
 

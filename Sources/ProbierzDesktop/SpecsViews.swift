@@ -121,6 +121,11 @@ struct SurfacesView: View {
             }
             .tableStyle(.inset)
             .accessibilityLabel("Probierz surfaces")
+            // A click in this table already means "select this surface" and a
+            // drag means "extend that selection", so selectable cell text would
+            // compete with both. The index opts out of the window's selection
+            // rule; the inspector beside it states the same values selectably.
+            .textSelection(.disabled)
         }
     }
 
@@ -336,6 +341,11 @@ struct JourneysView: View {
             }
             .tableStyle(.inset)
             .accessibilityLabel("Probierz journeys")
+            // A click in this table already means "select this journey" and a
+            // drag means "extend that selection", so selectable cell text would
+            // compete with both. The index opts out of the window's selection
+            // rule; the inspector beside it states the same values selectably.
+            .textSelection(.disabled)
         }
     }
 
