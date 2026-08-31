@@ -4,7 +4,7 @@
   "product": "Probierz",
   "bundle_id": "ai.wisent.probierz.desktop",
   "bundle_path": ".build/Probierz.app",
-  "build_command": "PROBIERZ_INSTALL_AFTER_BUILD=no ./Scripts/build-app.sh",
+  "build_command": "PROBIERZ_INSTALL_AFTER_BUILD=no WISENT_RESTART_AFTER_BUILD=0 ./Scripts/build-app.sh",
   "archive_name": "Probierz-{version}.zip",
   "feed_url": "https://github.com/wisent-ai/probierz-desktop/releases/latest/download/appcast.xml",
   "minimum_system_version": "14.0"
