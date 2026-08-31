@@ -299,15 +299,6 @@ struct ArtifactsView: View {
                     }
                     .asButton()
                 }
-                WisentCapabilityList(
-                    title: "Never on this screen",
-                    items: [
-                        "Opening or decrypting this file",
-                        "Revealing its name or local path",
-                        "Copying it out of the workspace",
-                    ],
-                    isAvailable: false
-                )
             }
         } else {
             WisentInspector(eyebrow: "Artifact provenance", title: "No descriptor selected") {

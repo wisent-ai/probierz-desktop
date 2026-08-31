@@ -207,7 +207,6 @@ struct WorkspaceView: View {
                 }
                 inventory
                 identity
-                boundary
             }
         }
     }
@@ -264,41 +263,6 @@ struct WorkspaceView: View {
                     WisentField(
                         label: "Scan ceiling",
                         value: "\((model.snapshot?.manifestLimit ?? MetadataLoader.maximumManifests).formatted(.number)) run manifests per read"
-                    )
-                }
-            }
-        }
-    }
-
-    private var boundary: some View {
-        WisentSectionBox(
-            title: "What this window can and cannot do",
-            detail: "An absent capability is a contract, not a permission that might arrive later."
-        ) {
-            HStack(alignment: .top, spacing: WisentDesign.Space.x6) {
-                WisentPanel {
-                    WisentCapabilityList(
-                        title: "Reads",
-                        items: [
-                            "run-manifest.json under probierz/test-results",
-                            "probierz/apps/<id>/probierz.yaml journey and surface names",
-                            "Spec file names under each declared package",
-                            "File size and modification date of declared artifacts",
-                        ],
-                        isAvailable: true
-                    )
-                }
-                WisentPanel {
-                    WisentCapabilityList(
-                        title: "Never does",
-                        items: [
-                            "Runs a verification, a preflight or any CLI",
-                            "Opens a screenshot, video, trace, log or report",
-                            "Decrypts or reveals a protected bundle payload or path",
-                            "Reads the value of any configuration name",
-                            "Writes anything into the workspace",
-                        ],
-                        isAvailable: false
                     )
                 }
             }
