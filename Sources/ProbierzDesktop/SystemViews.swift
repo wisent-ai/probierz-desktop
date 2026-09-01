@@ -186,7 +186,10 @@ struct PreflightView: View {
 /// and whether the scan saw every manifest or stopped at its limit.
 struct WorkspaceView: View {
     @ObservedObject var model: ProbierzModel
+    @ObservedObject var onboarding: ProbierzOnboarding
     let chooseWorkspace: () -> Void
+
+    @State private var walkthrough: WisentMutationOutcome = .idle
 
     var body: some View {
         WisentScreen(
@@ -225,6 +228,7 @@ struct WorkspaceView: View {
                 }
                 inventory
                 identity
+                firstRunWalkthrough
             }
         }
     }
@@ -281,5 +285,48 @@ struct WorkspaceView: View {
                 }
             }
         }
+    }
+
+    /// The one control on this screen that writes something instead of
+    /// reporting something, so it sits last, under the facts it does not
+    /// change.
+    private var firstRunWalkthrough: some View {
+        WisentSectionBox(
+            title: "First-run walkthrough",
+            detail: "See the walkthrough this product shows on a first run."
+        ) {
+            WisentPanel {
+                VStack(alignment: .leading, spacing: WisentDesign.Space.x3) {
+                    Button("Show it again") { showWalkthroughAgain() }
+                        .buttonStyle(WisentSecondaryButtonStyle())
+                        .disabled(isReplaying)
+                    if walkthrough != .idle {
+                        WisentMutationBar(outcome: walkthrough) { walkthrough = .idle }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private var isReplaying: Bool { onboarding.isWorking || walkthrough.isWorking }
+
+    /// Resets the journey and lets the shell present it.
+    ///
+    /// Nothing here reaches for a sheet: the walkthrough has exactly one
+    /// presentation in this app, the card `ProbierzRootView` stacks above the
+    /// open destination on a first run, and the reset is what puts it back.
+    /// The outcome is held by this screen rather than by the journey, so
+    /// leaving Workspace clears the line instead of carrying a stale "Started."
+    /// onto Runs.
+    ///
+    /// The local `.working` line is what closes the control, not
+    /// `onboarding.isWorking`: the journey does not raise that flag until the
+    /// task below is scheduled, and a second press lands in the gap.
+    @MainActor
+    private func showWalkthroughAgain() {
+        guard !isReplaying else { return }
+        walkthrough = .working("Starting the walkthrough…")
+        Task { walkthrough = await onboarding.replay() }
     }
 }

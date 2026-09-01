@@ -137,6 +137,70 @@ final class ProbierzOnboarding: ObservableObject {
         }
     }
 
+    /// Shows the walkthrough again, now, for an operator who asked for it.
+    ///
+    /// The shared client owns the semantics. `reset` closes the finished
+    /// attempt, opens a fresh one on the entry screen, and emits
+    /// `onboarding_reset` followed by `onboarding_started`, so a second viewing
+    /// is a second attempt in the funnel rather than a completed journey that
+    /// silently reappears. Republishing `screen` is the whole of the
+    /// presentation: `ProbierzRootView` stacks the card above whatever
+    /// destination is open the moment a screen exists, so the walkthrough
+    /// returns to the window already on screen and the operator keeps the
+    /// screen they asked from.
+    ///
+    /// `exposedScreenID` is cleared because the replayed entry screen is a view
+    /// of a new attempt: leaving the old id in place would suppress its
+    /// `onboarding_step_viewed` and lose the first step of every replay.
+    ///
+    /// A journey that never loaded its progress — the root task failed, or the
+    /// operator reached this control first — is started here rather than
+    /// refused, because a dead control is worse than a slow one.
+    func replay() async -> WisentMutationOutcome {
+        guard let client else {
+            return .failed("Onboarding did not load in this session, so there is nothing to show.")
+        }
+
+        isWorking = true
+        defer { isWorking = false }
+        do {
+            if await client.progress == nil {
+                _ = try await client.start(evidenceRevision: Self.evidenceRevision)
+                didStart = true
+            }
+            try await client.reset(evidenceRevision: Self.evidenceRevision)
+            exposedScreenID = nil
+            await synchronize(using: client)
+            try await exposeCurrentScreenIfNeeded(using: client)
+            try await client.flush()
+            return .succeeded("Started. The walkthrough is at the top of this screen.")
+        } catch {
+            return .failed(Self.replayFailure(error))
+        }
+    }
+
+    /// Why a replay failed, in a sentence an operator can act on.
+    ///
+    /// `JourneyClientError` carries no localization, so `localizedDescription`
+    /// renders it as "error 3" and names nothing. Its cases are spelled out
+    /// here; anything else keeps the words its own type gives, exactly as
+    /// `ProbierzModel` reports a failed repair.
+    private static func replayFailure(_ error: Error) -> String {
+        guard let journeyError = error as? JourneyClientError else {
+            return (error as? LocalizedError)?.errorDescription ?? String(describing: error)
+        }
+        switch journeyError {
+        case .notStarted:
+            return "Onboarding did not load in this session, so there is nothing to show."
+        case .storage:
+            return "Onboarding progress could not be written on this machine."
+        case .transport:
+            return "The onboarding service could not be reached."
+        case let .invalid(reason):
+            return reason
+        }
+    }
+
     func observeEvidenceBundleInspected(_ artifact: ArtifactMetadata) async {
         guard artifact.kind == .protectedBundle,
               artifact.isAvailableOnDisk,

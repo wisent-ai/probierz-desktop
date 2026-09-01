@@ -278,7 +278,7 @@ struct ProbierzRootView: View {
         case .preflight:
             PreflightView(model: model)
         case .workspace:
-            WorkspaceView(model: model, chooseWorkspace: chooseWorkspace)
+            WorkspaceView(model: model, onboarding: onboarding, chooseWorkspace: chooseWorkspace)
         }
     }
 
