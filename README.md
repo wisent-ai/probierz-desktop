@@ -90,7 +90,7 @@ Probierz Desktop serves:
 | Surface | Requirement | Current state |
 |---|---|---|
 | Native viewer | macOS 14+, Swift 6 | Implemented source build |
-| Identity gate | `wisent-desktop-auth` 0.1.x | Required dependency |
+| Identity gate | `wisent-desktop-auth` 0.2.3 | Required dependency |
 | Workspace | parent containing `probierz/package.json` and `probierz/agent/history.mjs` | Required |
 | Run metadata | Probierz `run-manifest.json` contract | Implemented bounded read |
 | Artifact content/hash verification | evidence reader/verifier | Not included |
