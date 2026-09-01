@@ -235,33 +235,33 @@ struct ProbierzOnboardingCard: View {
     private var title: String {
         switch screen.titleKey {
         case "probierz.first_use.read_only.title":
-            "Evidence stays inspectable"
+            "Review a run"
         case "probierz.first_use.provenance.title":
-            "Every bundle has provenance"
+            "Check a result"
         case "probierz.first_use.inspect.title":
-            "Inspect a real evidence bundle"
+            "Open a result"
         default:
-            screen.transitions.isEmpty ? "Inspect Probierz evidence" : "Understand Probierz evidence"
+            screen.transitions.isEmpty ? "Open a result" : "Review results"
         }
     }
 
     private var bodyText: String {
         switch screen.bodyKey {
         case "probierz.first_use.read_only.body":
-            "Probierz Desktop presents recorded evidence and can dispatch a bounded repair through Brama for a failed run. Protected bundle contents remain sealed."
+            "See what happened and retry a failed run."
         case "probierz.first_use.provenance.body":
-            "Bundle records come from a real run manifest. The viewer accepts only regular, non-symlink files contained by that run directory, then exposes provenance metadata without revealing a path or payload."
+            "Each result shows when it ran and what it produced."
         case "probierz.first_use.inspect.body":
-            "Open Artifacts and inspect an available Protected bundle. The journey finishes only when its real metadata inspector is on screen."
+            "Open Artifacts and choose a result."
         default:
             screen.transitions.isEmpty
-                ? "Inspect an available protected evidence bundle to see its provenance record."
-                : "Continue through the product-owned explanation before inspecting evidence."
+                ? "Choose a result to see its details."
+                : "Continue to see how results are presented."
         }
     }
 
     private var actionLabel: String {
-        screen.transitions.isEmpty ? "Show Evidence Bundles" : "Continue"
+        screen.transitions.isEmpty ? "Show results" : "Continue"
     }
 
     private var symbol: String {

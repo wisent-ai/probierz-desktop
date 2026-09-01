@@ -34,8 +34,8 @@ struct VerdictsView: View {
             HStack(spacing: 0) {
                 WisentFacetRail(
                     groups: facetGroups,
-                    footerTitle: "Freshness",
-                    footerDetail: "HEAD comparison needs git and is not run here"
+                    footerTitle: "Run state",
+                    footerDetail: "Based on the latest recorded run"
                 )
                 centre(visible: visible)
                 inspector
@@ -75,13 +75,13 @@ struct VerdictsView: View {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Reading merge eligibility",
-                readingDetail: "Composing declared journeys from probierz/apps with the newest run manifest that covers each."
+                readingTitle: "Loading merge eligibility",
+                readingDetail: "Checking each journey against its latest run."
             ) {
                 if model.verdicts.isEmpty {
                     WisentEmptyPanel(
                         title: "No journey declared or recorded",
-                        detail: "A verdict needs a journey. None is declared in probierz/apps for \(model.scopeLabel.lowercased()), and no run manifest names one.",
+                        detail: "A verdict requires a journey. None is available for \(model.scopeLabel.lowercased()).",
                         symbol: "checkmark.seal"
                     )
                     Spacer(minLength: 0)
@@ -125,7 +125,7 @@ struct VerdictsView: View {
                         .lineLimit(1)
                 }
                 .width(min: 70, ideal: 88)
-                TableColumn("LVL") { verdict in
+                TableColumn("RESULT") { verdict in
                     if let level = verdict.latestEvidenceLevel {
                         EvidenceLevelCell(level: level)
                     } else {
@@ -134,13 +134,13 @@ struct VerdictsView: View {
                             .foregroundStyle(WisentDesign.muted)
                     }
                 }
-                .width(30)
-                TableColumn("FLOOR") { verdict in
+                .width(min: 70, ideal: 90)
+                TableColumn("REQUIRED") { verdict in
                     Text(verdict.minimumEvidence.title)
                         .font(WisentTypeScale.identifierSmall())
                         .foregroundStyle(WisentDesign.muted)
                 }
-                .width(38)
+                .width(min: 70, ideal: 90)
                 TableColumn("VERDICT") { verdict in
                     if verdict.isBlocking {
                         WisentStatusChip(text: "Blocking", tone: .warning)
@@ -178,7 +178,7 @@ struct VerdictsView: View {
                 title: verdict.journey,
                 badges: [
                     verdict.isBlocking ? ("Blocking", WisentTone.warning) : ("Eligible", WisentTone.success),
-                    (verdict.minimumEvidence.title + " floor", WisentTone.neutral),
+                    ("\(verdict.minimumEvidence.title) required", WisentTone.neutral),
                 ]
             ) {
                 if verdict.isBlocking {
@@ -190,12 +190,12 @@ struct VerdictsView: View {
                 }
                 WisentField(label: "Product", value: verdict.appID)
                 WisentField(
-                    label: "Evidence floor",
+                    label: "Required result",
                     value: "\(verdict.minimumEvidence.title) — \(verdict.minimumEvidence.detail)"
                 )
                 if let level = verdict.latestEvidenceLevel {
                     WisentField(
-                        label: "Evidence of the last run",
+                        label: "Last result",
                         value: "\(level.title) — \(level.detail)",
                         tone: level.tone
                     )
@@ -211,15 +211,15 @@ struct VerdictsView: View {
                     WisentField(
                         label: "Recorded source \(repository.name)",
                         value: repository.isDirty
-                            ? "\(repository.gitSHA ?? "Not recorded") (dirty worktree)"
+                            ? "\(repository.gitSHA ?? "Not recorded") (uncommitted changes)"
                             : (repository.gitSHA ?? "Not recorded"),
                         tone: repository.isDirty ? .warning : .neutral
                     )
                 }
                 if verdict.headFreshnessUnknown {
                     WisentField(
-                        label: "Freshness against HEAD",
-                        value: "Not evaluated here. The commit above is what the run recorded; comparing it to HEAD needs git, which this viewer does not run. probierz status \(verdict.appID) is authoritative."
+                        label: "Source freshness",
+                        value: "Not checked"
                     )
                 }
                 if let runID = verdict.latestRunID {
@@ -232,7 +232,7 @@ struct VerdictsView: View {
             }
         } else {
             WisentInspector(eyebrow: "Merge eligibility", title: "No journey selected") {
-                Text("Select a journey to read its evidence floor, the level its last run reached, and the reasons that would block a merge.")
+                Text("Select a journey to see its required result and anything blocking a merge.")
                     .font(WisentTypeScale.body())
                     .foregroundStyle(WisentDesign.secondary)
                     .fixedSize(horizontal: false, vertical: true)

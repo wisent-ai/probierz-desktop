@@ -30,8 +30,8 @@ struct PreflightView: View {
         ) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Reading recorded preflight results",
-                readingDetail: "A blocked run manifest carries the preflight that stopped it: its checks, what was missing and how to fix it."
+                readingTitle: "Loading preflight results",
+                readingDetail: "Checking recorded readiness and suggested fixes."
             ) {
                 blockedPanels
                 readySignals
@@ -49,8 +49,8 @@ struct PreflightView: View {
         let blocked = preflights.filter { !$0.isReady }
         if blocked.isEmpty, preflights.isEmpty {
             WisentEmptyPanel(
-                title: "No preflight has been recorded here",
-                detail: "Probierz records a preflight block only when it refuses to spawn a run. No manifest in this workspace carries one, so there is nothing to report about this host from evidence alone. probierz check <target> is authoritative for the current machine.",
+                title: "No preflight results",
+                detail: "No preflight result is available for this workspace.",
                 symbol: "wrench.and.screwdriver"
             )
         }
@@ -72,7 +72,7 @@ struct PreflightView: View {
     private func detail(for preflight: PreflightRecord) -> String {
         var lines: [String] = []
         if !preflight.missing.isEmpty {
-            lines.append("missing: \(preflight.missing.joined(separator: ", "))")
+            lines.append("Missing: \(preflight.missing.map { requirementLabel(forName: $0) }.joined(separator: ", "))")
         }
         lines.append(contentsOf: preflight.remediation)
         lines.append("Recorded \(ProbierzFormat.timestamp(preflight.observedAt)) by run \(preflight.runID).")
@@ -97,7 +97,7 @@ struct PreflightView: View {
         if let preflight = preflights.first(where: { !$0.isReady }), !preflight.checks.isEmpty {
             WisentSectionBox(
                 title: "Checks recorded for \(preflight.target)",
-                detail: "Every check the runner performed, with the hint it recorded for the ones that failed.",
+                detail: "Readiness checks and suggested fixes.",
                 trailing: "\(preflight.checks.count.formatted(.number)) checks"
             ) {
                 WisentPanel(padding: 0) {
@@ -106,9 +106,9 @@ struct PreflightView: View {
                             WisentQueueRow(
                                 symbol: check.isSatisfied ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
                                 tone: check.isSatisfied ? .success : .warning,
-                                title: check.name,
-                                detail: check.hint.isEmpty ? "No hint recorded" : check.hint,
-                                meta: check.isOwnedByProbierz ? "probierz setup" : "host"
+                                title: requirementLabel(forName: check.name),
+                                detail: check.hint.isEmpty ? "No suggestion recorded" : check.hint,
+                                meta: check.isOwnedByProbierz ? "Setup" : "System"
                             )
                         }
                     }
@@ -116,9 +116,9 @@ struct PreflightView: View {
             }
         }
         WisentSectionBox(
-            title: "Condition names in this viewer's environment",
-            detail: "Presence only, never a value, and never a claim about the machine a run uses. A name that is absent here says nothing about the run host.",
-            trailing: "\((model.snapshot?.conditions.count ?? 0).formatted(.number)) names"
+            title: "Requirements on this Mac",
+            detail: "Shows what this app can use now.",
+            trailing: "\((model.snapshot?.conditions.count ?? 0).formatted(.number)) requirements"
         ) {
             // Rows, not a `Table`: this screen scrolls, and a `Table` inside a
             // `ScrollView` asks for the height of its contents. That is the
@@ -138,9 +138,28 @@ struct PreflightView: View {
         }
     }
 
+    private func requirementLabel(forName name: String) -> String {
+        return switch name {
+        case "BASE_URL": "Web address"
+        case "ELECTRON_APP_MAIN": "Electron app"
+        case "APP_IOS": "iOS app"
+        case "APP_ANDROID": "Android app"
+        case "BUNDLE_ID": "iOS bundle"
+        case "APP_PACKAGE": "Android package"
+        case "IOS_DEVICE": "iOS device"
+        case "IOS_VERSION": "iOS version"
+        case "APPIUM_HOME": "Mobile support"
+        case "MAC_BUNDLE_ID": "macOS app"
+        case "WIN_APP": "Windows app"
+        case "CUA_APP_EXECUTABLE": "Desktop app"
+        case "TUI_CMD": "Terminal command"
+        default: name == name.uppercased() ? "Required setting" : name
+        }
+    }
+
     private func conditionRow(_ condition: ConditionRecord) -> some View {
         HStack(spacing: WisentDesign.Space.x3) {
-            Text(condition.name)
+            Text(requirementLabel(forName: condition.name))
                 .font(WisentTypeScale.identifier())
                 .foregroundStyle(WisentDesign.ink)
                 .lineLimit(1)
@@ -188,15 +207,15 @@ struct WorkspaceView: View {
         ) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Reading the workspace",
-                readingDetail: "Resolving probierz/package.json and agent/history.mjs, then scanning probierz/test-results.",
+                readingTitle: "Loading workspace",
+                readingDetail: "Checking runs, journeys, artifacts, and system state.",
                 chooseWorkspace: chooseWorkspace
             ) {
                 if model.snapshot?.manifestsTruncated == true {
                     WisentAlertPanel(
                         tone: .warning,
-                        title: "The scan stopped at its limit",
-                        detail: "This read reached \(model.snapshot?.manifestLimit.formatted(.number) ?? "0") run manifests and stopped. Every count in this window is therefore a lower bound, and the oldest runs on disk are outside it.",
+                        title: "Only recent runs were loaded",
+                        detail: "The newest \(model.snapshot?.manifestLimit.formatted(.number) ?? "0") runs are shown. Counts may omit older runs.",
                         actions: [
                             WisentAction("Re-read", symbol: "arrow.clockwise", kind: .secondary) {
                                 Task { await model.refresh() }
@@ -213,27 +232,27 @@ struct WorkspaceView: View {
     private var inventory: some View {
         WisentCounterRow(counters: [
             WisentCounterRow.Counter(
-                "Run manifests",
+                "Runs",
                 value: (model.snapshot?.runs.count ?? 0).formatted(.number),
-                detail: "read from probierz/test-results",
+                detail: "recorded",
                 tone: .neutral
             ),
             WisentCounterRow.Counter(
-                "Artifact descriptors",
+                "Artifacts",
                 value: (model.snapshot?.artifacts.count ?? 0).formatted(.number),
-                detail: ProbierzFormat.bytes(model.snapshot?.summary(for: nil).artifactBytes ?? 0) + " declared",
+                detail: ProbierzFormat.bytes(model.snapshot?.summary(for: nil).artifactBytes ?? 0),
                 tone: .neutral
             ),
             WisentCounterRow.Counter(
                 "Products",
                 value: (model.snapshot?.productIDs.count ?? 0).formatted(.number),
-                detail: "app manifests and recorded app ids",
+                detail: "available",
                 tone: .neutral
             ),
             WisentCounterRow.Counter(
                 "Protected bundles",
                 value: (model.snapshot?.summary(for: nil).protectedBundleCount ?? 0).formatted(.number),
-                detail: "provenance records, payloads unread",
+                detail: "available",
                 tone: .brand
             ),
         ])
@@ -241,27 +260,23 @@ struct WorkspaceView: View {
 
     private var identity: some View {
         WisentSectionBox(
-            title: "Metadata source",
-            detail: "The directory every number in this window was read from.",
-            trailing: model.snapshot == nil ? "Not resolved" : "Resolved"
+            title: "Workspace details",
+            detail: "The workspace used for this view.",
+            trailing: model.snapshot == nil ? "Not selected" : "Selected"
         ) {
             WisentPanel {
                 VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
                     WisentField(
-                        label: "Probierz repository",
-                        value: model.snapshot?.repositoryRoot.path ?? "Not resolved"
-                    )
-                    WisentField(
-                        label: "Workspace root",
-                        value: model.workspaceRoot?.path ?? "Not selected"
+                        label: "Workspace",
+                        value: model.workspaceRoot?.lastPathComponent ?? "Not selected"
                     )
                     WisentField(
                         label: "Last read",
                         value: ProbierzFormat.timestamp(model.snapshot?.loadedAt)
                     )
                     WisentField(
-                        label: "Scan ceiling",
-                        value: "\((model.snapshot?.manifestLimit ?? MetadataLoader.maximumManifests).formatted(.number)) run manifests per read"
+                        label: "Run limit",
+                        value: "\((model.snapshot?.manifestLimit ?? MetadataLoader.maximumManifests).formatted(.number)) per refresh"
                     )
                 }
             }

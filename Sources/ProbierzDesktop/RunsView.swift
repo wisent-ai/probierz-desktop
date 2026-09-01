@@ -44,7 +44,7 @@ struct RunsView: View {
                     WisentFacetRail(
                         groups: facetGroups,
                         footerTitle: "Selection",
-                        footerDetail: "\(visible.count.formatted(.number)) of \(model.runs.count.formatted(.number)) manifests"
+                        footerDetail: "\(visible.count.formatted(.number)) of \(model.runs.count.formatted(.number)) runs"
                     )
                     centre(visible: visible)
                     inspector
@@ -91,7 +91,7 @@ struct RunsView: View {
                 }
             ),
             WisentFacetGroup(
-                "Evidence level",
+                "Result",
                 facets: [
                     WisentFacet(
                         id: "level.all",
@@ -132,20 +132,20 @@ struct RunsView: View {
             }
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Reading run manifests",
-                readingDetail: "Scanning probierz/test-results for run-manifest.json, up to \(MetadataLoader.maximumManifests.formatted(.number)) files."
+                readingTitle: "Loading runs",
+                readingDetail: "Checking up to \(MetadataLoader.maximumManifests.formatted(.number)) recent runs."
             ) {
                 if model.runs.isEmpty {
                     WisentEmptyPanel(
-                        title: "No run manifest here",
-                        detail: "Probierz writes one run-manifest.json per run under probierz/test-results. None exists for \(model.scopeLabel.lowercased()).",
+                        title: "No runs available",
+                        detail: "No runs are available for \(model.scopeLabel.lowercased()).",
                         symbol: "tray"
                     )
                     Spacer(minLength: 0)
                 } else if visible.isEmpty {
                     WisentEmptyPanel(
                         title: "No run matches this selection",
-                        detail: "The scope holds \(model.runs.count.formatted(.number)) manifests. The facets and search term in force exclude every one of them.",
+                        detail: "There are \(model.runs.count.formatted(.number)) runs. Current filters exclude all of them.",
                         symbol: "line.3.horizontal.decrease.circle",
                         action: WisentAction("Clear filters", kind: .secondary) { model.clearRunFilters() }
                     )
@@ -187,10 +187,10 @@ struct RunsView: View {
                     RunVerdictCell(status: run.status)
                 }
                 .width(min: 62, ideal: 74)
-                TableColumn("LVL") { run in
+                TableColumn("RESULT") { run in
                     EvidenceLevelCell(level: run.evidenceLevel)
                 }
-                .width(30)
+                .width(min: 70, ideal: 90)
                 TableColumn("STARTED") { run in
                     Text(ProbierzFormat.shortTimestamp(run.startedAt))
                         .font(WisentTypeScale.identifierSmall())
@@ -201,7 +201,7 @@ struct RunsView: View {
                 .width(min: 78, ideal: 92)
             }
             .tableStyle(.inset)
-            .accessibilityLabel("Probierz run manifests")
+            .accessibilityLabel("Probierz runs")
             // A click in this table already means "select this run" and a drag
             // means "extend that selection", so selectable cell text would
             // compete with both. The index opts out of the window's selection
@@ -216,7 +216,7 @@ struct RunsView: View {
     private var inspector: some View {
         if let run = model.selectedRun {
             WisentInspector(
-                eyebrow: "Run provenance",
+                eyebrow: "Run details",
                 title: run.runID,
                 badges: badges(for: run)
             ) {
@@ -229,7 +229,7 @@ struct RunsView: View {
                 if let spec = run.spec {
                     WisentField(label: "Spec", value: spec)
                 }
-                WisentField(label: "Evidence level", value: "\(run.evidenceLevel.title) — \(run.evidenceLevel.detail)", tone: run.evidenceLevel.tone)
+                WisentField(label: "Result", value: "\(run.evidenceLevel.title) — \(run.evidenceLevel.detail)", tone: run.evidenceLevel.tone)
                 WisentField(label: "Started", value: ProbierzFormat.timestamp(run.startedAt))
                 WisentField(label: "Completed", value: ProbierzFormat.timestamp(run.completedAt))
                 WisentField(label: "Duration", value: ProbierzFormat.duration(run.durationMilliseconds))
@@ -249,8 +249,8 @@ struct RunsView: View {
                 .asButton()
             }
         } else {
-            WisentInspector(eyebrow: "Run provenance", title: "No run selected") {
-                Text("Select a run to read its verdict, evidence level, recorded source identity and — when it failed — the manifest's own reason.")
+            WisentInspector(eyebrow: "Run details", title: "No run selected") {
+                Text("Select a run to see its verdict, evidence level, source, and failure details.")
                     .font(WisentTypeScale.body())
                     .foregroundStyle(WisentDesign.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -279,7 +279,7 @@ struct RunsView: View {
         }
         if run.status == .failed {
             WisentAction(
-                "Repair through Brama",
+                "Repair Run",
                 symbol: "wrench.and.screwdriver",
                 kind: .primary,
                 isEnabled: !model.repairOutcome.isWorking
@@ -296,7 +296,7 @@ struct RunsView: View {
         }
         if !failure.remediation.isEmpty {
             WisentField(
-                label: "Remediation recorded by preflight",
+                label: "Suggested fix",
                 value: failure.remediation.joined(separator: "\n"),
                 tone: .warning
             )
@@ -329,8 +329,8 @@ struct RunsView: View {
     private func sourceSection(run: RunRecord) -> some View {
         if let harness = run.harnessGitSHA {
             WisentField(
-                label: "Harness commit",
-                value: run.harnessIsDirty ? "\(harness) (dirty worktree)" : harness,
+                label: "Probierz source",
+                value: run.harnessIsDirty ? "\(harness) (uncommitted changes)" : harness,
                 tone: run.harnessIsDirty ? .warning : .neutral
             )
         }
@@ -338,7 +338,7 @@ struct RunsView: View {
             WisentField(
                 label: "Source \(repository.name)",
                 value: repository.isDirty
-                    ? "\(repository.gitSHA ?? "Not recorded") (dirty worktree)"
+                    ? "\(repository.gitSHA ?? "Not recorded") (uncommitted changes)"
                     : (repository.gitSHA ?? "Not recorded"),
                 tone: repository.isDirty ? .warning : .neutral
             )

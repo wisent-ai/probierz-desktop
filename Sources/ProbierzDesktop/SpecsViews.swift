@@ -44,15 +44,15 @@ struct SurfacesView: View {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Reading the surface inventory",
-                readingDetail: "Checking each declared package for its spec directories: test/specs, tests and specs."
+                readingTitle: "Loading surfaces",
+                readingDetail: "Checking available specs."
             ) {
                 let missing = surfaces.filter { !$0.isPackagePresent }
                 if !missing.isEmpty {
                     WisentAlertPanel(
                         tone: .warning,
-                        title: "\(missing.count.formatted(.number)) declared packages are absent",
-                        detail: "probierz list declares these surfaces, but this workspace has no package directory for them: \(missing.map(\.packagePath).joined(separator: ", ")). No target in that surface can run here."
+                        title: "\(missing.count.formatted(.number)) surfaces are unavailable",
+                        detail: "These surfaces are unavailable: \(missing.map(\.name).joined(separator: ", ")). Their targets cannot run."
                     )
                 }
                 table
@@ -133,7 +133,7 @@ struct SurfacesView: View {
     private var inspector: some View {
         if let surface = surfaces.first(where: { $0.id == model.selectedSurfaceID }) {
             WisentInspector(
-                eyebrow: "Surface contract",
+                eyebrow: "Surface details",
                 title: surface.name,
                 badges: [
                     surface.isPackagePresent
@@ -141,13 +141,13 @@ struct SurfacesView: View {
                         : ("Package absent", WisentTone.warning)
                 ]
             ) {
-                WisentField(label: "Package", value: surface.packagePath)
+                WisentField(label: "Package", value: surface.isPackagePresent ? "Available" : "Unavailable")
                 WisentField(label: "Tool", value: surface.tool)
                 WisentField(label: "Script", value: surface.scriptLabel)
                 WisentField(label: "Runs on", value: surface.targetsLabel)
                 WisentField(
-                    label: "Condition names",
-                    value: surface.conditionNames.joined(separator: "\n")
+                    label: "Requirements",
+                    value: "\(surface.conditionNames.count.formatted(.number))"
                 )
                 if !surface.observedTargets.isEmpty {
                     WisentField(
@@ -156,24 +156,24 @@ struct SurfacesView: View {
                     )
                 }
                 if let level = surface.lastEvidenceLevel {
-                    WisentField(label: "Evidence of the last run", value: level.title, tone: level.tone)
+                    WisentField(label: "Last result", value: level.title, tone: level.tone)
                 }
                 if surface.specPaths.isEmpty {
                     WisentField(
-                        label: "Specs on disk",
-                        value: "None found under test/specs, tests or specs",
+                        label: "Specs",
+                        value: "None found",
                         tone: .warning
                     )
                 } else {
                     WisentField(
-                        label: "Specs on disk (\(surface.specPaths.count.formatted(.number)))",
-                        value: surface.specPaths.joined(separator: "\n")
+                        label: "Specs",
+                        value: "\(surface.specPaths.count.formatted(.number)) available"
                     )
                 }
             }
         } else {
-            WisentInspector(eyebrow: "Surface contract", title: "No surface selected") {
-                Text("Select a surface to read the package it lives in, the tool that drives it, the condition names it needs and the specs found on disk.")
+            WisentInspector(eyebrow: "Surface details", title: "No surface selected") {
+                Text("Select a surface to see its tools, requirements, available specs, and latest run.")
                     .font(WisentTypeScale.body())
                     .foregroundStyle(WisentDesign.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -258,13 +258,13 @@ struct JourneysView: View {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Reading the journey inventory",
-                readingDetail: "Union of the journeys declared in probierz/apps/<id>/probierz.yaml and the journeys named by run manifests."
+                readingTitle: "Loading journeys",
+                readingDetail: "Combining declared journeys with recorded runs."
             ) {
                 if model.journeys.isEmpty {
                     WisentEmptyPanel(
                         title: "No journey declared or recorded",
-                        detail: "No probierz.yaml in probierz/apps declares a journey for \(model.scopeLabel.lowercased()), and no run manifest names one.",
+                        detail: "No journey is available for \(model.scopeLabel.lowercased()).",
                         symbol: "point.topleft.down.curvedto.point.bottomright.up"
                     )
                     Spacer(minLength: 0)
@@ -361,7 +361,7 @@ struct JourneysView: View {
                     WisentAlertPanel(
                         tone: .warning,
                         title: "This journey has no evidence",
-                        detail: "probierz/apps declares it, but no run manifest in this workspace names it. Until a run covers it, every merge decision about it is a guess."
+                        detail: "No recorded run covers this journey. A merge decision needs evidence."
                     )
                 }
                 WisentField(label: "Product", value: journey.appID)
@@ -384,7 +384,7 @@ struct JourneysView: View {
                 )
                 WisentField(label: "Pass rate", value: ProbierzFormat.percent(journey.passRate))
                 if let best = journey.bestEvidenceLevel {
-                    WisentField(label: "Strongest evidence", value: "\(best.title) — \(best.detail)", tone: best.tone)
+                    WisentField(label: "Best result", value: "\(best.title) — \(best.detail)", tone: best.tone)
                 }
                 if let status = journey.latestStatus {
                     WisentField(label: "Last verdict", value: status.title, tone: status.tone)

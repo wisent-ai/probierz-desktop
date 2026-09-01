@@ -45,7 +45,7 @@ struct ArtifactsView: View {
         .searchable(
             text: $model.query,
             placement: .toolbar,
-            prompt: "Search run id, type, format or digest"
+            prompt: "Search run id, type, format or integrity"
         )
         // The first-use journey finishes when a protected bundle's real
         // provenance inspector is on screen. The inspector is a pane now rather
@@ -97,7 +97,7 @@ struct ArtifactsView: View {
                 facets: [
                     WisentFacet(
                         id: "integrity.all",
-                        label: "Any digest",
+                        label: "Any integrity",
                         count: model.artifacts.count,
                         isSelected: model.artifactIntegrityFilter == nil
                     ) {
@@ -105,7 +105,7 @@ struct ArtifactsView: View {
                     },
                     WisentFacet(
                         id: "integrity.recorded",
-                        label: "SHA-256 recorded",
+                        label: "Integrity recorded",
                         count: model.artifacts.count - missingDigest,
                         isSelected: model.artifactIntegrityFilter == true
                     ) {
@@ -113,7 +113,7 @@ struct ArtifactsView: View {
                     },
                     WisentFacet(
                         id: "integrity.missing",
-                        label: "No digest",
+                        label: "No integrity code",
                         count: missingDigest,
                         tone: missingDigest > 0 ? .warning : .neutral,
                         isSelected: model.artifactIntegrityFilter == false
@@ -126,11 +126,11 @@ struct ArtifactsView: View {
         if unavailable > 0 || model.artifactAvailabilityFilter != nil {
             groups.append(
                 WisentFacetGroup(
-                    "Presence",
+                    "Availability",
                     facets: [
                         WisentFacet(
                             id: "presence.all",
-                            label: "Any presence",
+                            label: "Any availability",
                             count: model.artifacts.count,
                             isSelected: model.artifactAvailabilityFilter == nil
                         ) {
@@ -138,7 +138,7 @@ struct ArtifactsView: View {
                         },
                         WisentFacet(
                             id: "presence.ondisk",
-                            label: "On disk",
+                            label: "Available",
                             count: model.artifacts.count - unavailable,
                             isSelected: model.artifactAvailabilityFilter == true
                         ) {
@@ -146,7 +146,7 @@ struct ArtifactsView: View {
                         },
                         WisentFacet(
                             id: "presence.absent",
-                            label: "Descriptor only",
+                            label: "Unavailable",
                             count: unavailable,
                             isSelected: model.artifactAvailabilityFilter == false
                         ) {
@@ -175,20 +175,20 @@ struct ArtifactsView: View {
             }
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Reading artifact descriptors",
-                readingDetail: "Each run manifest lists the file size and SHA-256 of what it produced; this read never opens those files."
+                readingTitle: "Loading artifacts",
+                readingDetail: "Checking recorded evidence."
             ) {
                 if model.artifacts.isEmpty {
                     WisentEmptyPanel(
-                        title: "No artifact descriptor here",
-                        detail: "A run manifest records its artifacts once the run finishes. No manifest in \(model.scopeLabel.lowercased()) lists one.",
+                        title: "No artifacts available",
+                        detail: "No completed run in \(model.scopeLabel.lowercased()) includes an artifact.",
                         symbol: "archivebox"
                     )
                     Spacer(minLength: 0)
                 } else if visible.isEmpty {
                     WisentEmptyPanel(
-                        title: "No descriptor matches this selection",
-                        detail: "The scope holds \(model.artifacts.count.formatted(.number)) descriptors. The facets and search term in force exclude every one of them.",
+                        title: "No artifact matches this selection",
+                        detail: "There are \(model.artifacts.count.formatted(.number)) artifacts. Current filters exclude all of them.",
                         symbol: "line.3.horizontal.decrease.circle",
                         action: WisentAction("Clear filters", kind: .secondary) { model.clearArtifactFilters() }
                     )
@@ -240,19 +240,19 @@ struct ArtifactsView: View {
                 // A pill only for the minority: a recorded digest is the healthy
                 // dominant state and its count is in the rail, so only a missing
                 // one is marked here.
-                TableColumn("DIGEST") { artifact in
+                TableColumn("INTEGRITY") { artifact in
                     if artifact.hasSHA256 {
                         Text("Recorded")
                             .font(WisentTypeScale.body())
                             .foregroundStyle(WisentDesign.secondary)
                     } else {
-                        WisentStatusChip(text: "No digest", tone: .warning)
+                        WisentStatusChip(text: "Not recorded", tone: .warning)
                     }
                 }
                 .width(min: 62, ideal: 74)
             }
             .tableStyle(.inset)
-            .accessibilityLabel("Probierz artifact descriptors")
+            .accessibilityLabel("Probierz artifacts")
             // A click in this table already means "select this artifact" and a
             // drag means "extend that selection", so selectable cell text would
             // compete with both. The index opts out of the window's selection
@@ -267,7 +267,7 @@ struct ArtifactsView: View {
     private var inspector: some View {
         if let artifact = model.selectedArtifact {
             WisentInspector(
-                eyebrow: artifact.kind == .protectedBundle ? "Protected bundle provenance" : "Artifact provenance",
+                eyebrow: artifact.kind == .protectedBundle ? "Protected bundle details" : "Artifact details",
                 title: artifact.runID,
                 badges: badges(for: artifact)
             ) {
@@ -275,12 +275,12 @@ struct ArtifactsView: View {
                 WisentField(label: "Format", value: artifact.fileExtension)
                 WisentField(label: "Size", value: ProbierzFormat.bytes(artifact.bytes))
                 WisentField(
-                    label: "SHA-256",
+                    label: "Integrity code",
                     value: ProbierzFormat.digest(artifact.sha256),
                     tone: artifact.hasSHA256 ? .neutral : .warning
                 )
                 if let fingerprint = artifact.keyFingerprintSHA256 {
-                    WisentField(label: "Encryption key fingerprint", value: fingerprint)
+                    WisentField(label: "Key ID", value: fingerprint)
                 }
                 WisentField(label: "Modified", value: ProbierzFormat.timestamp(artifact.modifiedAt))
                 WisentField(label: "Source run", value: artifact.runID)
@@ -301,8 +301,8 @@ struct ArtifactsView: View {
                 }
             }
         } else {
-            WisentInspector(eyebrow: "Artifact provenance", title: "No descriptor selected") {
-                Text("Select a descriptor to read its type, format, size, SHA-256 and source run. Selecting one never opens the file it describes.")
+            WisentInspector(eyebrow: "Artifact details", title: "No artifact selected") {
+                Text("Select an artifact to see its type, format, size, integrity, and source run.")
                     .font(WisentTypeScale.body())
                     .foregroundStyle(WisentDesign.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -312,23 +312,23 @@ struct ArtifactsView: View {
 
     private func badges(for artifact: ArtifactMetadata) -> [(String, WisentTone)] {
         var badges: [(String, WisentTone)] = [(artifact.kind.title, artifact.kind == .protectedBundle ? .brand : .neutral)]
-        badges.append(artifact.hasSHA256 ? ("Digest recorded", .success) : ("No digest", .warning))
+        badges.append(artifact.hasSHA256 ? ("Integrity recorded", .success) : ("No integrity code", .warning))
         return badges
     }
 
     @ViewBuilder
     private func presence(for artifact: ArtifactMetadata) -> some View {
         if artifact.isAvailableOnDisk {
-            WisentField(label: "Presence", value: "Regular non-symlink file inside the result store")
+            WisentField(label: "Availability", value: "Available")
         } else if artifact.wasPlaintextRemoved {
             WisentField(
-                label: "Presence",
-                value: "Descriptor only — probierz protect removed the plaintext and kept this record"
+                label: "Availability",
+                value: "Protected; original unavailable"
             )
         } else {
             WisentField(
-                label: "Presence",
-                value: "Descriptor only — the manifest lists this artifact but no readable file matches it",
+                label: "Availability",
+                value: "Unavailable",
                 tone: .warning
             )
         }

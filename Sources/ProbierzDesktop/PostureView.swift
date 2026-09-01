@@ -33,8 +33,8 @@ struct PostureView: View {
         ) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Reading the Probierz metadata projection",
-                readingDetail: "Scanning probierz/test-results for run-manifest.json and probierz/apps for declared journeys.",
+                readingTitle: "Loading status",
+                readingDetail: "Checking runs and journeys.",
                 chooseWorkspace: chooseWorkspace
             ) {
                 content
@@ -57,7 +57,7 @@ struct PostureView: View {
         if model.summary.status.total == 0 {
             WisentEmptyPanel(
                 title: "No run has been recorded here",
-                detail: "Probierz writes a run manifest under probierz/test-results for every target it drives. This workspace holds none for \(model.scopeLabel.lowercased()), so there is no evidence to judge yet.",
+                detail: "No runs are available for \(model.scopeLabel.lowercased()), so there is no evidence to judge yet.",
                 symbol: "tray"
             )
         } else {
@@ -110,7 +110,7 @@ struct PostureView: View {
             WisentCounterRow.Counter(
                 "Passed",
                 value: model.summary.status.passed.formatted(.number),
-                detail: "manifests recording a pass",
+                detail: "successful runs",
                 tone: .success
             ),
             WisentCounterRow.Counter(
@@ -120,15 +120,15 @@ struct PostureView: View {
                 tone: model.summary.status.needsAttention > 0 ? .danger : .neutral
             ),
             WisentCounterRow.Counter(
-                "Recorded evidence",
+                "Recorded runs",
                 value: model.summary.evidence.e3.formatted(.number),
-                detail: "runs reaching E3",
+                detail: "report and recording saved",
                 tone: .brand
             ),
             WisentCounterRow.Counter(
                 "Evidence inventory",
                 value: ProbierzFormat.bytes(model.summary.artifactBytes),
-                detail: "\(model.summary.artifactCount.formatted(.number)) descriptors",
+                detail: "\(model.summary.artifactCount.formatted(.number)) artifacts",
                 tone: .neutral
             ),
         ])
@@ -141,8 +141,8 @@ struct PostureView: View {
         if model.snapshot?.manifestsTruncated == true {
             WisentAlertPanel(
                 tone: .warning,
-                title: "The projection is incomplete",
-                detail: "The scan stopped at its limit of \(model.snapshot?.manifestLimit.formatted(.number) ?? "0") run manifests, so every count on this screen is a lower bound. Older runs are on disk but outside this read.",
+                title: "Run history is incomplete",
+                detail: "Only the newest \(model.snapshot?.manifestLimit.formatted(.number) ?? "0") runs are shown. Counts may be lower than the full history.",
                 actions: [
                     WisentAction("Open Workspace", symbol: "internaldrive", kind: .secondary) {
                         model.destination = .workspace
@@ -198,7 +198,7 @@ struct PostureView: View {
         if !untested.isEmpty || !weak.isEmpty {
             WisentSectionBox(
                 title: "Journeys waiting on evidence",
-                detail: "Declared in probierz/apps and either never run, or last run without a pass.",
+                detail: "Never run, or the latest run did not pass.",
                 trailing: "\((untested.count + weak.count).formatted(.number)) journeys"
             ) {
                 WisentPanel(padding: 0) {
@@ -208,7 +208,7 @@ struct PostureView: View {
                                 journey: journey,
                                 symbol: "questionmark.circle",
                                 tone: .warning,
-                                detail: "No run manifest references this journey"
+                                detail: "No recorded run covers this journey"
                             )
                         }
                         ForEach(Array(weak.prefix(6))) { journey in

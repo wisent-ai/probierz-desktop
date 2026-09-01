@@ -126,7 +126,7 @@ struct ProbierzRootView: View {
                         }
                     }
                 } else {
-                    Text("No product manifest read yet")
+                    Text("No products available")
                 }
                 Divider()
                 Button("Choose Workspace…", action: chooseWorkspace)
@@ -205,7 +205,7 @@ struct ProbierzRootView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(WisentDesign.warning)
-                .accessibilityLabel("Inventory truncated")
+                .accessibilityLabel("Older runs not shown")
         default:
             EmptyView()
         }
@@ -288,12 +288,12 @@ struct ProbierzRootView: View {
             Button {
                 Task { await model.refresh() }
             } label: {
-                Label("Refresh Local Metadata", systemImage: "arrow.clockwise")
+                Label("Refresh", systemImage: "arrow.clockwise")
             }
             .disabled(model.isRefreshing || model.workspaceRoot == nil)
             .keyboardShortcut("r", modifiers: .command)
-            .help("Re-read run manifests, app manifests and spec inventory")
-            .accessibilityLabel(model.isRefreshing ? "Refreshing Probierz metadata" : "Refresh Probierz metadata")
+            .help("Refresh runs, journeys, artifacts, and system state")
+            .accessibilityLabel(model.isRefreshing ? "Refreshing Probierz" : "Refresh Probierz")
         }
     }
 
@@ -313,7 +313,7 @@ struct ProbierzRootView: View {
 
     private func chooseWorkspace() {
         let panel = NSOpenPanel()
-        panel.title = "Choose the Wisent workspace"
+        panel.title = "Choose a workspace"
         panel.prompt = "Choose"
         panel.canChooseFiles = false
         panel.canChooseDirectories = true

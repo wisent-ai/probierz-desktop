@@ -53,13 +53,19 @@ enum EvidenceLevel: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    var title: String { rawValue.uppercased() }
+    var title: String {
+        switch self {
+        case .e0: "No verified result"
+        case .e2: "Verified"
+        case .e3: "Recorded"
+        }
+    }
 
     var detail: String {
         switch self {
-        case .e0: "The run did not pass, so it carries no evidence."
-        case .e2: "Executed with a validated report and analysis."
-        case .e3: "Recorded run with a validated report, analysis and capture."
+        case .e0: "The run did not pass."
+        case .e2: "The run passed and saved a report."
+        case .e3: "The run passed and saved a report and recording."
         }
     }
 

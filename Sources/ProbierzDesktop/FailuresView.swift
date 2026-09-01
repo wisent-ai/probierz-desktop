@@ -198,7 +198,7 @@ struct FailuresView: View {
                 WisentFacetRail(
                     groups: facetGroups,
                     footerTitle: "Selection",
-                    footerDetail: "\(visible.count.formatted(.number)) of \(model.failures.count.formatted(.number)) envelopes"
+                    footerDetail: "\(visible.count.formatted(.number)) of \(model.failures.count.formatted(.number)) failures"
                 )
                 centre(visible: visible)
                 inspector
@@ -268,14 +268,14 @@ struct FailuresView: View {
                 WisentEmptyPanel(
                     title: "No workspace selected",
                     detail: model.errorMessage
-                        ?? "Choose the Wisent workspace containing probierz/package.json and agent/history.mjs.",
+                        ?? "Choose the workspace you want to review.",
                     symbol: "questionmark.folder"
                 )
                 Spacer(minLength: 0)
             } else if model.failures.isEmpty, model.failuresLoadedAt == nil {
                 WisentLoadingPanel(
-                    title: "Reading reported failures",
-                    detail: "Scanning probierz/test-results/failures for one envelope per line."
+                    title: "Loading reported failures",
+                    detail: "Checking recent reports."
                 )
                 Spacer(minLength: 0)
             } else if model.failures.isEmpty {
@@ -288,7 +288,7 @@ struct FailuresView: View {
             } else if visible.isEmpty {
                 WisentEmptyPanel(
                     title: "No failure matches this selection",
-                    detail: "The intake holds \(model.failures.count.formatted(.number)) envelopes. The facets in force exclude every one of them.",
+                    detail: "There are \(model.failures.count.formatted(.number)) failures. Current filters exclude all of them.",
                     symbol: "line.3.horizontal.decrease.circle",
                     action: WisentAction("Clear filters", kind: .secondary) { model.clearFailureFilters() }
                 )
@@ -381,19 +381,19 @@ struct FailuresView: View {
                 WisentAlertPanel(
                     tone: envelope.severityTone == .warning ? .warning : .danger,
                     title: envelope.failurePoint,
-                    detail: envelope.detail ?? "The envelope records no detail from the layer below."
+                    detail: envelope.detail ?? "No additional detail was recorded."
                 )
                 WisentField(label: "Failure point", value: envelope.failurePoint)
                 WisentField(label: "Service", value: envelope.service)
                 WisentField(label: "Error code", value: envelope.errorCode)
                 WisentField(label: "Severity", value: envelope.severity, tone: envelope.severityTone)
                 WisentField(
-                    label: "Retryable",
-                    value: envelope.retryable ? "Yes — the same call may succeed unchanged" : "No"
+                    label: "Try again",
+                    value: envelope.retryable ? "Yes — the same action may succeed" : "No"
                 )
                 WisentField(
-                    label: "Outage",
-                    value: envelope.outage ? "Yes — our side is broken" : "No",
+                    label: "Service unavailable",
+                    value: envelope.outage ? "Yes" : "No",
                     tone: envelope.outage ? .warning : .neutral
                 )
                 if let impact = envelope.impact {
@@ -415,7 +415,7 @@ struct FailuresView: View {
             }
         } else {
             WisentInspector(eyebrow: "Reported failure", title: "No failure selected") {
-                Text("Select a failure to read its failure point, severity, retryability, the detail the layer below supplied, and the cause chain underneath it.")
+                Text("Select a failure to see its severity, details, and causes.")
                     .font(WisentTypeScale.body())
                     .foregroundStyle(WisentDesign.secondary)
                     .fixedSize(horizontal: false, vertical: true)

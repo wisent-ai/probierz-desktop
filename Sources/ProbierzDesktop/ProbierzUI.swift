@@ -199,9 +199,9 @@ struct ProbierzSnapshotGate<Content: View>: View {
             Spacer(minLength: 0)
         } else {
             WisentEmptyPanel(
-                title: "Probierz metadata unavailable",
+                title: "Workspace data unavailable",
                 detail: model.errorMessage
-                    ?? "Choose the Wisent workspace containing probierz/package.json and agent/history.mjs.",
+                    ?? "Choose the workspace you want to review.",
                 symbol: "questionmark.folder",
                 action: chooseWorkspace.map { choose in
                     WisentAction("Choose Workspace", symbol: "folder", kind: .primary, perform: choose)

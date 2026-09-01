@@ -17,7 +17,7 @@ final class ProbierzModel: ObservableObject {
             case .all: "All journeys"
             case .noEvidence: "No evidence"
             case .needsAttention: "Needs attention"
-            case .recorded: "Recorded (E3)"
+            case .recorded: "Recorded"
             }
         }
     }
@@ -90,7 +90,7 @@ final class ProbierzModel: ObservableObject {
         workspaceRoot = WorkspaceLocator.resolve(savedPath: defaults.string(forKey: workspaceKey))
         productScope = defaults.string(forKey: scopeKey)
         if workspaceRoot == nil {
-            errorMessage = "Choose the local Wisent workspace to inspect Probierz metadata."
+            errorMessage = "Choose your Wisent workspace."
         }
     }
 
@@ -393,7 +393,7 @@ final class ProbierzModel: ObservableObject {
     func selectWorkspace(_ url: URL) {
         let standardized = url.standardizedFileURL
         guard WorkspaceLocator.isWorkspace(standardized) else {
-            errorMessage = "The selected folder does not contain probierz/package.json and agent/history.mjs."
+            errorMessage = "Choose the folder that contains your Wisent projects."
             return
         }
         generation &+= 1
