@@ -30,8 +30,10 @@ struct PreflightView: View {
         ) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Loading preflight results",
-                readingDetail: "Checking recorded readiness and suggested fixes."
+                readingLabel: "Loading preflight results",
+                // Preflight lands on panels and recorded checks: prose, not a
+                // table of its own.
+                readingShape: .prose(lines: 4)
             ) {
                 blockedPanels
                 readySignals
@@ -210,8 +212,10 @@ struct WorkspaceView: View {
         ) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Loading workspace",
-                readingDetail: "Checking runs, journeys, artifacts, and system state.",
+                readingLabel: "Loading workspace",
+                // The inventory counter row lands first: four counters, each
+                // with a caption under its value.
+                readingShape: .metrics(cells: 4, detail: true),
                 chooseWorkspace: chooseWorkspace
             ) {
                 if model.snapshot?.manifestsTruncated == true {

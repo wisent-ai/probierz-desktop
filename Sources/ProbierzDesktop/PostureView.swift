@@ -33,8 +33,10 @@ struct PostureView: View {
         ) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Loading status",
-                readingDetail: "Checking runs and journeys.",
+                readingLabel: "Loading status",
+                // The signal strip lands first, and it carries one cell per
+                // signal in `signals` once a snapshot exists.
+                readingShape: .metrics(cells: 5),
                 chooseWorkspace: chooseWorkspace
             ) {
                 content
