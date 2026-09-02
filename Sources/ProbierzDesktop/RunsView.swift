@@ -24,7 +24,8 @@ struct RunsView: View {
                     "Refresh",
                     symbol: "arrow.clockwise",
                     kind: .secondary,
-                    isEnabled: !model.isRefreshing && model.workspaceRoot != nil
+                    isEnabled: model.workspaceRoot != nil,
+                    isBusy: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
                 }
@@ -283,7 +284,7 @@ struct RunsView: View {
                 "Repair Run",
                 symbol: "wrench.and.screwdriver",
                 kind: .primary,
-                isEnabled: !model.repairOutcome.isWorking
+                isBusy: model.repairOutcome.isWorking
             ) {
                 model.repair(run)
             }

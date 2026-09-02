@@ -22,7 +22,8 @@ struct PreflightView: View {
                     "Refresh",
                     symbol: "arrow.clockwise",
                     kind: .secondary,
-                    isEnabled: !model.isRefreshing && model.workspaceRoot != nil
+                    isEnabled: model.workspaceRoot != nil,
+                    isBusy: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
                 }
@@ -204,7 +205,8 @@ struct WorkspaceView: View {
                     "Refresh",
                     symbol: "arrow.clockwise",
                     kind: .primary,
-                    isEnabled: !model.isRefreshing && model.workspaceRoot != nil
+                    isEnabled: model.workspaceRoot != nil,
+                    isBusy: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
                 },
@@ -301,9 +303,10 @@ struct WorkspaceView: View {
         ) {
             WisentPanel {
                 VStack(alignment: .leading, spacing: WisentDesign.Space.x3) {
-                    Button("Show it again") { showWalkthroughAgain() }
-                        .buttonStyle(WisentSecondaryButtonStyle())
-                        .disabled(isReplaying)
+                    WisentAction("Show it again", kind: .secondary, isBusy: isReplaying) {
+                        showWalkthroughAgain()
+                    }
+                    .asButton()
                     if walkthrough != .idle {
                         WisentMutationBar(outcome: walkthrough) { walkthrough = .idle }
                     }
