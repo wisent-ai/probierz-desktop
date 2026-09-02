@@ -132,8 +132,9 @@ struct RunsView: View {
             }
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Loading runs",
-                readingDetail: "Checking up to \(MetadataLoader.maximumManifests.formatted(.number)) recent runs."
+                readingLabel: "Loading runs",
+                // The runs table's own five columns and header row.
+                readingShape: .table(columns: 5)
             ) {
                 if model.runs.isEmpty {
                     WisentEmptyPanel(
