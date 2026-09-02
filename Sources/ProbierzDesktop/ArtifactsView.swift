@@ -23,7 +23,8 @@ struct ArtifactsView: View {
                     "Refresh",
                     symbol: "arrow.clockwise",
                     kind: .secondary,
-                    isEnabled: !model.isRefreshing && model.workspaceRoot != nil
+                    isEnabled: model.workspaceRoot != nil,
+                    isBusy: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
                 }

@@ -293,7 +293,10 @@ struct ProbierzRootView: View {
             .disabled(model.isRefreshing || model.workspaceRoot == nil)
             .keyboardShortcut("r", modifiers: .command)
             .help("Refresh runs, journeys, artifacts, and system state")
-            .accessibilityLabel(model.isRefreshing ? "Refreshing Probierz" : "Refresh Probierz")
+            // The resting word stays while the refresh runs: a name that turns
+            // into "Refreshing Probierz" is gone at the one moment a screen
+            // reader is asked what this control is.
+            .accessibilityLabel("Refresh Probierz")
         }
     }
 

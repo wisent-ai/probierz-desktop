@@ -295,16 +295,11 @@ struct ProbierzOnboardingCard: View {
                 }
                 .layoutPriority(1)
                 Spacer(minLength: WisentDesign.Space.x4)
-                Button(action: action) {
-                    // The button keeps its words while the step is in flight;
-                    // they are dimmed rather than swapped for a spinning
-                    // circle, so the control never changes size and keeps its
-                    // accessible name.
-                    Text(actionLabel)
-                        .opacity(isWorking ? 0.35 : 1)
-                }
-                .buttonStyle(WisentPrimaryButtonStyle())
-                .disabled(isWorking)
+                // The shell owns this now: `isBusy` keeps the box, the verb and
+                // the accessible name, shimmers a bar sized by the hidden word,
+                // and refuses a second press while the step runs.
+                WisentAction(actionLabel, kind: .primary, isBusy: isWorking, perform: action)
+                    .asButton()
             }
         }
         .accessibilityElement(children: .contain)
