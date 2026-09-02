@@ -56,6 +56,10 @@ final class ProbierzOnboarding: ObservableObject {
     private static let journeyID = "first-use"
     private static let evidenceRevision = "probierz-desktop-evidence-v1"
     private static let installationIDKey = "probierzDesktop.onboarding.installationID"
+    private static let resourceName = "probierz-desktop-first-use"
+    /// SwiftPM names a resource bundle `<Package>_<Target>.bundle`; this string
+    /// is the one `swift build` writes into `.build/debug`, not a guess.
+    private static let resourceBundleName = "ProbierzDesktop_ProbierzDesktop.bundle"
 
     private let client: JourneyClient?
     private var didStart = false
@@ -239,17 +243,28 @@ final class ProbierzOnboarding: ObservableObject {
         exposedScreenID = screen.screenId
     }
 
+    /// The bundled definition, which is both the offline journey and the
+    /// identity a definition published through Echo is checked against.
+    ///
+    /// `JourneyResource` resolves the packaged resource bundle the way a
+    /// shipped app has to — from `Bundle.main.resourceURL` and then
+    /// `bundleURL` — instead of SwiftPM's `Bundle.module` accessor, which
+    /// resolves an absolute `.build` path that exists only on the machine that
+    /// compiled the binary and traps on everyone else's Mac.
     private static func fallbackBundle() -> JourneyBundle? {
-        guard let versionID = UUID(uuidString: "A1E81E86-368A-42C0-9BBA-C7E05D42AD24") else {
+        guard let versionID = UUID(uuidString: "A1E81E86-368A-42C0-9BBA-C7E05D42AD24"),
+              let data = try? JourneyResource.definitionData(
+                  resource: resourceName,
+                  bundleName: resourceBundleName
+              )
+        else {
             return nil
         }
         return try? JourneyRouter.makeBundle(
-            canonicalDefinition: fallbackDefinition,
+            canonicalDefinition: String(decoding: data, as: UTF8.self),
             journeyVersionId: versionID
         )
     }
-
-    private static let fallbackDefinition = #"{"schema_version":1,"product_id":"probierz-desktop","journey_id":"first-use","journey_version":"2026-08-04.1","entry_screen_id":"read-only-semantics","first_success_fact":"evidence_bundle_inspected","published_at":"2026-08-04T00:00:00Z","source_revision":"probierz-desktop-onboarding-2026-08-04.1","screens":[{"screen_id":"read-only-semantics","screen_kind":"explanation","title_key":"probierz.first_use.read_only.title","body_key":"probierz.first_use.read_only.body","required":true,"actions":["continue"],"transitions":[{"next_screen_id":"bundle-provenance","reason_code":"semantics_acknowledged","priority":0}],"presentation":{}},{"screen_id":"bundle-provenance","screen_kind":"explanation","title_key":"probierz.first_use.provenance.title","body_key":"probierz.first_use.provenance.body","required":true,"actions":["continue"],"transitions":[{"next_screen_id":"inspect-evidence-bundle","reason_code":"provenance_explained","priority":0}],"presentation":{}},{"screen_id":"inspect-evidence-bundle","screen_kind":"first_success","title_key":"probierz.first_use.inspect.title","body_key":"probierz.first_use.inspect.body","required":true,"completion_evidence":{"kind":"fact","fact":"evidence_bundle_inspected","operator":"eq","value":true},"actions":["inspect_evidence_bundle"],"transitions":[],"presentation":{}}],"analytics_contract":{"contract_version":"1","surface":"native_viewer","exposure_event":"journey.step_viewed","primary_action_event":"journey.step_completed","completion_event":"journey.completed","first_success_event":"journey.first_success_observed"}}"#
 }
 
 struct ProbierzOnboardingCard: View {

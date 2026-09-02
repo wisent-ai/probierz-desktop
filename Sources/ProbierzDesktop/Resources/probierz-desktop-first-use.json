@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "product_id": "probierz-desktop",
+  "journey_id": "first-use",
+  "journey_version": "2026-08-04.1",
+  "entry_screen_id": "read-only-semantics",
+  "first_success_fact": "evidence_bundle_inspected",
+  "published_at": "2026-08-04T00:00:00Z",
+  "source_revision": "probierz-desktop-onboarding-2026-08-04.1",
+  "screens": [
+    {
+      "screen_id": "read-only-semantics",
+      "screen_kind": "explanation",
+      "title_key": "probierz.first_use.read_only.title",
+      "body_key": "probierz.first_use.read_only.body",
+      "required": true,
+      "actions": [
+        "continue"
+      ],
+      "transitions": [
+        {
+          "next_screen_id": "bundle-provenance",
+          "reason_code": "semantics_acknowledged",
+          "priority": 0
+        }
+      ],
+      "presentation": {}
+    },
+    {
+      "screen_id": "bundle-provenance",
+      "screen_kind": "explanation",
+      "title_key": "probierz.first_use.provenance.title",
+      "body_key": "probierz.first_use.provenance.body",
+      "required": true,
+      "actions": [
+        "continue"
+      ],
+      "transitions": [
+        {
+          "next_screen_id": "inspect-evidence-bundle",
+          "reason_code": "provenance_explained",
+          "priority": 0
+        }
+      ],
+      "presentation": {}
+    },
+    {
+      "screen_id": "inspect-evidence-bundle",
+      "screen_kind": "first_success",
+      "title_key": "probierz.first_use.inspect.title",
+      "body_key": "probierz.first_use.inspect.body",
+      "required": true,
+      "completion_evidence": {
+        "kind": "fact",
+        "fact": "evidence_bundle_inspected",
+        "operator": "eq",
+        "value": true
+      },
+      "actions": [
+        "inspect_evidence_bundle"
+      ],
+      "transitions": [],
+      "presentation": {}
+    }
+  ],
+  "analytics_contract": {
+    "contract_version": "1",
+    "surface": "native_viewer",
+    "exposure_event": "journey.step_viewed",
+    "primary_action_event": "journey.step_completed",
+    "completion_event": "journey.completed",
+    "first_success_event": "journey.first_success_observed"
+  }
+}
