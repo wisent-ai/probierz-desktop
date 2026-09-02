@@ -65,10 +65,10 @@
   ],
   "analytics_contract": {
     "contract_version": "1",
-    "surface": "native_viewer",
-    "exposure_event": "journey.step_viewed",
-    "primary_action_event": "journey.step_completed",
-    "completion_event": "journey.completed",
-    "first_success_event": "journey.first_success_observed"
+    "surface": "macos_first_use",
+    "exposure_event": "onboarding_step_viewed",
+    "primary_action_event": "onboarding_step_completed",
+    "completion_event": "onboarding_completed",
+    "first_success_event": "onboarding_first_success_observed"
   }
 }
