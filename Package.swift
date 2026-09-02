@@ -8,7 +8,7 @@ let package = Package(
         .executable(name: "ProbierzDesktop", targets: ["ProbierzDesktop"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/wisent-ai/wisent-desktop-auth.git", exact: "0.3.5"),
+        .package(url: "https://github.com/wisent-ai/wisent-desktop-auth.git", exact: "0.3.6"),
         .package(url: "https://github.com/wisent-ai/wisent-desktop-update.git", exact: "0.2.0"),
         // 0.3.0 is the tag that ships `JourneyResource`, the loader that reads
         // the bundled journey definition out of a packaged app.
