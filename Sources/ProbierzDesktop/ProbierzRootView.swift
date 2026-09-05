@@ -241,8 +241,14 @@ struct ProbierzRootView: View {
                 if let screen = onboarding.screen {
                     ProbierzOnboardingCard(
                         screen: screen,
-                        isWorking: onboarding.isWorking,
-                        action: performOnboardingAction
+                        isWorking: onboarding.isWorking || model.isAdopting,
+                        adoptionOutcome: model.adoptionOutcome,
+                        conflicts: model.projectAdoption?.conflicts ?? [],
+                        adoptionAccepted: model.projectAdoption?.accepted == true,
+                        action: performOnboardingAction,
+                        skip: skipProjectAdoption,
+                        replace: replaceProjectAdoption,
+                        dismissOutcome: model.clearAdoptionOutcome
                     )
                     .padding(.horizontal, WisentDesign.Space.x5)
                     .padding(.top, WisentDesign.Space.x4)
@@ -278,7 +284,12 @@ struct ProbierzRootView: View {
         case .preflight:
             PreflightView(model: model)
         case .workspace:
-            WorkspaceView(model: model, onboarding: onboarding, chooseWorkspace: chooseWorkspace)
+            WorkspaceView(
+                model: model,
+                onboarding: onboarding,
+                chooseWorkspace: chooseWorkspace,
+                adoptProject: chooseAdoptionSource
+            )
         }
     }
 
@@ -302,11 +313,48 @@ struct ProbierzRootView: View {
     private func performOnboardingAction() {
         Task {
             switch await onboarding.performPrimaryAction() {
+            case .adoptExistingProject:
+                if model.projectAdoption?.accepted == true {
+                    _ = await onboarding.completeOptionalProjectStep(imported: true)
+                } else {
+                    chooseAdoptionSource()
+                }
             case .showEvidenceBundles:
                 model.destination = .artifacts
                 model.selectFirstProtectedBundle()
             case .advanced, .unavailable:
                 break
+            }
+        }
+    }
+
+    private func skipProjectAdoption() {
+        model.clearAdoptionOutcome()
+        Task { _ = await onboarding.completeOptionalProjectStep(imported: false) }
+    }
+
+    private func replaceProjectAdoption() {
+        guard let path = model.projectAdoption?.sourceRoot else { return }
+        Task {
+            _ = await model.adoptProject(
+                from: URL(fileURLWithPath: path, isDirectory: true),
+                replace: true
+            )
+        }
+    }
+
+    private func chooseAdoptionSource() {
+        let panel = NSOpenPanel()
+        panel.title = "Choose an existing Probierz project"
+        panel.message = "Choose a Git repository containing apps/<appId>/probierz.yaml and established Probierz package spec directories. Nothing will run."
+        panel.prompt = "Adopt"
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = model.workspaceRoot
+        if panel.runModal() == .OK, let url = panel.url {
+            Task {
+                _ = await model.adoptProject(from: url)
             }
         }
     }

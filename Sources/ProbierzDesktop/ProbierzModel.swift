@@ -43,6 +43,10 @@ final class ProbierzModel: ObservableObject {
     @Published private(set) var isRefreshing = false
     @Published private(set) var errorMessage: String?
     @Published private(set) var repairOutcome: WisentMutationOutcome = .idle
+    @Published private(set) var adoptionOutcome: WisentMutationOutcome = .idle
+    @Published private(set) var projectAdoption: ProjectAdoptionResult?
+    @Published private(set) var projectAdoptions: ProjectAdoptionIndex?
+    @Published private(set) var isAdopting = false
 
     @Published var destination: ProbierzDestination = .posture
     @Published var query = ""
@@ -84,6 +88,7 @@ final class ProbierzModel: ObservableObject {
     private let scopeKey = "probierzDesktop.productScope"
     private var generation = 0
     private let commandClient = ProbierzCommandClient()
+    private let adoptionClient = ProjectAdoptionClient()
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -245,6 +250,52 @@ final class ProbierzModel: ObservableObject {
         repairOutcome = .idle
     }
 
+    @discardableResult
+    func adoptProject(from sourceRoot: URL, replace: Bool = false) async -> Bool {
+        guard !isAdopting else { return false }
+        guard let repositoryRoot = snapshot?.repositoryRoot else {
+            adoptionOutcome = .failed("Select a Probierz workspace before adopting definitions.")
+            return false
+        }
+        isAdopting = true
+        projectAdoption = nil
+        adoptionOutcome = .working("Validating the complete Probierz project before writing…")
+        defer { isAdopting = false }
+        do {
+            let result = try await adoptionClient.adopt(
+                repositoryRoot: repositoryRoot,
+                sourceRoot: sourceRoot,
+                replace: replace
+            )
+            projectAdoption = result
+            if result.accepted {
+                adoptionOutcome = .succeeded(result.summary)
+                projectAdoptions = try await adoptionClient.list(repositoryRoot: repositoryRoot)
+                await refresh()
+                return true
+            }
+            adoptionOutcome = .failed(result.summary)
+            return false
+        } catch {
+            adoptionOutcome = .failed(
+                (error as? LocalizedError)?.errorDescription ?? String(describing: error)
+            )
+            return false
+        }
+    }
+
+    func clearAdoptionOutcome() {
+        adoptionOutcome = .idle
+    }
+
+    func reloadProjectAdoptions() async {
+        guard let repositoryRoot = snapshot?.repositoryRoot else {
+            projectAdoptions = nil
+            return
+        }
+        projectAdoptions = try? await adoptionClient.list(repositoryRoot: repositoryRoot)
+    }
+
     /// The failures the operator has not resolved, newest first. Drives the
     /// alert panels on Posture, which quote each manifest's own sentence.
     var unresolvedFailures: [RunRecord] {
@@ -387,6 +438,7 @@ final class ProbierzModel: ObservableObject {
             self.productScope = nil
         }
         applyScope()
+        await reloadProjectAdoptions()
         errorMessage = nil
     }
 
@@ -400,6 +452,9 @@ final class ProbierzModel: ObservableObject {
         workspaceRoot = standardized
         snapshot = nil
         applyScope()
+        projectAdoption = nil
+        projectAdoptions = nil
+        adoptionOutcome = .idle
         failures = []
         failuresLoadedAt = nil
         selectedFailureID = nil

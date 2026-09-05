@@ -15,7 +15,7 @@ private struct ProbierzJourneyTransport: JourneyTransport {
 
     func readBundle(productId: String, journeyId: String) async throws -> JourneyBundle {
         let bundle = try await base.readBundle(productId: productId, journeyId: journeyId)
-        guard bundle.definition.journeyVersion == "2026-08-04.1",
+        guard bundle.definition.journeyVersion == "2026-09-03.2",
               bundle.definition.firstSuccessFact == "evidence_bundle_inspected"
         else {
             throw JourneyClientError.invalid("Probierz journey identity")
@@ -44,6 +44,7 @@ private struct ProbierzJourneyTransport: JourneyTransport {
 final class ProbierzOnboarding: ObservableObject {
     enum PrimaryActionResult {
         case advanced
+        case adoptExistingProject
         case showEvidenceBundles
         case unavailable
     }
@@ -121,6 +122,26 @@ final class ProbierzOnboarding: ObservableObject {
     }
 
     func performPrimaryAction() async -> PrimaryActionResult {
+        guard let screen else { return .unavailable }
+        if screen.screenId == "adopt-existing-project" {
+            return .adoptExistingProject
+        }
+        return await advanceCurrentScreen()
+    }
+
+    func completeOptionalProjectStep(imported: Bool) async -> Bool {
+        guard screen?.screenId == "adopt-existing-project" else { return false }
+        if case .advanced = await advanceCurrentScreen(
+            evidence: ["project_definitions_adopted": .boolean(imported)]
+        ) {
+            return true
+        }
+        return false
+    }
+
+    private func advanceCurrentScreen(
+        evidence: [String: JSONValue] = ["evidence_bundle_inspected": .boolean(false)]
+    ) async -> PrimaryActionResult {
         guard let client, let screen, status == .inProgress else { return .unavailable }
         if screen.transitions.isEmpty {
             return .showEvidenceBundles
@@ -130,7 +151,7 @@ final class ProbierzOnboarding: ObservableObject {
         defer { isWorking = false }
         do {
             guard try await client.advance(
-                evidence: ["evidence_bundle_inspected": .boolean(false)],
+                evidence: evidence,
                 evidenceRevision: Self.evidenceRevision
             ) != nil else { return .unavailable }
             await synchronize(using: client)
@@ -252,7 +273,7 @@ final class ProbierzOnboarding: ObservableObject {
     /// resolves an absolute `.build` path that exists only on the machine that
     /// compiled the binary and traps on everyone else's Mac.
     private static func fallbackBundle() -> JourneyBundle? {
-        guard let versionID = UUID(uuidString: "A1E81E86-368A-42C0-9BBA-C7E05D42AD24"),
+        guard let versionID = UUID(uuidString: "C8498F19-AD2A-4E7E-93F2-C173BE84256E"),
               let data = try? JourneyResource.definitionData(
                   resource: resourceName,
                   bundleName: resourceBundleName
@@ -270,49 +291,88 @@ final class ProbierzOnboarding: ObservableObject {
 struct ProbierzOnboardingCard: View {
     let screen: JourneyScreen
     let isWorking: Bool
+    let adoptionOutcome: WisentMutationOutcome
+    let conflicts: [ProjectAdoptionConflict]
+    let adoptionAccepted: Bool
     let action: () -> Void
+    let skip: () -> Void
+    let replace: () -> Void
+    let dismissOutcome: () -> Void
 
     var body: some View {
         WisentPanel {
-            HStack(alignment: .top, spacing: WisentDesign.Space.x4) {
-                Image(systemName: symbol)
-                    .font(.system(size: WisentDesign.Space.x5, weight: .semibold))
-                    .foregroundStyle(WisentDesign.brand)
-                    .frame(width: WisentDesign.Space.x10, height: WisentDesign.Space.x10)
-                    .background(
-                        WisentDesign.brandSoft,
-                        in: RoundedRectangle(cornerRadius: WisentDesign.Radius.medium)
-                    )
-                VStack(alignment: .leading, spacing: WisentDesign.Space.x2) {
-                    WisentBadge("Getting started", symbol: "sparkles", tone: .brand)
-                    Text(title)
-                        .font(WisentTypography.heading(18))
-                        .foregroundStyle(WisentDesign.ink)
-                    Text(bodyText)
-                        .font(WisentTypography.body(13))
-                        .foregroundStyle(WisentDesign.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: WisentDesign.Space.x3) {
+                HStack(alignment: .top, spacing: WisentDesign.Space.x4) {
+                    Image(systemName: symbol)
+                        .font(.system(size: WisentDesign.Space.x5, weight: .semibold))
+                        .foregroundStyle(WisentDesign.brand)
+                        .frame(width: WisentDesign.Space.x10, height: WisentDesign.Space.x10)
+                        .background(
+                            WisentDesign.brandSoft,
+                            in: RoundedRectangle(cornerRadius: WisentDesign.Radius.medium)
+                        )
+                    VStack(alignment: .leading, spacing: WisentDesign.Space.x2) {
+                        WisentBadge("Getting started", symbol: "sparkles", tone: .brand)
+                        Text(title)
+                            .font(WisentTypography.heading(18))
+                            .foregroundStyle(WisentDesign.ink)
+                        Text(bodyText)
+                            .font(WisentTypography.body(13))
+                            .foregroundStyle(WisentDesign.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .layoutPriority(1)
+                    Spacer(minLength: WisentDesign.Space.x4)
+                    if isProjectImport {
+                        VStack(alignment: .trailing, spacing: WisentDesign.Space.x2) {
+                            Button(actionLabel, action: action)
+                                .buttonStyle(WisentPrimaryButtonStyle())
+                                .disabled(isWorking)
+                            if !adoptionAccepted {
+                                Button("Skip", action: skip)
+                                    .buttonStyle(WisentSecondaryButtonStyle())
+                                    .disabled(isWorking)
+                            }
+                        }
+                    } else {
+                        Button(actionLabel, action: action)
+                            .buttonStyle(WisentPrimaryButtonStyle())
+                            .disabled(isWorking)
+                    }
                 }
-                .layoutPriority(1)
-                Spacer(minLength: WisentDesign.Space.x4)
-                Button(action: action) {
-                    // The button keeps its words while the step is in flight;
-                    // they are dimmed rather than swapped for a spinning
-                    // circle, so the control never changes size and keeps its
-                    // accessible name.
-                    Text(actionLabel)
-                        .opacity(isWorking ? 0.35 : 1)
+                if isProjectImport, adoptionOutcome != .idle {
+                    WisentMutationBar(outcome: adoptionOutcome) { dismissOutcome() }
                 }
-                .buttonStyle(WisentPrimaryButtonStyle())
-                .disabled(isWorking)
+                if isProjectImport, !conflicts.isEmpty {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: WisentDesign.Space.x1) {
+                            ForEach(conflicts) { conflict in
+                                Text("\(conflict.path) — \(conflict.reason)")
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundStyle(WisentDesign.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                    }
+                    .frame(maxHeight: 112)
+                    Button("Replace these reviewed definitions", action: replace)
+                        .buttonStyle(WisentSecondaryButtonStyle())
+                        .disabled(isWorking)
+                }
             }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Probierz first-use journey")
     }
 
+    private var isProjectImport: Bool {
+        screen.screenId == "adopt-existing-project"
+    }
+
     private var title: String {
         switch screen.titleKey {
+        case "probierz.first_use.adopt.title":
+            "Bring your existing project"
         case "probierz.first_use.read_only.title":
             "Review a run"
         case "probierz.first_use.provenance.title":
@@ -326,6 +386,8 @@ struct ProbierzOnboardingCard: View {
 
     private var bodyText: String {
         switch screen.bodyKey {
+        case "probierz.first_use.adopt.body":
+            "Adopt validated application manifests and specs without running them. Existing files stay unchanged unless you review conflicts and explicitly replace them."
         case "probierz.first_use.read_only.body":
             "See what happened and retry a failed run."
         case "probierz.first_use.provenance.body":
@@ -340,11 +402,13 @@ struct ProbierzOnboardingCard: View {
     }
 
     private var actionLabel: String {
-        screen.transitions.isEmpty ? "Show results" : "Continue"
+        if isProjectImport { return adoptionAccepted ? "Continue" : "Choose project" }
+        return screen.transitions.isEmpty ? "Show results" : "Continue"
     }
 
     private var symbol: String {
         switch screen.titleKey {
+        case "probierz.first_use.adopt.title": "square.and.arrow.down"
         case "probierz.first_use.read_only.title": "lock.open.display"
         case "probierz.first_use.provenance.title": "point.3.connected.trianglepath.dotted"
         default: "doc.text.magnifyingglass"

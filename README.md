@@ -66,11 +66,13 @@ Probierz Desktop serves:
   metadata;
 - stable Apple Development-signed local app-bundle script.
 - one-click repair dispatch for failed runs through the canonical Probierz CLI;
+- first-use and Workspace actions that adopt validated definitions from an
+  existing Probierz repository through Probierz core's loopback API;
 
 ### Explicit non-goals and limitations
 
 - Probierz Desktop does not execute tests, specs, journeys, probes, or device
-  actions itself; it delegates repairs to Probierz core.
+  actions itself. Repairs and project adoption go through Probierz core.
 - It does not author or approve a quality policy or return a gate verdict.
 - It does not open, decrypt, render, upload, delete, or verify artifact bytes.
 - `hasSHA256` means the manifest contains a non-empty hash field; the viewer does
@@ -83,7 +85,9 @@ Probierz Desktop serves:
   Older or external evidence can be omitted, with truncation surfaced in the UI.
 - Configuration display reports whether named environment variables are present,
   not whether their values are correct, safe, reachable, or authorized.
-- The app does not connect to a hosted Probierz control plane or retain evidence.
+- The only local control plane is the loopback Probierz process the app starts
+  for project adoption. It binds `127.0.0.1` on an ephemeral port and is not a
+  hosted service.
 
 ### Supported environment and current capability
 
@@ -177,6 +181,30 @@ Expected result: the app opens the Wisent authentication gate and, after sign-in
 shows the selected local workspace's Probierz metadata. If no valid workspace is
 found, choose one in the UI.
 
+### Start with an existing Probierz project
+
+On the first walkthrough screen, choose **Choose project** and select another
+Git repository containing Probierz definitions. **Skip** leaves the current
+workspace empty and usable. The same operation remains available under
+**Workspace → Adopt existing project**, and the screen lists every durable
+source identity after a successful adoption.
+
+The source must contain validated `apps/<appId>/probierz.yaml` manifests and
+their referenced files in the established
+`packages/<surface>/test/specs`, `tests`, or `specs` directories. The desktop
+client sends the selected path to Probierz's loopback API; core validates the
+entire selection and then persists it. No journey, spec, browser, simulator, or
+device starts during adoption.
+
+An identical source is reported as unchanged. Existing differing files produce
+an explicit, scrollable conflict list and no writes. **Replace these reviewed
+definitions** performs the same operation with explicit replacement; unmanaged
+files and unchanged same-source definitions can be replaced, while paths owned
+by another adopted source and locally changed content or file modes remain
+refused, including definitions removed upstream. The source path, content
+digest, applications, and file digests and modes remain in
+`apps/.adoptions.json`.
+
 Build a stable development-signed app bundle:
 
 ```bash
@@ -205,6 +233,15 @@ A valid workspace contains regular, non-symlink files at:
 
 - `probierz/package.json`;
 - `probierz/agent/history.mjs`.
+
+### Project adoption API
+
+Probierz Desktop starts `node agent/cli.mjs serve --port 0` for the selected
+Probierz repository and reads its one-time loopback address. It uses
+`POST /v1/project-adoptions` for adoption and
+`GET /v1/project-adoptions` for retained source identities. Both the GUI and
+`probierz project adopt` therefore call the same core transaction rather than
+maintaining separate parsers or copying files in Swift.
 
 ### Contract inventory
 

@@ -2,12 +2,34 @@
   "schema_version": 1,
   "product_id": "probierz-desktop",
   "journey_id": "first-use",
-  "journey_version": "2026-08-04.1",
-  "entry_screen_id": "read-only-semantics",
+  "journey_version": "2026-09-03.2",
+  "entry_screen_id": "adopt-existing-project",
   "first_success_fact": "evidence_bundle_inspected",
-  "published_at": "2026-08-04T00:00:00Z",
-  "source_revision": "probierz-desktop-onboarding-2026-08-04.1",
+  "published_at": "2026-09-03T00:00:00Z",
+  "source_revision": "probierz-desktop-onboarding-2026-09-03.2",
   "screens": [
+    {
+      "screen_id": "adopt-existing-project",
+      "screen_kind": "import",
+      "title_key": "probierz.first_use.adopt.title",
+      "body_key": "probierz.first_use.adopt.body",
+      "required": false,
+      "actions": [
+        "import",
+        "skip"
+      ],
+      "transitions": [
+        {
+          "next_screen_id": "read-only-semantics",
+          "reason_code": "project_adopted_or_skipped",
+          "priority": 0
+        }
+      ],
+      "presentation": {
+        "title": "Bring your existing Probierz project",
+        "body": "Choose another Probierz repository to adopt its validated app manifests and established spec directories. Definitions are persisted but never run. Skip keeps this project empty and usable."
+      }
+    },
     {
       "screen_id": "read-only-semantics",
       "screen_kind": "explanation",
