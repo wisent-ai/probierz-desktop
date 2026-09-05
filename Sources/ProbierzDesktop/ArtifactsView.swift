@@ -23,7 +23,8 @@ struct ArtifactsView: View {
                     "Refresh",
                     symbol: "arrow.clockwise",
                     kind: .secondary,
-                    isEnabled: !model.isRefreshing && model.workspaceRoot != nil
+                    isEnabled: model.workspaceRoot != nil,
+                    isBusy: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
                 }
@@ -175,8 +176,9 @@ struct ArtifactsView: View {
             }
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Loading artifacts",
-                readingDetail: "Checking recorded evidence."
+                readingLabel: "Loading artifacts",
+                // Five columns and a header, like the inventory table below.
+                readingShape: .table(columns: 5)
             ) {
                 if model.artifacts.isEmpty {
                     WisentEmptyPanel(

@@ -21,7 +21,8 @@ struct SurfacesView: View {
                     "Refresh",
                     symbol: "arrow.clockwise",
                     kind: .secondary,
-                    isEnabled: !model.isRefreshing && model.workspaceRoot != nil
+                    isEnabled: model.workspaceRoot != nil,
+                    isBusy: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
                 }
@@ -44,8 +45,9 @@ struct SurfacesView: View {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Loading surfaces",
-                readingDetail: "Checking available specs."
+                readingLabel: "Loading surfaces",
+                // Six columns and a header, like the surfaces table below.
+                readingShape: .table(columns: 6)
             ) {
                 let missing = surfaces.filter { !$0.isPackagePresent }
                 if !missing.isEmpty {
@@ -203,7 +205,8 @@ struct JourneysView: View {
                     "Refresh",
                     symbol: "arrow.clockwise",
                     kind: .secondary,
-                    isEnabled: !model.isRefreshing && model.workspaceRoot != nil
+                    isEnabled: model.workspaceRoot != nil,
+                    isBusy: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
                 }
@@ -258,8 +261,9 @@ struct JourneysView: View {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Loading journeys",
-                readingDetail: "Combining declared journeys with recorded runs."
+                readingLabel: "Loading journeys",
+                // Six columns and a header, like the journeys table below.
+                readingShape: .table(columns: 6)
             ) {
                 if model.journeys.isEmpty {
                     WisentEmptyPanel(

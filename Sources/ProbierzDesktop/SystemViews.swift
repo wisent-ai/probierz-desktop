@@ -22,7 +22,8 @@ struct PreflightView: View {
                     "Refresh",
                     symbol: "arrow.clockwise",
                     kind: .secondary,
-                    isEnabled: !model.isRefreshing && model.workspaceRoot != nil
+                    isEnabled: model.workspaceRoot != nil,
+                    isBusy: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
                 }
@@ -30,8 +31,10 @@ struct PreflightView: View {
         ) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Loading preflight results",
-                readingDetail: "Checking recorded readiness and suggested fixes."
+                readingLabel: "Loading preflight results",
+                // Preflight lands on panels and recorded checks: prose, not a
+                // table of its own.
+                readingShape: .prose(lines: 4)
             ) {
                 blockedPanels
                 readySignals
@@ -203,7 +206,8 @@ struct WorkspaceView: View {
                     "Refresh",
                     symbol: "arrow.clockwise",
                     kind: .primary,
-                    isEnabled: !model.isRefreshing && model.workspaceRoot != nil
+                    isEnabled: model.workspaceRoot != nil,
+                    isBusy: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
                 },
@@ -211,8 +215,10 @@ struct WorkspaceView: View {
         ) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Loading workspace",
-                readingDetail: "Checking runs, journeys, artifacts, and system state.",
+                readingLabel: "Loading workspace",
+                // The inventory counter row lands first: four counters, each
+                // with a caption under its value.
+                readingShape: .metrics(cells: 4, detail: true),
                 chooseWorkspace: chooseWorkspace
             ) {
                 if model.snapshot?.manifestsTruncated == true {
@@ -362,9 +368,10 @@ struct WorkspaceView: View {
         ) {
             WisentPanel {
                 VStack(alignment: .leading, spacing: WisentDesign.Space.x3) {
-                    Button("Show it again") { showWalkthroughAgain() }
-                        .buttonStyle(WisentSecondaryButtonStyle())
-                        .disabled(isReplaying)
+                    WisentAction("Show it again", kind: .secondary, isBusy: isReplaying) {
+                        showWalkthroughAgain()
+                    }
+                    .asButton()
                     if walkthrough != .idle {
                         WisentMutationBar(outcome: walkthrough) { walkthrough = .idle }
                     }

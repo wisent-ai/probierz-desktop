@@ -325,9 +325,8 @@ struct ProbierzOnboardingCard: View {
                     Spacer(minLength: WisentDesign.Space.x4)
                     if isProjectImport {
                         VStack(alignment: .trailing, spacing: WisentDesign.Space.x2) {
-                            Button(actionLabel, action: action)
-                                .buttonStyle(WisentPrimaryButtonStyle())
-                                .disabled(isWorking)
+                            WisentAction(actionLabel, kind: .primary, isBusy: isWorking, perform: action)
+                                .asButton()
                             if !adoptionAccepted {
                                 Button("Skip", action: skip)
                                     .buttonStyle(WisentSecondaryButtonStyle())
@@ -335,9 +334,8 @@ struct ProbierzOnboardingCard: View {
                             }
                         }
                     } else {
-                        Button(actionLabel, action: action)
-                            .buttonStyle(WisentPrimaryButtonStyle())
-                            .disabled(isWorking)
+                        WisentAction(actionLabel, kind: .primary, isBusy: isWorking, perform: action)
+                            .asButton()
                     }
                 }
                 if isProjectImport, adoptionOutcome != .idle {
