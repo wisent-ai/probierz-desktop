@@ -258,29 +258,6 @@ struct ProbierzRootView: View {
         .background { WisentCanvasBackground() }
     }
 
-    @ViewBuilder
-    private var destinationView: some View {
-        switch model.destination {
-        case .posture:
-            PostureView(model: model, chooseWorkspace: chooseWorkspace)
-        case .runs:
-            RunsView(model: model)
-        case .failures:
-            FailuresView(model: model)
-        case .artifacts:
-            ArtifactsView(model: model, onboarding: onboarding)
-        case .verdicts:
-            VerdictsView(model: model)
-        case .surfaces:
-            SurfacesView(model: model)
-        case .journeys:
-            JourneysView(model: model)
-        case .preflight:
-            PreflightView(model: model)
-        case .workspace:
-            WorkspaceView(model: model, onboarding: onboarding, chooseWorkspace: chooseWorkspace)
-        }
-    }
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
@@ -308,19 +285,6 @@ struct ProbierzRootView: View {
             case .advanced, .unavailable:
                 break
             }
-        }
-    }
-
-    private func chooseWorkspace() {
-        let panel = NSOpenPanel()
-        panel.title = "Choose a workspace"
-        panel.prompt = "Choose"
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.directoryURL = model.workspaceRoot
-        if panel.runModal() == .OK, let url = panel.url {
-            model.selectWorkspace(url)
         }
     }
 }
