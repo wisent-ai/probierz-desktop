@@ -24,7 +24,8 @@ struct RunsView: View {
                     "Refresh",
                     symbol: "arrow.clockwise",
                     kind: .secondary,
-                    isEnabled: !model.isRefreshing && model.workspaceRoot != nil
+                    isEnabled: model.workspaceRoot != nil,
+                    isBusy: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
                 }
@@ -132,8 +133,9 @@ struct RunsView: View {
             }
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Loading runs",
-                readingDetail: "Checking up to \(MetadataLoader.maximumManifests.formatted(.number)) recent runs."
+                readingLabel: "Loading runs",
+                // The runs table's own five columns and header row.
+                readingShape: .table(columns: 5)
             ) {
                 if model.runs.isEmpty {
                     WisentEmptyPanel(
@@ -282,7 +284,7 @@ struct RunsView: View {
                 "Repair Run",
                 symbol: "wrench.and.screwdriver",
                 kind: .primary,
-                isEnabled: !model.repairOutcome.isWorking
+                isBusy: model.repairOutcome.isWorking
             ) {
                 model.repair(run)
             }

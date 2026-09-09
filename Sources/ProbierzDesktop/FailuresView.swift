@@ -273,10 +273,9 @@ struct FailuresView: View {
                 )
                 Spacer(minLength: 0)
             } else if model.failures.isEmpty, model.failuresLoadedAt == nil {
-                WisentLoadingPanel(
-                    title: "Loading reported failures",
-                    detail: "Checking recent reports."
-                )
+                // The reported failures land in the five-column table below,
+                // header included, so the read is drawn as that table.
+                WisentSkeletonTable(rows: 6, columns: 5, header: true, label: "Loading reported failures")
                 Spacer(minLength: 0)
             } else if model.failures.isEmpty {
                 WisentEmptyPanel(

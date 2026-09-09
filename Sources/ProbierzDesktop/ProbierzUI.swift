@@ -181,13 +181,65 @@ extension View {
     }
 }
 
+/// The geometry a screen's read lands in.
+///
+/// A skeleton is only honest when it has the shape of the content that
+/// replaces it, and the gate below is shared by seven screens that land on
+/// four different shapes. One shape for all of them would be the same lie a
+/// "Loading…" panel tells, so the screen declares its own and the gate draws
+/// it.
+enum ProbierzReadShape {
+    /// A table, with the column count and header row the real table has.
+    case table(columns: Int, rows: Int = 6, header: Bool = true)
+    /// Rows that become records; `media` only where the real row opens with a
+    /// circular glyph.
+    case list(rows: Int = 3, lines: Int = 2, media: Bool = false)
+    /// Headings, fields and prose.
+    case prose(lines: Int = 3)
+    /// A divided metric strip: one cell per signal or counter, `detail` when
+    /// the real cell carries a caption line under its value.
+    case metrics(cells: Int, detail: Bool = false)
+
+    /// The composites label themselves, so the whole region announces itself
+    /// once and the bars inside it stay hidden from assistive technology.
+    ///
+    /// Main-actor isolated because the skeleton views are, and this is only
+    /// ever called from a `body`.
+    @MainActor
+    @ViewBuilder
+    func skeleton(label: String) -> some View {
+        switch self {
+        case let .table(columns, rows, header):
+            WisentSkeletonTable(rows: rows, columns: columns, header: header, label: label)
+        case let .list(rows, lines, media):
+            WisentSkeletonList(rows: rows, lines: lines, media: media, label: label)
+        case let .prose(lines):
+            WisentSkeletonText(lines: lines, label: label)
+        case let .metrics(cells, detail):
+            WisentSkeletonGroup(label: label, spacing: WisentDesign.Space.x3) {
+                HStack(alignment: .top, spacing: WisentDesign.Space.x5) {
+                    ForEach(0 ..< cells, id: \.self) { _ in
+                        VStack(alignment: .leading, spacing: WisentDesign.Space.x2) {
+                            WisentSkeleton(.line, width: 52)
+                            WisentSkeleton(.heading)
+                            if detail {
+                                WisentSkeleton(.line, width: 68)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Loading, no-workspace and ready are three different states, and the loading
-/// one names the directory it is reading and draws a skeleton of the rows it is
-/// about to render, instead of showing a bare spinner.
+/// one draws a skeleton of the content it is about to render — in that screen's
+/// own shape — instead of showing a bare spinner or naming itself in prose.
 struct ProbierzSnapshotGate<Content: View>: View {
     @ObservedObject var model: ProbierzModel
-    let readingTitle: String
-    let readingDetail: String
+    let readingLabel: String
+    let readingShape: ProbierzReadShape
     var chooseWorkspace: (() -> Void)?
     @ViewBuilder var content: () -> Content
 
@@ -195,7 +247,7 @@ struct ProbierzSnapshotGate<Content: View>: View {
         if model.snapshot != nil {
             content()
         } else if model.isRefreshing {
-            WisentLoadingPanel(title: readingTitle, detail: readingDetail)
+            readingShape.skeleton(label: readingLabel)
             Spacer(minLength: 0)
         } else {
             WisentEmptyPanel(

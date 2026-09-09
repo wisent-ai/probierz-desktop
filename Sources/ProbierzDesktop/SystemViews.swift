@@ -22,7 +22,8 @@ struct PreflightView: View {
                     "Refresh",
                     symbol: "arrow.clockwise",
                     kind: .secondary,
-                    isEnabled: !model.isRefreshing && model.workspaceRoot != nil
+                    isEnabled: model.workspaceRoot != nil,
+                    isBusy: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
                 }
@@ -30,8 +31,10 @@ struct PreflightView: View {
         ) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Loading preflight results",
-                readingDetail: "Checking recorded readiness and suggested fixes."
+                readingLabel: "Loading preflight results",
+                // Preflight lands on panels and recorded checks: prose, not a
+                // table of its own.
+                readingShape: .prose(lines: 4)
             ) {
                 blockedPanels
                 readySignals
@@ -188,6 +191,7 @@ struct WorkspaceView: View {
     @ObservedObject var model: ProbierzModel
     @ObservedObject var onboarding: ProbierzOnboarding
     let chooseWorkspace: () -> Void
+    let adoptProject: () -> Void
 
     @State private var walkthrough: WisentMutationOutcome = .idle
 
@@ -202,7 +206,8 @@ struct WorkspaceView: View {
                     "Refresh",
                     symbol: "arrow.clockwise",
                     kind: .primary,
-                    isEnabled: !model.isRefreshing && model.workspaceRoot != nil
+                    isEnabled: model.workspaceRoot != nil,
+                    isBusy: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
                 },
@@ -210,8 +215,10 @@ struct WorkspaceView: View {
         ) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Loading workspace",
-                readingDetail: "Checking runs, journeys, artifacts, and system state.",
+                readingLabel: "Loading workspace",
+                // The inventory counter row lands first: four counters, each
+                // with a caption under its value.
+                readingShape: .metrics(cells: 4, detail: true),
                 chooseWorkspace: chooseWorkspace
             ) {
                 if model.snapshot?.manifestsTruncated == true {
@@ -228,6 +235,7 @@ struct WorkspaceView: View {
                 }
                 inventory
                 identity
+                projectAdoption
                 firstRunWalkthrough
             }
         }
@@ -287,6 +295,69 @@ struct WorkspaceView: View {
         }
     }
 
+    private var projectAdoption: some View {
+        WisentSectionBox(
+            title: "Adopt existing project",
+            detail: "Import validated app manifests and established spec directories. Adoption never runs a journey.",
+            trailing: "\(model.projectAdoptions?.sources.count ?? 0) source(s)"
+        ) {
+            WisentPanel {
+                VStack(alignment: .leading, spacing: WisentDesign.Space.x3) {
+                    Button("Choose Probierz project", action: adoptProject)
+                        .buttonStyle(WisentPrimaryButtonStyle())
+                        .disabled(model.isAdopting)
+                    if model.adoptionOutcome != .idle {
+                        WisentMutationBar(outcome: model.adoptionOutcome) {
+                            model.clearAdoptionOutcome()
+                        }
+                    }
+                    if let result = model.projectAdoption, !result.conflicts.isEmpty {
+                        VStack(alignment: .leading, spacing: WisentDesign.Space.x2) {
+                            Text("No definitions changed. Review every conflict:")
+                                .font(WisentTypography.bodyMedium(12))
+                                .foregroundStyle(WisentDesign.ink)
+                            ForEach(result.conflicts) { conflict in
+                                Text("\(conflict.path) — \(conflict.reason)")
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundStyle(WisentDesign.secondary)
+                                    .textSelection(.enabled)
+                            }
+                            Button("Replace these reviewed definitions") {
+                                Task {
+                                    _ = await model.adoptProject(
+                                        from: URL(fileURLWithPath: result.sourceRoot, isDirectory: true),
+                                        replace: true
+                                    )
+                                }
+                            }
+                            .buttonStyle(WisentSecondaryButtonStyle())
+                            .disabled(model.isAdopting)
+                        }
+                    }
+                    Divider()
+                    if let sources = model.projectAdoptions?.sources, !sources.isEmpty {
+                        ForEach(sources) { source in
+                            VStack(alignment: .leading, spacing: WisentDesign.Space.x1) {
+                                Text(source.sourceRoot)
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundStyle(WisentDesign.ink)
+                                    .textSelection(.enabled)
+                                Text("\(source.fileCount) definitions · \(source.applications.count) applications · SHA-256 \(source.sourceDigest.prefix(12))…")
+                                    .font(WisentTypography.body(11))
+                                    .foregroundStyle(WisentDesign.secondary)
+                            }
+                        }
+                    } else {
+                        Text("No existing project has been adopted. Skipping leaves this workspace empty and usable.")
+                            .font(WisentTypography.body(12))
+                            .foregroundStyle(WisentDesign.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
     /// The one control on this screen that writes something instead of
     /// reporting something, so it sits last, under the facts it does not
     /// change.
@@ -297,9 +368,10 @@ struct WorkspaceView: View {
         ) {
             WisentPanel {
                 VStack(alignment: .leading, spacing: WisentDesign.Space.x3) {
-                    Button("Show it again") { showWalkthroughAgain() }
-                        .buttonStyle(WisentSecondaryButtonStyle())
-                        .disabled(isReplaying)
+                    WisentAction("Show it again", kind: .secondary, isBusy: isReplaying) {
+                        showWalkthroughAgain()
+                    }
+                    .asButton()
                     if walkthrough != .idle {
                         WisentMutationBar(outcome: walkthrough) { walkthrough = .idle }
                     }

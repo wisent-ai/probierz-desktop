@@ -241,8 +241,14 @@ struct ProbierzRootView: View {
                 if let screen = onboarding.screen {
                     ProbierzOnboardingCard(
                         screen: screen,
-                        isWorking: onboarding.isWorking,
-                        action: performOnboardingAction
+                        isWorking: onboarding.isWorking || model.isAdopting,
+                        adoptionOutcome: model.adoptionOutcome,
+                        conflicts: model.projectAdoption?.conflicts ?? [],
+                        adoptionAccepted: model.projectAdoption?.accepted == true,
+                        action: performOnboardingAction,
+                        skip: skipProjectAdoption,
+                        replace: replaceProjectAdoption,
+                        dismissOutcome: model.clearAdoptionOutcome
                     )
                     .padding(.horizontal, WisentDesign.Space.x5)
                     .padding(.top, WisentDesign.Space.x4)
@@ -259,6 +265,7 @@ struct ProbierzRootView: View {
     }
 
 
+
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
@@ -270,7 +277,10 @@ struct ProbierzRootView: View {
             .disabled(model.isRefreshing || model.workspaceRoot == nil)
             .keyboardShortcut("r", modifiers: .command)
             .help("Refresh runs, journeys, artifacts, and system state")
-            .accessibilityLabel(model.isRefreshing ? "Refreshing Probierz" : "Refresh Probierz")
+            // The resting word stays while the refresh runs: a name that turns
+            // into "Refreshing Probierz" is gone at the one moment a screen
+            // reader is asked what this control is.
+            .accessibilityLabel("Refresh Probierz")
         }
     }
 
@@ -279,12 +289,33 @@ struct ProbierzRootView: View {
     private func performOnboardingAction() {
         Task {
             switch await onboarding.performPrimaryAction() {
+            case .adoptExistingProject:
+                if model.projectAdoption?.accepted == true {
+                    _ = await onboarding.completeOptionalProjectStep(imported: true)
+                } else {
+                    chooseAdoptionSource()
+                }
             case .showEvidenceBundles:
                 model.destination = .artifacts
                 model.selectFirstProtectedBundle()
             case .advanced, .unavailable:
                 break
             }
+        }
+    }
+
+    private func skipProjectAdoption() {
+        model.clearAdoptionOutcome()
+        Task { _ = await onboarding.completeOptionalProjectStep(imported: false) }
+    }
+
+    private func replaceProjectAdoption() {
+        guard let path = model.projectAdoption?.sourceRoot else { return }
+        Task {
+            _ = await model.adoptProject(
+                from: URL(fileURLWithPath: path, isDirectory: true),
+                replace: true
+            )
         }
     }
 }

@@ -23,7 +23,8 @@ struct VerdictsView: View {
                     "Refresh",
                     symbol: "arrow.clockwise",
                     kind: .secondary,
-                    isEnabled: !model.isRefreshing && model.workspaceRoot != nil
+                    isEnabled: model.workspaceRoot != nil,
+                    isBusy: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
                 }
@@ -75,8 +76,9 @@ struct VerdictsView: View {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
             ProbierzSnapshotGate(
                 model: model,
-                readingTitle: "Loading merge eligibility",
-                readingDetail: "Checking each journey against its latest run."
+                readingLabel: "Loading merge eligibility",
+                // Six columns and a header, like the verdicts table below.
+                readingShape: .table(columns: 6)
             ) {
                 if model.verdicts.isEmpty {
                     WisentEmptyPanel(

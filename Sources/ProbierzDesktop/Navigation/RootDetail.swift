@@ -25,7 +25,12 @@ extension ProbierzRootView {
         case .preflight:
             PreflightView(model: model)
         case .workspace:
-            WorkspaceView(model: model, onboarding: onboarding, chooseWorkspace: chooseWorkspace)
+            WorkspaceView(
+                model: model,
+                onboarding: onboarding,
+                chooseWorkspace: chooseWorkspace,
+                adoptProject: chooseAdoptionSource
+            )
         }
     }
 
@@ -41,6 +46,24 @@ extension ProbierzRootView {
         panel.directoryURL = model.workspaceRoot
         if panel.runModal() == .OK, let url = panel.url {
             model.selectWorkspace(url)
+        }
+    }
+
+    /// The picker that adopts an existing Probierz project. It sits beside the
+    /// screen that offers it, for the same reason the workspace picker does.
+    func chooseAdoptionSource() {
+        let panel = NSOpenPanel()
+        panel.title = "Choose an existing Probierz project"
+        panel.message = "Choose a Git repository containing apps/<appId>/probierz.yaml and established Probierz package spec directories. Nothing will run."
+        panel.prompt = "Adopt"
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = model.workspaceRoot
+        if panel.runModal() == .OK, let url = panel.url {
+            Task {
+                _ = await model.adoptProject(from: url)
+            }
         }
     }
 }
