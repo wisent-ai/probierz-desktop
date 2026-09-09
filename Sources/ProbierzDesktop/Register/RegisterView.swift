@@ -13,6 +13,9 @@ struct RegisterView: View {
     @ObservedObject var model: ProbierzModel
     @StateObject private var store = RegisterStore()
     @State private var note = ""
+    @State private var runID = ""
+    @State private var recording = false
+    private var root: URL? { model.snapshot?.repositoryRoot }
 
     var body: some View {
         WisentScreen(
@@ -20,6 +23,9 @@ struct RegisterView: View {
             scope: model.scopeLabel,
             freshness: store.freshnessLabel,
             actions: [
+                WisentAction("Record incident", symbol: "plus", kind: .primary, isEnabled: root != nil) {
+                    recording = true
+                },
                 WisentAction(
                     "Refresh",
                     symbol: "arrow.clockwise",
@@ -45,11 +51,22 @@ struct RegisterView: View {
         }
         .onAppear { reload() }
         .onChange(of: model.workspaceRoot) { reload() }
+        .onChange(of: store.stateFilter) { reload() }
+        .onChange(of: store.selectedID) {
+            note = ""
+            runID = ""
+            if let root, let id = store.selectedID {
+                Task { await store.show(workspaceRoot: root, id: id) }
+            }
+        }
+        .sheet(isPresented: $recording) {
+            if let root { RecordIncidentSheet(store: store, root: root) }
+        }
     }
 
     private func reload() {
-        guard let root = model.workspaceRoot else { return }
-        store.load(workspaceRoot: root)
+        guard let root else { return }
+        Task { await store.load(workspaceRoot: root) }
     }
 
     // MARK: - Facets
@@ -183,17 +200,29 @@ struct RegisterView: View {
 
     @ViewBuilder
     private var inspector: some View {
-        VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
-            if let entry = store.selected {
-                selectedEntry(entry)
-            } else {
-                Text("Select an entry to read the claim, the failure it carried, and what closed it.")
-                    .font(WisentTypeScale.body())
-                    .foregroundStyle(WisentDesign.secondary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
+                TextField("Maximum entries", value: $store.limit, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                Button("Apply limit") { reload() }
+                if let entry = store.selected {
+                    selectedEntry(entry)
+                } else {
+                    Text("Select an entry to read the claim, failure, and resolution.")
+                        .font(WisentTypeScale.body())
+                        .foregroundStyle(WisentDesign.secondary)
+                }
+                if let problem = store.problem {
+                    Text(problem).foregroundStyle(WisentDesign.danger).textSelection(.enabled)
+                }
+                if let detail = store.detail {
+                    section("Full entry") {
+                        Text(detail).font(.system(.body, design: .monospaced)).textSelection(.enabled)
+                    }
+                }
             }
-            Spacer(minLength: 0)
+            .padding(WisentDesign.Space.x5)
         }
-        .padding(WisentDesign.Space.x5)
         .frame(width: 340, alignment: .topLeading)
     }
 
@@ -226,6 +255,7 @@ struct RegisterView: View {
             section("Resolved") {
                 row("at", resolution.resolvedAt)
                 row("by", resolution.actor)
+                if let run = resolution.runID { row("run", run) }
                 Text(resolution.note)
                     .font(WisentTypeScale.body())
                     .foregroundStyle(WisentDesign.ink)
@@ -250,6 +280,8 @@ struct RegisterView: View {
             TextField("What repaired it", text: $note)
                 .textFieldStyle(.roundedBorder)
                 .accessibilityLabel("What repaired this incident")
+            TextField("Verification run ID (optional)", text: $runID)
+                .textFieldStyle(.roundedBorder)
             Button("Resolve") {
                 resolve(entry)
             }
@@ -281,10 +313,11 @@ struct RegisterView: View {
     }
 
     private func resolve(_ entry: RegisterEntry) {
-        guard let root = model.workspaceRoot else { return }
+        guard let root else { return }
         let submitted = note
+        let verificationRun = runID
         Task {
-            await store.resolve(workspaceRoot: root, id: entry.id, note: submitted)
+            await store.resolve(workspaceRoot: root, id: entry.id, note: submitted, runID: verificationRun)
             if store.problem == nil {
                 note = ""
             }

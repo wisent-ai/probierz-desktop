@@ -65,7 +65,7 @@ actor ProjectAdoptionClient {
         var errorDescription: String? {
             switch self {
             case .missingCLI:
-                "The selected workspace does not contain the Probierz adoption service."
+                "The selected workspace does not contain an executable Probierz service."
             case .launch(let detail):
                 "Probierz could not start its local service: \(detail)"
             case .invalidReadyLine:
@@ -73,7 +73,7 @@ actor ProjectAdoptionClient {
             case .service(let detail):
                 detail
             case .invalidResponse:
-                "Probierz returned an invalid project-adoption response."
+                "Probierz returned an invalid service response."
             }
         }
     }
@@ -129,6 +129,15 @@ actor ProjectAdoptionClient {
         method: String,
         body: Body?
     ) async throws -> Data {
+        try await request(
+            repositoryRoot: repositoryRoot, path: path, method: method,
+            body: try body.map { try JSONEncoder().encode($0) }
+        )
+    }
+
+    func request(
+        repositoryRoot: URL, path: String, method: String, body: Data?
+    ) async throws -> Data {
         let baseURL = try startIfNeeded(repositoryRoot: repositoryRoot)
         guard let url = URL(string: path, relativeTo: baseURL) else { throw ClientError.invalidResponse }
         var request = URLRequest(url: url)
@@ -136,7 +145,7 @@ actor ProjectAdoptionClient {
         request.timeoutInterval = 30
         if let body {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try JSONEncoder().encode(body)
+            request.httpBody = body
         }
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw ClientError.invalidResponse }
@@ -161,16 +170,10 @@ actor ProjectAdoptionClient {
         process = nil
         baseURL = nil
 
-        let cli = normalizedRoot.appendingPathComponent("agent/cli.mjs", isDirectory: false)
-        let api = normalizedRoot.appendingPathComponent("agent/local-api.mjs", isDirectory: false)
-        guard FileManager.default.fileExists(atPath: cli.path),
-              FileManager.default.fileExists(atPath: api.path) else {
-            throw ClientError.missingCLI
-        }
-
+        let binary = try Self.binary(repositoryRoot: normalizedRoot)
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = ["node", cli.path, "serve", "--port", "0"]
+        process.executableURL = binary
+        process.arguments = ["--harness", normalizedRoot.path, "serve", "--port", "0"]
         process.currentDirectoryURL = normalizedRoot
         var environment = ProcessInfo.processInfo.environment
         environment["NO_COLOR"] = "1"
@@ -204,5 +207,23 @@ actor ProjectAdoptionClient {
         stdoutPipe = stdout
         stderrPipe = stderr
         return url
+    }
+
+    nonisolated static func binary(repositoryRoot: URL) throws -> URL {
+        if let explicit = ProcessInfo.processInfo.environment["PROBIERZ_BIN"], !explicit.isEmpty {
+            guard FileManager.default.isExecutableFile(atPath: explicit) else {
+                throw ClientError.launch("PROBIERZ_BIN is not executable: \(explicit)")
+            }
+            return URL(fileURLWithPath: explicit)
+        }
+        let candidates = [
+            repositoryRoot.appendingPathComponent("probierz-rs/target/release/probierz"),
+            repositoryRoot.appendingPathComponent("probierz-rs/target/debug/probierz"),
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".local/bin/probierz"),
+        ]
+        guard let binary = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0.path) }) else {
+            throw ClientError.missingCLI
+        }
+        return binary
     }
 }
