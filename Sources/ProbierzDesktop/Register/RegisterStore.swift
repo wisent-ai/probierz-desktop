@@ -73,6 +73,15 @@ final class RegisterStore: ObservableObject {
     private var generation = 0
 
     var visible: [RegisterEntry] { entries }
+    func clear() {
+        generation += 1
+        entries = []
+        selectedID = nil
+        detail = nil
+        problem = nil
+        loadedAt = nil
+    }
+
     var openCount: Int { entries.filter(\.isOpen).count }
     var resolvedCount: Int { entries.count - openCount }
     var selected: RegisterEntry? { entries.first { $0.id == selectedID } }

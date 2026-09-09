@@ -58,6 +58,31 @@ final class RegisterTests: XCTestCase {
     }
 
     @MainActor
+    func testChangingWorkspaceDoesNotShowOrRewriteThePreviousRegister() async throws {
+        let first = try workspace()
+        let second = try workspace()
+        defer {
+            try? FileManager.default.removeItem(at: first)
+            try? FileManager.default.removeItem(at: second)
+        }
+        let store = RegisterStore()
+        await store.record(
+            workspaceRoot: first, claim: "First workspace",
+            envelope: #"{"service":"probierz","failure_point":"verification.claim","error_code":"invalid","detail":"No retained result"}"#,
+            runID: ""
+        )
+        XCTAssertNil(store.problem)
+        let before = try contents(first)
+        store.clear()
+        await store.load(workspaceRoot: second)
+        XCTAssertNil(store.problem)
+        XCTAssertTrue(store.entries.isEmpty)
+        XCTAssertNil(store.detail)
+        XCTAssertEqual(try contents(first), before)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: second.appendingPathComponent("test-results/.incidents/register.jsonl").path))
+    }
+
+    @MainActor
     func testInvalidRecordAndUnreadableRegisterDoNotLookSuccessful() async throws {
         let root = try workspace()
         defer { try? FileManager.default.removeItem(at: root) }
