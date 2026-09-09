@@ -264,34 +264,7 @@ struct ProbierzRootView: View {
         .background { WisentCanvasBackground() }
     }
 
-    @ViewBuilder
-    private var destinationView: some View {
-        switch model.destination {
-        case .posture:
-            PostureView(model: model, chooseWorkspace: chooseWorkspace)
-        case .runs:
-            RunsView(model: model)
-        case .failures:
-            FailuresView(model: model)
-        case .artifacts:
-            ArtifactsView(model: model, onboarding: onboarding)
-        case .verdicts:
-            VerdictsView(model: model)
-        case .surfaces:
-            SurfacesView(model: model)
-        case .journeys:
-            JourneysView(model: model)
-        case .preflight:
-            PreflightView(model: model)
-        case .workspace:
-            WorkspaceView(
-                model: model,
-                onboarding: onboarding,
-                chooseWorkspace: chooseWorkspace,
-                adoptProject: chooseAdoptionSource
-            )
-        }
-    }
+
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
@@ -343,35 +316,6 @@ struct ProbierzRootView: View {
                 from: URL(fileURLWithPath: path, isDirectory: true),
                 replace: true
             )
-        }
-    }
-
-    private func chooseAdoptionSource() {
-        let panel = NSOpenPanel()
-        panel.title = "Choose an existing Probierz project"
-        panel.message = "Choose a Git repository containing apps/<appId>/probierz.yaml and established Probierz package spec directories. Nothing will run."
-        panel.prompt = "Adopt"
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.directoryURL = model.workspaceRoot
-        if panel.runModal() == .OK, let url = panel.url {
-            Task {
-                _ = await model.adoptProject(from: url)
-            }
-        }
-    }
-
-    private func chooseWorkspace() {
-        let panel = NSOpenPanel()
-        panel.title = "Choose a workspace"
-        panel.prompt = "Choose"
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.directoryURL = model.workspaceRoot
-        if panel.runModal() == .OK, let url = panel.url {
-            model.selectWorkspace(url)
         }
     }
 }
