@@ -33,7 +33,7 @@ let package = Package(
         .testTarget(
             name: "ProbierzDesktopTests",
             dependencies: ["ProbierzDesktop"],
-            path: "Tests/ProbierzDesktopTests"
+            path: "tests/register"
         ),
     ]
 )
