@@ -208,11 +208,11 @@ digest, applications, and file digests and modes remain in
 Build a stable development-signed app bundle:
 
 ```bash
-sh Scripts/build-app.sh
+sh release/bundle/build-app.sh
 open .build/Probierz.app
 ```
 
-`Scripts/build-app.sh` requires an Apple Development signing identity (or
+`release/bundle/build-app.sh` requires an Apple Development signing identity (or
 `WISENT_CODESIGN_IDENTITY`) and refuses ad-hoc signing. By default it restarts the
 app only when already running; set `WISENT_RESTART_AFTER_BUILD=0` to disable that
 step.

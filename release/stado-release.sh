@@ -80,7 +80,7 @@ build_release() {
   WISENT_UPDATE_FEED_URL="$PUBLIC_UPDATE_ROOT/$PRODUCT_SLUG/appcast.xml" \
   WISENT_CODESIGN_IDENTITY="$MACOS_SIGN_IDENTITY" \
   WISENT_RESTART_AFTER_BUILD=0 \
-    "$source/Scripts/build-app.sh"
+    "$source/release/bundle/build-app.sh"
 
   app="$source/.build/$PRODUCT.app"
   [ -d "$app" ] || { printf 'release bundle was not produced: %s\n' "$app" >&2; exit 1; }

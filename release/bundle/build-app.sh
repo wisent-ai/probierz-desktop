@@ -2,7 +2,7 @@
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
 CONFIGURATION=${CONFIGURATION:-release}
 PRODUCT=ProbierzDesktop
 APP_NAME=Probierz
