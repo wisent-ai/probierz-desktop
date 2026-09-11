@@ -29,6 +29,9 @@ prepare_source() {
   work="$WISENT_OUTPUT_DIR/work"
   source="$work/source"
   rm -rf "$work"
+  # Throwaway state is removed by the code that made it: the source copy and
+  # everything signed inside it end with the run.
+  trap 'rm -rf "$work"' EXIT
   mkdir -p "$source"
   rsync -a --exclude .git --exclude .build "$WISENT_SOURCE_DIR/" "$source/"
   tar -xzf "$swiftpm" -C "$source"
@@ -62,6 +65,7 @@ build_release() {
   cleanup() {
     security delete-keychain "$keychain" >/dev/null 2>&1 || true
     rm -f "$cert" "$notary_key" "$sparkle_key"
+    rm -rf "$work"
   }
   trap cleanup EXIT
   printf '%s' "$MACOS_CERT_P12" | base64 -D > "$cert"
