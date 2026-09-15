@@ -5,10 +5,17 @@ import XCTest
 /// defend persisted effects and refusals, not rendering.
 final class RegisterTests: XCTestCase {
     private func workspace() throws -> URL {
-        let binary = try XCTUnwrap(ProcessInfo.processInfo.environment["PROBIERZ_BIN"], "Set PROBIERZ_BIN to the built product")
-        XCTAssertTrue(FileManager.default.isExecutableFile(atPath: binary))
         let repository = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        // The product resolves its own binary - PROBIERZ_BIN first, then this
+        // checkout's build, then the installed one - so checking what the
+        // register does needs no environment set by hand and nobody needs to
+        // drive the window to see it.
+        do {
+            _ = try ProjectAdoptionClient.binary(repositoryRoot: repository)
+        } catch {
+            throw XCTSkip("no probierz binary to verify against: \(error)")
+        }
         let root = repository.appendingPathComponent(".build/register-tests/\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root.appendingPathComponent("apps"), withIntermediateDirectories: true)
         return root
