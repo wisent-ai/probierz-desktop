@@ -30,16 +30,19 @@ extension EvidenceLevel {
 // MARK: - Formatting
 
 enum ProbierzFormat {
+    private static let millisecondsPerSecond = 1_000.0
+    private static let secondsPerMinute = 60
+    private static let percent = 100.0
     static func bytes(_ value: Int64) -> String {
         ByteCountFormatter.string(fromByteCount: value, countStyle: .file)
     }
 
     static func duration(_ milliseconds: Double) -> String {
         guard milliseconds > 0 else { return "—" }
-        let seconds = milliseconds / 1_000
-        if seconds < 60 { return seconds.formatted(.number.precision(.fractionLength(1))) + " s" }
-        let minutes = Int(seconds) / 60
-        let remainder = Int(seconds) % 60
+        let seconds = milliseconds / millisecondsPerSecond
+        if seconds < Double(secondsPerMinute) { return seconds.formatted(.number.precision(.fractionLength(1))) + " s" }
+        let minutes = Int(seconds) / secondsPerMinute
+        let remainder = Int(seconds) % secondsPerMinute
         return "\(minutes)m \(remainder)s"
     }
 
@@ -60,7 +63,7 @@ enum ProbierzFormat {
 
     static func percent(_ value: Double?) -> String {
         guard let value else { return "—" }
-        return (value * 100).formatted(.number.precision(.fractionLength(0))) + "%"
+        return (value * percent).formatted(.number.precision(.fractionLength(0))) + "%"
     }
 }
 

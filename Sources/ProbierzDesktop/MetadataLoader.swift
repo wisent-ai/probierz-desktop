@@ -1,6 +1,13 @@
 import Foundation
 
 struct MetadataLoader: Sendable {
+    /// Bounds on what is read from a run's metadata: a front-matter value, an identifier, a trimmed field,
+    /// a SHA-256 digest and a display name.
+    private static let maxFrontMatterValue = 400
+    private static let maxIdentifierLength = 120
+    private static let maxFieldLength = 600
+    private static let sha256HexLength = 64
+    private static let maxDisplayNameLength = 160
     let workspaceRoot: URL
 
     private static let repositoryName = "probierz"
@@ -291,12 +298,12 @@ struct MetadataLoader: Sendable {
         if value.hasPrefix("\""), value.hasSuffix("\""), value.count >= 2 {
             value = String(value.dropFirst().dropLast())
         }
-        return key.isEmpty || value.isEmpty ? nil : (key, String(value.prefix(400)))
+        return key.isEmpty || value.isEmpty ? nil : (key, String(value.prefix(maxFrontMatterValue)))
     }
 
     private static func isIdentifier(_ value: String) -> Bool {
         !value.isEmpty
-            && value.count <= 120
+            && value.count <= maxIdentifierLength
             && value.allSatisfy { $0.isLetter || $0.isNumber || "-_.:".contains($0) }
     }
 
@@ -815,12 +822,12 @@ struct MetadataLoader: Sendable {
         guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
             return nil
         }
-        return String(value.prefix(600))
+        return String(value.prefix(maxFieldLength))
     }
 
     private static func normalizedDigest(_ value: String?) -> String? {
         guard let value = trimmed(value),
-              value.count == 64,
+              value.count == sha256HexLength,
               value.allSatisfy(\.isHexDigit)
         else { return nil }
         return value.lowercased()
@@ -829,7 +836,7 @@ struct MetadataLoader: Sendable {
     private func normalizedIdentifier(_ value: String?) -> String? {
         guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
               !value.isEmpty,
-              value.count <= 160,
+              value.count <= Self.maxDisplayNameLength,
               value.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) }) else {
             return nil
         }

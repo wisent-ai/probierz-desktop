@@ -55,6 +55,8 @@ struct ProjectAdoptionIndex: Decodable, Sendable {
 }
 
 actor ProjectAdoptionClient {
+    /// The ready line the adoption helper prints is one small JSON object.
+    private static let maxReadyLineBytes = 16_384
     enum ClientError: LocalizedError {
         case missingCLI
         case launch(String)
@@ -189,7 +191,7 @@ actor ProjectAdoptionClient {
         }
 
         let readyData = stdout.fileHandleForReading.availableData
-        guard readyData.count <= 16_384,
+        guard readyData.count <= Self.maxReadyLineBytes,
               let line = String(data: readyData, encoding: .utf8)?.split(separator: "\n").first,
               let data = String(line).data(using: .utf8),
               let ready = try? JSONDecoder().decode(Ready.self, from: data),

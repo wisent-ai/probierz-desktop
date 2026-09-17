@@ -1,6 +1,10 @@
 import Foundation
 
 struct ProbierzCommandClient: Sendable {
+    /// An app id and a run id are short tokens; a CLI answer larger than this is not a Probierz answer.
+    private static let maxAppIDLength = 128
+    private static let maxRunIDLength = 256
+    private static let maxOutputBytes = 256_000
     enum CommandError: LocalizedError {
         case missingCLI
         case launch(String)
@@ -28,8 +32,8 @@ struct ProbierzCommandClient: Sendable {
         }
         let appID = appID.trimmingCharacters(in: .whitespacesAndNewlines)
         let runID = runID.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !appID.isEmpty, appID.count <= 128,
-              !runID.isEmpty, runID.count <= 256 else {
+        guard !appID.isEmpty, appID.count <= Self.maxAppIDLength,
+              !runID.isEmpty, runID.count <= Self.maxRunIDLength else {
             throw CommandError.invalidResponse
         }
 
@@ -58,7 +62,7 @@ struct ProbierzCommandClient: Sendable {
 
         let stdoutData = stdout.fileHandleForReading.readDataToEndOfFile()
         let stderrData = stderr.fileHandleForReading.readDataToEndOfFile()
-        guard stdoutData.count <= 256_000, stderrData.count <= 256_000 else {
+        guard stdoutData.count <= Self.maxOutputBytes, stderrData.count <= Self.maxOutputBytes else {
             throw CommandError.invalidResponse
         }
         if process.terminationStatus != 0 {

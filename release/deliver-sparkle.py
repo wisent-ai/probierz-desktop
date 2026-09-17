@@ -7,6 +7,11 @@ import tarfile
 import tempfile
 import urllib.request
 
+# Any 2xx answer means the object landed; the upload waits up to two minutes per file.
+HTTP_SUCCESS_MIN = 200
+HTTP_SUCCESS_MAX_EXCLUSIVE = 300
+UPLOAD_TIMEOUT_SECONDS = 120
+
 
 def required(name: str) -> str:
     value = os.environ.get(name, "").strip()
@@ -62,7 +67,7 @@ with tempfile.TemporaryDirectory() as temporary:
             headers={"Authorization": f"Bearer {token}", "Content-Type": content_type},
         )
         with urllib.request.urlopen(request) as response:
-            if not 200 <= response.status < 300:
+            if not HTTP_SUCCESS_MIN <= response.status < HTTP_SUCCESS_MAX_EXCLUSIVE:
                 raise RuntimeError(f"Sparkle upload returned HTTP {response.status}")
 
 public_base = f"https://updates.wisent.ai/{product}"

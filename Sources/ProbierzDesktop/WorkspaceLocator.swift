@@ -1,6 +1,9 @@
 import Foundation
 
 enum WorkspaceLocator {
+    /// How many ancestors of the app bundle and of each candidate are tried before giving up.
+    private static let bundleAncestorDepth = 14
+    private static let candidateAncestorDepth = 10
     static func resolve(savedPath: String?) -> URL? {
         let manager = FileManager.default
         var candidates: [URL] = []
@@ -18,7 +21,7 @@ enum WorkspaceLocator {
         )
 
         var ancestor = Bundle.main.bundleURL.standardizedFileURL
-        for _ in 0..<14 {
+        for _ in 0..<bundleAncestorDepth {
             candidates.append(ancestor)
             ancestor.deleteLastPathComponent()
         }
@@ -26,7 +29,7 @@ enum WorkspaceLocator {
         var seen = Set<String>()
         for candidate in candidates {
             var current = candidate.standardizedFileURL
-            for _ in 0..<10 {
+            for _ in 0..<candidateAncestorDepth {
                 let path = current.path
                 if seen.insert(path).inserted, isWorkspace(current) {
                     return current
