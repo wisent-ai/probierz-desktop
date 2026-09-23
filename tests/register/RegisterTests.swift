@@ -1,7 +1,7 @@
 import XCTest
 @testable import ProbierzDesktop
 
-/// Uses the real Probierz service without operating a GUI. These assertions
+/// Uses the real Probierz CLI without operating a GUI. These assertions
 /// defend persisted effects and refusals, not rendering.
 final class RegisterTests: XCTestCase {
     private func workspace() throws -> URL {
@@ -12,7 +12,7 @@ final class RegisterTests: XCTestCase {
         // register does needs no environment set by hand and nobody needs to
         // drive the window to see it.
         do {
-            _ = try ProjectAdoptionClient.binary(repositoryRoot: repository)
+            _ = try ProbierzCLI.binary(repositoryRoot: repository)
         } catch {
             throw XCTSkip("no probierz binary to verify against: \(error)")
         }

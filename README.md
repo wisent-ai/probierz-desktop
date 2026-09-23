@@ -67,7 +67,7 @@ Probierz Desktop serves:
 - stable Apple Development-signed local app-bundle script.
 - one-click repair dispatch for failed runs through the canonical Probierz CLI;
 - first-use and Workspace actions that adopt validated definitions from an
-  existing Probierz repository through Probierz core's loopback API;
+  existing Probierz repository through Probierz core's `project adopt` command;
 
 ### Explicit non-goals and limitations
 
@@ -85,9 +85,8 @@ Probierz Desktop serves:
   Older or external evidence can be omitted, with truncation surfaced in the UI.
 - Configuration display reports whether named environment variables are present,
   not whether their values are correct, safe, reachable, or authorized.
-- The only local control plane is the loopback Probierz process the app starts
-  for project adoption. It binds `127.0.0.1` on an ephemeral port and is not a
-  hosted service.
+- The app runs no local control plane. Adoption and the incident register are
+  finite Probierz CLI calls that exit when they answer; nothing binds a port.
 
 ### Supported environment and current capability
 
@@ -192,7 +191,7 @@ source identity after a successful adoption.
 The source must contain validated `apps/<appId>/probierz.yaml` manifests and
 their referenced files in the established
 `packages/<surface>/test/specs`, `tests`, or `specs` directories. The desktop
-client sends the selected path to Probierz's loopback API; core validates the
+client passes the selected path to `probierz project adopt`; core validates the
 entire selection and then persists it. No journey, spec, browser, simulator, or
 device starts during adoption.
 
@@ -234,14 +233,24 @@ A valid workspace contains regular, non-symlink files at:
 - `probierz/package.json`;
 - `probierz/agent/history.mjs`.
 
-### Project adoption API
+### Project adoption and the incident register
 
-Probierz Desktop starts `node agent/cli.mjs serve --port 0` for the selected
-Probierz repository and reads its one-time loopback address. It uses
-`POST /v1/project-adoptions` for adoption and
-`GET /v1/project-adoptions` for retained source identities. Both the GUI and
-`probierz project adopt` therefore call the same core transaction rather than
-maintaining separate parsers or copying files in Swift.
+Probierz Desktop keeps no Probierz process running. Each operation is one
+finite call to the Probierz CLI for the selected repository, and the window
+reads the JSON that command prints:
+
+- adoption runs `probierz --harness <repository> project adopt --source <path> [--replace]`;
+  a conflict is shown from the result the command prints before it exits 1;
+- retained source identities come from `probierz project adoptions`;
+- the register runs `probierz incident list|show|record|resolve --json`, with
+  the envelope written to `record --envelope -` on stdin.
+
+A refusal shows the `detail` of the `probierz-failure` line the CLI writes to
+stderr, the same sentence an operator sees. The binary is `PROBIERZ_BIN`, then
+this checkout's `probierz-rs/target/{release,debug}/probierz`, then
+`~/.local/bin/probierz`. Both the GUI and the CLI therefore call the same core
+transactions rather than maintaining separate parsers or copying files in
+Swift.
 
 ### Contract inventory
 

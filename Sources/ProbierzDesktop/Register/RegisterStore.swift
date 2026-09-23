@@ -57,8 +57,9 @@ struct RegisterEntry: Identifiable, Decodable, Sendable {
     }
 }
 
-/// The local API owns validation, file locking and resolution state. Desktop
-/// never parses the register file or implements a second write path.
+/// `probierz incident` owns validation, file locking and resolution state.
+/// Desktop never parses the register file or implements a second write path:
+/// each operation is one finite CLI call and reads that command's JSON answer.
 @MainActor
 final class RegisterStore: ObservableObject {
     @Published private(set) var entries: [RegisterEntry] = []
@@ -69,7 +70,6 @@ final class RegisterStore: ObservableObject {
     @Published var stateFilter: String?
     @Published var selectedID: String?
     @Published var limit = 20
-    private let client = ProjectAdoptionClient()
     private var generation = 0
 
     var visible: [RegisterEntry] { entries }
@@ -93,8 +93,8 @@ final class RegisterStore: ObservableObject {
         generation += 1
         let requested = generation
         do {
-            let data = try await request(workspaceRoot, action: "list", body: [
-                "state": stateFilter ?? "all", "limit": limit,
+            let data = try await request(workspaceRoot, [
+                "list", "--state=\(stateFilter ?? "all")", "--limit=\(limit)",
             ])
             struct List: Decodable { let incidents: [RegisterEntry] }
             let response = try JSONDecoder().decode(List.self, from: data)
@@ -116,7 +116,7 @@ final class RegisterStore: ObservableObject {
 
     func show(workspaceRoot: URL, id: String) async {
         do {
-            let data = try await request(workspaceRoot, action: "show", body: ["id": id])
+            let data = try await request(workspaceRoot, ["show"], id: id)
             let value = try JSONSerialization.jsonObject(with: data)
             let formatted = try JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .sortedKeys])
             guard selectedID == id else { return }
@@ -131,10 +131,9 @@ final class RegisterStore: ObservableObject {
         isWorking = true
         defer { isWorking = false }
         do {
-            let value = try JSONSerialization.jsonObject(with: Data(envelope.utf8))
-            var body: [String: Any] = ["claim": claim, "envelope": value]
-            if !runID.isEmpty { body["run_id"] = runID }
-            let data = try await request(workspaceRoot, action: "record", body: body)
+            var arguments = ["record", "--claim=\(claim)", "--envelope=-"]
+            if !runID.isEmpty { arguments.append("--run=\(runID)") }
+            let data = try await request(workspaceRoot, arguments, input: Data(envelope.utf8))
             let incident = try JSONDecoder().decode(RegisterIncident.self, from: data)
             stateFilter = nil
             await load(workspaceRoot: workspaceRoot)
@@ -150,9 +149,9 @@ final class RegisterStore: ObservableObject {
         isWorking = true
         defer { isWorking = false }
         do {
-            var body: [String: Any] = ["id": id, "note": note]
-            if !runID.isEmpty { body["run_id"] = runID }
-            _ = try await request(workspaceRoot, action: "resolve", body: body)
+            var arguments = ["resolve", "--note=\(note)"]
+            if !runID.isEmpty { arguments.append("--run=\(runID)") }
+            _ = try await request(workspaceRoot, arguments, id: id)
             await load(workspaceRoot: workspaceRoot)
             await show(workspaceRoot: workspaceRoot, id: id)
         } catch {
@@ -160,10 +159,11 @@ final class RegisterStore: ObservableObject {
         }
     }
 
-    private func request(_ root: URL, action: String, body: [String: Any]) async throws -> Data {
-        let encoded = try JSONSerialization.data(withJSONObject: body)
-        return try await client.request(
-            repositoryRoot: root, path: "/v1/incidents/\(action)", method: "POST", body: encoded
-        )
+    /// One `probierz incident` operation's JSON answer. The incident id goes
+    /// after `--`, so no id can be read as an option.
+    private func request(_ root: URL, _ arguments: [String], id: String? = nil, input: Data? = nil) async throws -> Data {
+        var command = ["incident"] + arguments + ["--json"]
+        if let id { command += ["--", id] }
+        return try await ProbierzCLI.answer(repositoryRoot: root, arguments: command, input: input)
     }
 }
