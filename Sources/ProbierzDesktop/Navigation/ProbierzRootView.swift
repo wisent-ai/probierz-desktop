@@ -33,7 +33,7 @@ struct ProbierzRootView: View {
     /// The recorded defect in Skarbiec: clicking a `List` row did not change the
     /// destination, leaving the window navigable by keyboard only. A `Button`
     /// carries one unambiguous action.
-    private var sidebar: some View {
+    var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
             brandHeader
             Divider()
@@ -66,7 +66,7 @@ struct ProbierzRootView: View {
         )
     }
 
-    private var brandHeader: some View {
+    var brandHeader: some View {
         HStack(spacing: WisentDesign.Space.x3) {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: WisentDesign.Space.x4, weight: .semibold))
@@ -96,7 +96,7 @@ struct ProbierzRootView: View {
     /// Probierz keys history, journeys and merge verdicts by app ID, so every
     /// screen reads this one value. As a tab it would cost a destination and
     /// still leave the operator guessing which product the numbers describe.
-    private var productScope: some View {
+    var productScope: some View {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x1) {
             Text("PRODUCT IN VIEW")
                 .font(WisentTypography.monoSemibold(8))
@@ -151,7 +151,7 @@ struct ProbierzRootView: View {
         .accessibilityIdentifier("probierz.product-scope")
     }
 
-    private func destinationRow(_ destination: ProbierzDestination) -> some View {
+    func destinationRow(_ destination: ProbierzDestination) -> some View {
         Button {
             model.destination = destination
         } label: {
@@ -187,13 +187,13 @@ struct ProbierzRootView: View {
         .accessibilityAddTraits(isSelected(destination) ? [.isSelected] : [])
     }
 
-    private func isSelected(_ destination: ProbierzDestination) -> Bool {
+    func isSelected(_ destination: ProbierzDestination) -> Bool {
         model.destination == destination
     }
 
     /// A count only where a count changes what the operator does next.
     @ViewBuilder
-    private func indicator(for destination: ProbierzDestination) -> some View {
+    func indicator(for destination: ProbierzDestination) -> some View {
         switch destination {
         case .runs where model.summary.status.needsAttention > 0:
             countBadge(model.summary.status.needsAttention, tone: WisentDesign.danger)
@@ -211,7 +211,7 @@ struct ProbierzRootView: View {
         }
     }
 
-    private func countBadge(_ value: Int, tone: Color) -> some View {
+    func countBadge(_ value: Int, tone: Color) -> some View {
         Text(value.formatted(.number))
             .font(WisentTypography.monoSemibold(9))
             .foregroundStyle(tone)
@@ -220,7 +220,7 @@ struct ProbierzRootView: View {
             .background(tone.opacity(0.12), in: Capsule())
     }
 
-    private var blockedPreflightCount: Int {
+    var blockedPreflightCount: Int {
         model.snapshot?.preflights.filter { !$0.isReady }.count ?? 0
     }
 
@@ -235,7 +235,7 @@ struct ProbierzRootView: View {
     /// sidebar's last row above the window origin, 442 pt out of a 860 pt
     /// window. `WisentScreen` bounds itself; a container that stacks something
     /// above it has to do the same.
-    private var detail: some View {
+    var detail: some View {
         GeometryReader { proxy in
             VStack(spacing: 0) {
                 if let screen = onboarding.screen {
@@ -266,56 +266,9 @@ struct ProbierzRootView: View {
 
 
 
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            Button {
-                Task { await model.refresh() }
-            } label: {
-                Label("Refresh", systemImage: "arrow.clockwise")
-            }
-            .disabled(model.isRefreshing || model.workspaceRoot == nil)
-            .keyboardShortcut("r", modifiers: .command)
-            .help("Refresh runs, journeys, artifacts, and system state")
-            // The resting word stays while the refresh runs: a name that turns
-            // into "Refreshing Probierz" is gone at the one moment a screen
-            // reader is asked what this control is.
-            .accessibilityLabel("Refresh Probierz")
-        }
-    }
 
     // MARK: - Actions
 
-    private func performOnboardingAction() {
-        Task {
-            switch await onboarding.performPrimaryAction() {
-            case .adoptExistingProject:
-                if model.projectAdoption?.accepted == true {
-                    _ = await onboarding.completeOptionalProjectStep(imported: true)
-                } else {
-                    chooseAdoptionSource()
-                }
-            case .showEvidenceBundles:
-                model.destination = .artifacts
-                model.selectFirstProtectedBundle()
-            case .advanced, .unavailable:
-                break
-            }
-        }
-    }
 
-    private func skipProjectAdoption() {
-        model.clearAdoptionOutcome()
-        Task { _ = await onboarding.completeOptionalProjectStep(imported: false) }
-    }
 
-    private func replaceProjectAdoption() {
-        guard let path = model.projectAdoption?.sourceRoot else { return }
-        Task {
-            _ = await model.adoptProject(
-                from: URL(fileURLWithPath: path, isDirectory: true),
-                replace: true
-            )
-        }
-    }
 }

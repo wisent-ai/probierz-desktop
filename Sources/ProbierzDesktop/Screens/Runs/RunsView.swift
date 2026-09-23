@@ -64,7 +64,7 @@ struct RunsView: View {
 
     /// Counts come from the aggregate computed once at load, so opening this
     /// screen never recounts 123 manifests to label five facets.
-    private var facetGroups: [WisentFacetGroup] {
+    var facetGroups: [WisentFacetGroup] {
         let status = model.summary.status
         let evidence = model.summary.evidence
         return [
@@ -120,7 +120,7 @@ struct RunsView: View {
     // MARK: - Centre
 
     @ViewBuilder
-    private func centre(visible: [RunRecord]) -> some View {
+    func centre(visible: [RunRecord]) -> some View {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
             if let errorMessage = model.errorMessage, model.snapshot != nil {
                 WisentErrorBanner(
@@ -165,7 +165,7 @@ struct RunsView: View {
     /// 236 pt sidebar, 168 pt rail and 320 pt inspector leaves 556 pt. Duration,
     /// artifact count and host live one line down in the inspector, where the
     /// rest of the run already is.
-    private func table(visible: [RunRecord]) -> some View {
+    func table(visible: [RunRecord]) -> some View {
         WisentTableFrame {
             Table(visible, selection: $model.selectedRunID) {
                 TableColumn("RUN ID") { run in
@@ -215,7 +215,7 @@ struct RunsView: View {
     // MARK: - Inspector
 
     @ViewBuilder
-    private var inspector: some View {
+    var inspector: some View {
         if let run = model.selectedRun {
             WisentInspector(
                 eyebrow: "Run details",
@@ -260,7 +260,7 @@ struct RunsView: View {
         }
     }
 
-    private func badges(for run: RunRecord) -> [(String, WisentTone)] {
+    func badges(for run: RunRecord) -> [(String, WisentTone)] {
         var badges: [(String, WisentTone)] = [(run.status.title, run.status.tone)]
         badges.append((run.evidenceLevel.title, run.evidenceLevel.tone))
         if run.isRecorded { badges.append(("Recorded", .brand)) }
@@ -268,90 +268,6 @@ struct RunsView: View {
         return badges
     }
 
-    /// The reason, verbatim, then the reproducing command the manifest recorded.
-    @ViewBuilder
-    private func failureSection(run: RunRecord, failure: RunFailure) -> some View {
-        WisentAlertPanel(
-            tone: run.status == .blocked ? .warning : .danger,
-            title: failure.headline,
-            detail: failure.sentence
-        )
-        if let command = failure.command {
-            RecordedCommandRow(command: command)
-        }
-        if run.status == .failed {
-            WisentAction(
-                "Repair Run",
-                symbol: "wrench.and.screwdriver",
-                kind: .primary,
-                isBusy: model.repairOutcome.isWorking
-            ) {
-                model.repair(run)
-            }
-            .asButton()
-        }
-        if failure.reasons.count > 1 {
-            WisentField(
-                label: "Every recorded reason",
-                value: failure.reasons.joined(separator: "\n")
-            )
-        }
-        if !failure.remediation.isEmpty {
-            WisentField(
-                label: "Suggested fix",
-                value: failure.remediation.joined(separator: "\n"),
-                tone: .warning
-            )
-        }
-        if let code = failure.code {
-            WisentField(label: "Reason code", value: code, tone: .danger)
-        }
-        if !failure.facts.isEmpty {
-            WisentField(label: "Recorded facts", value: failure.facts.joined(separator: "\n"))
-        }
-    }
 
-    @ViewBuilder
-    private func hostSection(run: RunRecord) -> some View {
-        if run.hostName != nil || run.hostPlatform != nil || run.deviceName != nil {
-            WisentField(
-                label: "Host",
-                value: [run.hostName, run.hostPlatform].compactMap { $0 }.joined(separator: " · ")
-            )
-        }
-        if let device = run.deviceName {
-            WisentField(
-                label: "Device",
-                value: [device, run.deviceRuntime].compactMap { $0 }.joined(separator: " · ")
-            )
-        }
-    }
 
-    @ViewBuilder
-    private func sourceSection(run: RunRecord) -> some View {
-        if let harness = run.harnessGitSHA {
-            WisentField(
-                label: "Probierz source",
-                value: run.harnessIsDirty ? "\(harness) (uncommitted changes)" : harness,
-                tone: run.harnessIsDirty ? .warning : .neutral
-            )
-        }
-        ForEach(run.sourceRepositories) { repository in
-            WisentField(
-                label: "Source \(repository.name)",
-                value: repository.isDirty
-                    ? "\(repository.gitSHA ?? "Not recorded") (uncommitted changes)"
-                    : (repository.gitSHA ?? "Not recorded"),
-                tone: repository.isDirty ? .warning : .neutral
-            )
-        }
-    }
-}
-
-@MainActor
-extension WisentAction {
-    /// A single action rendered inline inside an inspector column.
-    func asButton() -> some View {
-        WisentActionButton(action: self)
-    }
 }
