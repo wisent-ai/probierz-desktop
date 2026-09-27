@@ -72,10 +72,7 @@
     {
       "name": "sparkle-appcast",
       "platform": "darwin-arm64",
-      "argv": [
-        "python3",
-        "release/deliver-sparkle.py"
-      ],
+      "argv": ["stado", "product", "deliver", "sparkle"],
       "required": true,
       "secret_env": {
         "WISENT_SPARKLE_UPLOAD_BASE_URL": "probierz-desktop-sparkle#upload_base_url",
