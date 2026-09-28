@@ -238,6 +238,15 @@ struct ProbierzRootView: View {
     var detail: some View {
         GeometryReader { proxy in
             VStack(spacing: 0) {
+                if let failure = onboarding.errorMessage {
+                    WisentErrorBanner(
+                        title: "Onboarding",
+                        detail: failure,
+                        action: WisentAction("Dismiss", kind: .secondary) { onboarding.dismissError() }
+                    )
+                    .padding(.horizontal, WisentDesign.Space.x5)
+                    .padding(.top, WisentDesign.Space.x4)
+                }
                 if let screen = onboarding.screen {
                     ProbierzOnboardingCard(
                         screen: screen,

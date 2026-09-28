@@ -16,6 +16,8 @@ final class ProbierzOnboarding: ObservableObject {
     @Published private(set) var screen: JourneyScreen?
     @Published private(set) var status: JourneyProgressStatus?
     @Published private(set) var isWorking = false
+    /// The last journey operation that failed, in a sentence; nil once one succeeds.
+    @Published private(set) var errorMessage: String?
 
     private static let productID = "probierz-desktop"
     private static let journeyID = "first-use"
@@ -50,18 +52,24 @@ final class ProbierzOnboarding: ObservableObject {
             defaults: defaults
         )
 
-        if let fallback = Self.fallbackBundle() {
-            client = try? JourneyClient(
+        guard let bundled = Self.fallbackBundle() else {
+            client = nil
+            errorMessage = "The first-use walkthrough bundled with Probierz could not be read."
+            return
+        }
+        do {
+            client = try JourneyClient(
                 productId: Self.productID,
                 journeyId: Self.journeyID,
                 subjectHash: subjectHash,
                 scope: .device,
                 transport: transport,
                 storage: storage,
-                fallback: fallback
+                fallback: bundled
             )
-        } else {
+        } catch {
             client = nil
+            errorMessage = "The first-use walkthrough could not be prepared. \(Self.failureSentence(error))"
         }
     }
 
@@ -79,10 +87,16 @@ final class ProbierzOnboarding: ObservableObject {
             )
             try await exposeCurrentScreenIfNeeded(using: client)
             try await client.flush()
+            errorMessage = nil
         } catch {
             screen = nil
             status = nil
+            errorMessage = "The first-use walkthrough could not load. \(Self.failureSentence(error))"
         }
+    }
+
+    func dismissError() {
+        errorMessage = nil
     }
 
     func performPrimaryAction() async -> PrimaryActionResult {
@@ -120,8 +134,10 @@ final class ProbierzOnboarding: ObservableObject {
             ) != nil else { return .unavailable }
             await synchronize(using: client)
             try await exposeCurrentScreenIfNeeded(using: client)
+            errorMessage = nil
             return .advanced
         } catch {
+            errorMessage = "This step could not be saved. \(Self.failureSentence(error))"
             return .unavailable
         }
     }
@@ -164,7 +180,7 @@ final class ProbierzOnboarding: ObservableObject {
             try await client.flush()
             return .succeeded("Started. The walkthrough is at the top of this screen.")
         } catch {
-            return .failed(Self.replayFailure(error))
+            return .failed(Self.failureSentence(error))
         }
     }
 
@@ -174,7 +190,7 @@ final class ProbierzOnboarding: ObservableObject {
     /// renders it as "error 3" and names nothing. Its cases are spelled out
     /// here; anything else keeps the words its own type gives, exactly as
     /// `ProbierzModel` reports a failed repair.
-    private static func replayFailure(_ error: Error) -> String {
+    private static func failureSentence(_ error: Error) -> String {
         guard let journeyError = error as? JourneyClientError else {
             return (error as? LocalizedError)?.errorDescription ?? String(describing: error)
         }
@@ -207,7 +223,7 @@ final class ProbierzOnboarding: ObservableObject {
             await synchronize(using: client)
             try await client.flush()
         } catch {
-            return
+            errorMessage = "Opening the evidence bundle could not be recorded. \(Self.failureSentence(error))"
         }
     }
 
