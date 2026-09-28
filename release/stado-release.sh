@@ -51,6 +51,7 @@ build_release() {
   : "${AC_API_ISSUER_ID:?AC_API_ISSUER_ID is required}"
   : "${AC_API_KEY_P8:?AC_API_KEY_P8 is required}"
   : "${SPARKLE_PRIVATE_KEY:?SPARKLE_PRIVATE_KEY is required}"
+  : "${SPARKLE_PUBLIC_KEY:?SPARKLE_PUBLIC_KEY is required}"
   case "$MACOS_SIGN_IDENTITY" in 'Developer ID Application:'*) ;; *) printf 'Developer ID Application identity required\n' >&2; exit 1 ;; esac
   prepare_source
   release="$WISENT_OUTPUT_DIR/release"
@@ -88,6 +89,9 @@ build_release() {
 
   app="$source/.build/$PRODUCT.app"
   [ -d "$app" ] || { printf 'release bundle was not produced: %s\n' "$app" >&2; exit 1; }
+  # Installed copies trust only the SUPublicEDKey they carry, so an app whose
+  # key is not the public half of the key this release signs with could never update.
+  [ "$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$app/Contents/Info.plist")" = "$SPARKLE_PUBLIC_KEY" ] || { printf 'SUPublicEDKey is not the public half of the Sparkle key this release signs with\n' >&2; exit 1; }
   stado product signing notarize --app "$app" --evidence "$evidence/notary.json"
 
   staged_app="$release/$PRODUCT.app"
