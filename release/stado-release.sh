@@ -109,6 +109,9 @@ build_release() {
   # separators escaped.
   archive_url="$(stado web origin url /api/release/sparkle --query "product=$PRODUCT_SLUG" --query "version=$WISENT_VERSION" --query "file=$PRODUCT.zip" | sed 's/&/\&amp;/g')"
   printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' "<rss version=\"2.0\" xmlns:sparkle=\"http://www.andymatuschak.org/xml-namespaces/sparkle\"><channel><title>$PRODUCT updates</title><item><title>$PRODUCT $WISENT_VERSION</title><sparkle:version>$WISENT_VERSION</sparkle:version><sparkle:shortVersionString>$WISENT_VERSION</sparkle:shortVersionString><sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion><enclosure url=\"$archive_url\" $signature_line type=\"application/octet-stream\"/></item></channel></rss>" > "$release/appcast.xml"
+  # Apps that set SURequireSignedFeed accept a feed only with the EdDSA
+  # signature sign_update embeds in the appcast itself.
+  "$signer" --ed-key-file "$sparkle_key" "$release/appcast.xml"
   archive_sha="$(shasum -a 256 "$archive" | awk '{print $1}')"
   appcast_sha="$(shasum -a 256 "$release/appcast.xml" | awk '{print $1}')"
   signature_sha="$(shasum -a 256 "$archive.sparkle-signature" | awk '{print $1}')"
