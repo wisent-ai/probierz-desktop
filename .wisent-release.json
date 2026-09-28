@@ -27,6 +27,9 @@
           "build"
         ]
       },
+      "tests": [
+        {"name": "register", "argv": ["swift", "test", "--filter", "ProbierzDesktopTests"]}
+      ],
       "stage": {
         "release/Probierz.app": "Probierz.app",
         "release/Probierz.zip": "Probierz.zip",
