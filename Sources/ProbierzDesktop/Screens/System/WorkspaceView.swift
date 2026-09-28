@@ -155,6 +155,11 @@ struct WorkspaceView: View {
                         }
                     }
                     Divider()
+                    if let failure = model.projectAdoptionsError {
+                        Text("The adopted projects could not be listed — \(failure)")
+                            .font(WisentTypography.body(12))
+                            .foregroundStyle(WisentDesign.danger)
+                    }
                     if let sources = model.projectAdoptions?.sources, !sources.isEmpty {
                         ForEach(sources) { source in
                             VStack(alignment: .leading, spacing: WisentDesign.Space.x1) {
@@ -167,7 +172,7 @@ struct WorkspaceView: View {
                                     .foregroundStyle(WisentDesign.secondary)
                             }
                         }
-                    } else {
+                    } else if model.projectAdoptionsError == nil {
                         Text("No existing project has been adopted. Skipping leaves this workspace empty and usable.")
                             .font(WisentTypography.body(12))
                             .foregroundStyle(WisentDesign.secondary)

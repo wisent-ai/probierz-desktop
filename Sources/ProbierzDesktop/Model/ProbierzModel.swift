@@ -46,6 +46,8 @@ final class ProbierzModel: ObservableObject {
     @Published var adoptionOutcome: WisentMutationOutcome = .idle
     @Published var projectAdoption: ProjectAdoptionResult?
     @Published var projectAdoptions: ProjectAdoptionIndex?
+    /// Why the adopted-project list could not be read; the previous list is kept.
+    @Published var projectAdoptionsError: String?
     @Published var isAdopting = false
 
     @Published var destination: ProbierzDestination = .posture

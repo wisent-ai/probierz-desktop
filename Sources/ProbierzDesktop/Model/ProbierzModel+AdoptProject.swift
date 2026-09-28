@@ -42,9 +42,15 @@ extension ProbierzModel {
     func reloadProjectAdoptions() async {
         guard let repositoryRoot = snapshot?.repositoryRoot else {
             projectAdoptions = nil
+            projectAdoptionsError = nil
             return
         }
-        projectAdoptions = try? await adoptionClient.list(repositoryRoot: repositoryRoot)
+        do {
+            projectAdoptions = try await adoptionClient.list(repositoryRoot: repositoryRoot)
+            projectAdoptionsError = nil
+        } catch {
+            projectAdoptionsError = (error as? LocalizedError)?.errorDescription ?? String(describing: error)
+        }
     }
     /// The failures the operator has not resolved, newest first. Drives the
     /// alert panels on Posture, which quote each manifest's own sentence.
@@ -183,6 +189,7 @@ extension ProbierzModel {
         applyScope()
         projectAdoption = nil
         projectAdoptions = nil
+        projectAdoptionsError = nil
         adoptionOutcome = .idle
         failures = []
         failuresLoadedAt = nil
