@@ -6,6 +6,5 @@
   "bundle_path": ".build/Probierz.app",
   "build_command": "PROBIERZ_INSTALL_AFTER_BUILD=no WISENT_RESTART_AFTER_BUILD=0 ./release/bundle/build-app.sh",
   "archive_name": "Probierz-{version}.zip",
-  "feed_url": "https://charless-mac-mini.tail6443b3.ts.net/api/release/appcast?product=probierz-desktop",
   "minimum_system_version": "14.0"
 }

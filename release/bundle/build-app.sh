@@ -27,23 +27,16 @@ if [ -n "${WISENT_RELEASE_VERSION:-}" ]; then
     /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $WISENT_RELEASE_VERSION" "$CONTENTS/Info.plist"
     /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${WISENT_BUILD_NUMBER:-$WISENT_RELEASE_VERSION}" "$CONTENTS/Info.plist"
 fi
-# The feed URL is .feed_url of .wisent-desktop-release.json, the release
-# manifest wisent-desktop-update reads; WISENT_UPDATE_FEED_URL overrides it
-# for a staging feed. A bundle whose SUFeedURL is empty or not https would
-# never check for updates, so it fails the build here.
-RELEASE_MANIFEST="$ROOT/.wisent-desktop-release.json"
+# Stado resolves the deployment's update origin; source carries no host.
+# WISENT_UPDATE_FEED_URL explicitly overrides it for a staging feed.
 UPDATE_FEED_URL=${WISENT_UPDATE_FEED_URL:-}
-if [ -z "$UPDATE_FEED_URL" ] && [ -f "$RELEASE_MANIFEST" ]; then
-    command -v jq >/dev/null 2>&1 || {
-        printf '%s\n' "jq is required to read $RELEASE_MANIFEST" >&2
-        exit 1
-    }
-    UPDATE_FEED_URL=$(jq -r '.feed_url // empty' "$RELEASE_MANIFEST")
+if [ -z "$UPDATE_FEED_URL" ]; then
+    UPDATE_FEED_URL=$(stado web origin url /api/release/appcast --query "product=$ICON_PRODUCT")
 fi
 case "$UPDATE_FEED_URL" in
     https://*) ;;
     '')
-        printf '%s\n' "no update feed URL: set WISENT_UPDATE_FEED_URL, or .feed_url in $RELEASE_MANIFEST. An app with an empty SUFeedURL can never check for updates." >&2
+        printf '%s\n' "Stado returned no update feed URL; declare an appcast origin or set WISENT_UPDATE_FEED_URL." >&2
         exit 1 ;;
     *)
         printf '%s\n' "update feed URL must use HTTPS: $UPDATE_FEED_URL" >&2
