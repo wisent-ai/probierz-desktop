@@ -71,7 +71,7 @@ Probierz Desktop serves:
 - a **Benchmark** screen (Evidence group) for the product in scope: the suites
   and contenders its manifest declares, every recorded run with ours beside the
   best rival, and the `probierz benchmark` commands — `rivals`, `run`, `show`,
-  `standing`, `compare`, `roadmap`, `author-suite` and `author` — each run as
+  `standing`, `compare`, `roadmap`, `pursue`, `author-suite` and `author` — each run as
   the same finite CLI call an operator types. A refusal is shown as the
   sentence of the command's `probierz-failure` line; `rivals` shows its whole
   answer, gaps included, beside the refusal it exits with;

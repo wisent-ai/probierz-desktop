@@ -1,14 +1,16 @@
 import SwiftUI
 
-/// The three benchmark commands that write: `run` records a run of one suite,
-/// `author-suite` drafts and declares a new suite, and `author` drafts, places,
-/// declares and verifies one contender's driver. Each is the same CLI call an
+/// The benchmark commands that write: `run` records a run of one suite,
+/// `author-suite` drafts and declares a new suite, `author` drafts, places,
+/// declares and verifies one contender's driver, and `pursue` hands a lost
+/// case to Jeden and decides it with a new run. Each is the same CLI call an
 /// operator types; its refusal is the product's own sentence.
 struct BenchmarkActionSheet: View {
     enum Kind: String, CaseIterable, Identifiable {
         case run = "Run a suite"
         case authorSuite = "Author a suite"
         case authorContender = "Author a contender"
+        case pursue = "Pursue a lost case"
         var id: String { rawValue }
     }
 
@@ -24,6 +26,8 @@ struct BenchmarkActionSheet: View {
     @State private var cases = ""
     @State private var contender = ""
     @State private var ours = false
+    @State private var lostCase = ""
+    @State private var budget = ""
 
     var body: some View {
         Form {
@@ -36,6 +40,7 @@ struct BenchmarkActionSheet: View {
             case .run: runFields
             case .authorSuite: authorSuiteFields
             case .authorContender: authorContenderFields
+            case .pursue: pursueFields
             }
             if let problem = store.problem {
                 Text(problem).foregroundStyle(.red).textSelection(.enabled)
@@ -78,6 +83,14 @@ struct BenchmarkActionSheet: View {
             .foregroundStyle(.secondary)
     }
 
+    @ViewBuilder private var pursueFields: some View {
+        suitePicker
+        TextField("Case the newest run lost", text: $lostCase)
+        TextField("Budget in US dollars", text: $budget)
+        Text("Jeden pursues the case in our product's checkout. Probierz then records a new run of the suite, and only that run's standing closes the case.")
+            .foregroundStyle(.secondary)
+    }
+
     private var suitePicker: some View {
         Picker("Suite", selection: $suite) {
             ForEach(store.suites) { Text($0.id).tag($0.id) }
@@ -106,6 +119,11 @@ struct BenchmarkActionSheet: View {
             let id = contender.trimmingCharacters(in: .whitespaces)
             guard !id.isEmpty, !suite.isEmpty else { return nil }
             return ["author", app, "--contender", id, "--suite", suite] + (ours ? ["--ours"] : [])
+        case .pursue:
+            let id = lostCase.trimmingCharacters(in: .whitespaces)
+            let dollars = budget.trimmingCharacters(in: .whitespaces)
+            guard !suite.isEmpty, !id.isEmpty, let amount = Double(dollars), amount > 0 else { return nil }
+            return ["pursue", app, "--suite", suite, "--case", id, "--budget-usd", dollars]
         }
     }
 
