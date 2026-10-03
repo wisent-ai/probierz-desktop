@@ -18,6 +18,8 @@ extension ProbierzRootView {
             ArtifactsView(model: model, onboarding: onboarding)
         case .verdicts:
             VerdictsView(model: model)
+        case .benchmark:
+            BenchmarkView(model: model)
         case .surfaces:
             SurfacesView(model: model)
         case .journeys:

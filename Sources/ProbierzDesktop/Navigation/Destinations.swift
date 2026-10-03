@@ -9,6 +9,7 @@ enum ProbierzDestination: String, CaseIterable, Identifiable, Hashable {
     case register
     case artifacts
     case verdicts
+    case benchmark
     case surfaces
     case journeys
     case preflight
@@ -24,6 +25,7 @@ enum ProbierzDestination: String, CaseIterable, Identifiable, Hashable {
         case .register: "Register"
         case .artifacts: "Artifacts"
         case .verdicts: "Verdicts"
+        case .benchmark: "Benchmark"
         case .surfaces: "Surfaces"
         case .journeys: "Journeys"
         case .preflight: "Preflight"
@@ -39,6 +41,7 @@ enum ProbierzDestination: String, CaseIterable, Identifiable, Hashable {
         case .register: "book.closed"
         case .artifacts: "archivebox"
         case .verdicts: "checkmark.seal"
+        case .benchmark: "chart.bar.xaxis"
         case .surfaces: "square.stack.3d.up"
         case .journeys: "point.topleft.down.curvedto.point.bottomright.up"
         case .preflight: "wrench.and.screwdriver"
@@ -56,7 +59,7 @@ struct DestinationGroup: Identifiable, Sendable {
     /// metadata happens to live in.
     static let all: [DestinationGroup] = [
         DestinationGroup(title: "Work", destinations: [.posture, .runs, .failures, .register]),
-        DestinationGroup(title: "Evidence", destinations: [.artifacts, .verdicts]),
+        DestinationGroup(title: "Evidence", destinations: [.artifacts, .verdicts, .benchmark]),
         DestinationGroup(title: "Specs", destinations: [.surfaces, .journeys]),
         DestinationGroup(title: "System", destinations: [.preflight, .workspace]),
     ]
