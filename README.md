@@ -74,7 +74,11 @@ Probierz Desktop serves:
   `standing`, `compare`, `roadmap`, `pursue`, `author-suite` and `author` — each run as
   the same finite CLI call an operator types. A refusal is shown as the
   sentence of the command's `probierz-failure` line; `rivals` shows its whole
-  answer, gaps included, beside the refusal it exits with;
+  answer, gaps included, beside the refusal it exits with. Its **Scout a
+  product** sheet needs no product in scope: `scout` turns a Trends topic into
+  an opportunity brief with the rivals and the suite, and `adopt` — only once
+  the operator ticks the authority to create — has Stado create that brief's
+  private repository and preview catalog record;
 
 ### Explicit non-goals and limitations
 

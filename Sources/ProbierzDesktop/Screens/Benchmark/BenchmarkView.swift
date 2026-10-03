@@ -9,6 +9,7 @@ struct BenchmarkView: View {
     @ObservedObject var model: ProbierzModel
     @StateObject private var store = BenchmarkStore()
     @State private var acting = false
+    @State private var scouting = false
     private var root: URL? { model.snapshot?.repositoryRoot }
     private var app: String? { model.productScope }
 
@@ -23,6 +24,10 @@ struct BenchmarkView: View {
                 WisentAction("Rivals", symbol: "person.2", kind: .secondary,
                              isEnabled: root != nil && app != nil && !store.isWorking) {
                     if let root, let app { Task { await store.rivals(root: root, app: app) } }
+                },
+                WisentAction("Scout a product", symbol: "binoculars", kind: .secondary,
+                             isEnabled: root != nil && !store.isWorking) {
+                    scouting = true
                 },
                 WisentAction("Refresh", symbol: "arrow.clockwise", kind: .secondary,
                              isEnabled: root != nil && app != nil) {
@@ -47,6 +52,9 @@ struct BenchmarkView: View {
         }
         .sheet(isPresented: $acting) {
             if let root, let app { BenchmarkActionSheet(store: store, root: root, app: app) }
+        }
+        .sheet(isPresented: $scouting) {
+            if let root { BenchmarkScoutSheet(store: store, root: root) }
         }
     }
 
