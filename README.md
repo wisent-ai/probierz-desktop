@@ -76,9 +76,11 @@ Probierz Desktop serves:
   sentence of the command's `probierz-failure` line; `rivals` shows its whole
   answer, gaps included, beside the refusal it exits with. Its **Scout a
   product** sheet needs no product in scope: `scout` turns a Trends topic into
-  an opportunity brief with the rivals and the suite, and `adopt` — only once
-  the operator ticks the authority to create — has Stado create that brief's
-  private repository and preview catalog record;
+  an opportunity brief with the rivals and the suite, `adopt` — only once the
+  operator ticks the authority to create — has Stado create that brief's
+  private repository and preview catalog record, `cycle` runs the whole loop
+  once under the harness's written `autonomy.yaml` policy, and `schedule` has
+  Stado run that cycle on a cron pinned to one host;
 
 ### Explicit non-goals and limitations
 

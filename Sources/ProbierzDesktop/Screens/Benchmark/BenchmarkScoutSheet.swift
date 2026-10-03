@@ -1,16 +1,18 @@
 import Foundation
 import SwiftUI
 
-/// A product that does not exist yet: `probierz benchmark scout` reads a
-/// Trends topic and writes an opportunity brief with the rivals and the
-/// suite, and `probierz benchmark adopt` is the operator's decision on that
-/// brief, which has Stado create the private repository and the preview
-/// catalog record. Each is the same CLI call an operator types; its refusal
-/// is the product's own sentence.
+/// A product that does not exist yet, and the loop that needs nobody:
+/// `probierz benchmark scout` reads a Trends topic and writes an opportunity
+/// brief, `adopt` has Stado create the brief's repository and preview
+/// catalog record, `cycle` runs the whole loop once under the written policy,
+/// and `schedule` has Stado run that cycle on a cron on one host. Each is the
+/// same CLI call an operator types; its refusal is the product's own sentence.
 struct BenchmarkScoutSheet: View {
     enum Kind: String, CaseIterable, Identifiable {
         case scout = "Scout a topic"
         case adopt = "Adopt a brief"
+        case cycle = "Run the loop once"
+        case schedule = "Schedule the loop"
         var id: String { rawValue }
     }
 
@@ -23,6 +25,11 @@ struct BenchmarkScoutSheet: View {
     @State private var observations = ""
     @State private var brief = ""
     @State private var authorised = false
+    @State private var policy = ""
+    @State private var cron = ""
+    @State private var host = ""
+    @State private var harnessDir = ""
+    @State private var secrets = ""
 
     var body: some View {
         Form {
@@ -34,6 +41,8 @@ struct BenchmarkScoutSheet: View {
             switch kind {
             case .scout: scoutFields
             case .adopt: adoptFields
+            case .cycle: cycleFields
+            case .schedule: scheduleFields
             }
             if let problem = store.problem {
                 Text(problem).foregroundStyle(.red).textSelection(.enabled)
@@ -63,6 +72,20 @@ struct BenchmarkScoutSheet: View {
             .foregroundStyle(.secondary)
     }
 
+    @ViewBuilder private var cycleFields: some View {
+        TextField("Policy file (empty: autonomy.yaml in the harness)", text: $policy)
+        Text("Gives every catalog product a Trends topic, scouts every rising topic within the policy's weekly product limit, has the model judge and adopt briefs, runs every suite, writes the roadmap, pursues losses within the policy's budget, and turns open incidents into roadmap items. The report lands under test-results/.autonomy/.")
+            .foregroundStyle(.secondary)
+    }
+
+    @ViewBuilder private var scheduleFields: some View {
+        TextField("Cron, five fields in UTC", text: $cron)
+        TextField("Stado host", text: $host)
+        TextField("Probierz harness directory on that host", text: $harnessDir)
+        TextField("Secrets as NAME=ITEM#FIELD, separated by spaces", text: $secrets)
+        TextField("Policy file on that host (empty: the harness's autonomy.yaml)", text: $policy)
+    }
+
     /// The command line this sheet runs, or `nil` while a required field is
     /// empty, a number is not one, or adoption is not authorised.
     private var arguments: [String]? {
@@ -79,6 +102,21 @@ struct BenchmarkScoutSheet: View {
             let file = brief.trimmingCharacters(in: .whitespaces)
             guard !file.isEmpty, authorised else { return nil }
             return ["adopt", file, "--allow-create"]
+        case .cycle:
+            let file = policy.trimmingCharacters(in: .whitespaces)
+            return file.isEmpty ? ["cycle"] : ["cycle", "--policy", file]
+        case .schedule:
+            let expression = cron.trimmingCharacters(in: .whitespaces)
+            let target = host.trimmingCharacters(in: .whitespaces)
+            let directory = harnessDir.trimmingCharacters(in: .whitespaces)
+            guard !expression.isEmpty, !target.isEmpty, !directory.isEmpty else { return nil }
+            var line = ["schedule", "--cron", expression, "--host", target, "--harness-dir", directory]
+            for secret in secrets.split(separator: " ") where !secret.isEmpty {
+                line += ["--secret-env", String(secret)]
+            }
+            let file = policy.trimmingCharacters(in: .whitespaces)
+            if !file.isEmpty { line += ["--policy", file] }
+            return line
         }
     }
 
