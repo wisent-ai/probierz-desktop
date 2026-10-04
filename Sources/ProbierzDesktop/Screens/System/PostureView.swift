@@ -11,10 +11,6 @@ struct PostureView: View {
     @ObservedObject var model: ProbierzModel
     let chooseWorkspace: () -> Void
 
-    /// Enough failures to show the shape of the problem without turning the
-    /// screen into the Runs table.
-    private static let alertLimit = 3
-
     var body: some View {
         WisentScreen(
             title: "Posture",
@@ -180,14 +176,13 @@ struct PostureView: View {
     }
 
     private var failingRuns: [RunRecord] {
-        Array(model.unresolvedFailures.prefix(Self.alertLimit))
+        model.unresolvedFailures
     }
 
     /// The reasons are `probierz status`' own sentences, reproduced from the same
     /// manifest facts rather than reworded.
     private var blockingDetail: String {
         model.blockingVerdicts
-            .prefix(6)
             .flatMap(\.blockingReasons)
             .joined(separator: "\n")
     }
@@ -206,7 +201,7 @@ struct PostureView: View {
             ) {
                 WisentPanel(padding: 0) {
                     VStack(spacing: 0) {
-                        ForEach(Array(untested.prefix(6))) { journey in
+                        ForEach(untested) { journey in
                             queueRow(
                                 journey: journey,
                                 symbol: "questionmark.circle",
@@ -214,7 +209,7 @@ struct PostureView: View {
                                 detail: "No recorded run covers this journey"
                             )
                         }
-                        ForEach(Array(weak.prefix(6))) { journey in
+                        ForEach(weak) { journey in
                             queueRow(
                                 journey: journey,
                                 symbol: journey.latestStatus?.symbol ?? "xmark.octagon.fill",

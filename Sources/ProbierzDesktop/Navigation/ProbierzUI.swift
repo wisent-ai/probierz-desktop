@@ -127,7 +127,7 @@ struct RunFailurePanel: View {
     private var detail: String {
         var lines = [failure.sentence]
         if failure.reasons.count > 1 {
-            lines.append(contentsOf: failure.reasons.dropFirst().prefix(4))
+            lines.append(contentsOf: failure.reasons.dropFirst())
         }
         if let code = failure.code { lines.append("reason: \(code)") }
         if !failure.facts.isEmpty { lines.append(failure.facts.joined(separator: " · ")) }
