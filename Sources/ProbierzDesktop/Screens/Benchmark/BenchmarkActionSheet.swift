@@ -24,6 +24,7 @@ struct BenchmarkActionSheet: View {
     @State private var repetitions = ""
     @State private var newSuite = ""
     @State private var cases = ""
+    @State private var rounds = ""
     @State private var contender = ""
     @State private var ours = false
     @State private var lostCase = ""
@@ -70,7 +71,8 @@ struct BenchmarkActionSheet: View {
 
     @ViewBuilder private var authorSuiteFields: some View {
         TextField("New suite id", text: $newSuite)
-        TextField("Cases (empty: Probierz's default)", text: $cases)
+        TextField("Cases the suite holds", text: $cases)
+        TextField("Drafts allowed", text: $rounds)
         Text("Drafted from the catalog record of \(app) and its rivals through the Stado model router. An existing suite file is never overwritten.")
             .foregroundStyle(.secondary)
     }
@@ -79,6 +81,7 @@ struct BenchmarkActionSheet: View {
         TextField("Contender id (a rival the catalog names, or ours)", text: $contender)
         Toggle("Our own contender", isOn: $ours)
         suitePicker
+        TextField("Drafts allowed", text: $rounds)
         Text("The driver is placed under benchmark/contenders/ or benchmark/rivals/, declared, and verified with a recorded run of that contender alone.")
             .foregroundStyle(.secondary)
     }
@@ -106,6 +109,11 @@ struct BenchmarkActionSheet: View {
             guard let value = Int(trimmed), value > 0 else { return nil }
             return .some([flag, String(value)])
         }
+        /// A count the command requires: a positive whole number, or nil.
+        func required(_ text: String, _ flag: String) -> [String]? {
+            guard let value = Int(text.trimmingCharacters(in: .whitespaces)), value > 0 else { return nil }
+            return [flag, String(value)]
+        }
         switch kind {
         case .run:
             guard !suite.isEmpty, let extra = count(repetitions, "--repetitions") else { return nil }
@@ -113,12 +121,14 @@ struct BenchmarkActionSheet: View {
                 + chosen.sorted().flatMap { ["--contender", $0] } + (extra ?? [])
         case .authorSuite:
             let id = newSuite.trimmingCharacters(in: .whitespaces)
-            guard !id.isEmpty, let extra = count(cases, "--cases") else { return nil }
-            return ["author-suite", app, "--suite", id] + (extra ?? [])
+            guard !id.isEmpty, let cap = required(cases, "--cases"), let drafts = required(rounds, "--rounds") else {
+                return nil
+            }
+            return ["author-suite", app, "--suite", id] + cap + drafts
         case .authorContender:
             let id = contender.trimmingCharacters(in: .whitespaces)
-            guard !id.isEmpty, !suite.isEmpty else { return nil }
-            return ["author", app, "--contender", id, "--suite", suite] + (ours ? ["--ours"] : [])
+            guard !id.isEmpty, !suite.isEmpty, let drafts = required(rounds, "--rounds") else { return nil }
+            return ["author", app, "--contender", id, "--suite", suite] + (ours ? ["--ours"] : []) + drafts
         case .pursue:
             let id = lostCase.trimmingCharacters(in: .whitespaces)
             let dollars = budget.trimmingCharacters(in: .whitespaces)
