@@ -30,6 +30,7 @@ struct BenchmarkScoutSheet: View {
     @State private var host = ""
     @State private var harnessDir = ""
     @State private var secrets = ""
+    @State private var settings = ""
 
     var body: some View {
         Form {
@@ -83,6 +84,7 @@ struct BenchmarkScoutSheet: View {
         TextField("Stado host", text: $host)
         TextField("Probierz harness directory on that host", text: $harnessDir)
         TextField("Secrets as NAME=ITEM#FIELD, separated by spaces", text: $secrets)
+        TextField("Settings as NAME=VALUE, separated by spaces (router URL, agent id)", text: $settings)
         TextField("Policy file on that host (empty: the harness's autonomy.yaml)", text: $policy)
     }
 
@@ -113,6 +115,9 @@ struct BenchmarkScoutSheet: View {
             var line = ["schedule", "--cron", expression, "--host", target, "--harness-dir", directory]
             for secret in secrets.split(separator: " ") where !secret.isEmpty {
                 line += ["--secret-env", String(secret)]
+            }
+            for setting in settings.split(separator: " ") where !setting.isEmpty {
+                line += ["--env", String(setting)]
             }
             let file = policy.trimmingCharacters(in: .whitespaces)
             if !file.isEmpty { line += ["--policy", file] }
