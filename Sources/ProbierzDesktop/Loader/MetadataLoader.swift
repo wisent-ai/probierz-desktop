@@ -1,20 +1,11 @@
 import Foundation
 
 struct MetadataLoader: Sendable {
-    /// Bounds on what is read from a run's metadata: a front-matter value, an identifier, a trimmed field,
-    /// a SHA-256 digest and a display name.
-    static let maxFrontMatterValue = 400
-    static let maxIdentifierLength = 120
-    static let maxFieldLength = 600
+    /// A SHA-256 digest is 64 hexadecimal characters.
     static let sha256HexLength = 64
-    static let maxDisplayNameLength = 160
     let workspaceRoot: URL
 
     static let repositoryName = "probierz"
-    static let maximumManifests = 2_000
-    static let maximumVisitedEntries = 100_000
-    static let maximumManifestBytes = 4 << 20
-    static let maximumAppManifestBytes = 512 << 10
 
     /// The six surfaces `probierz list` declares, with the packages, tools and
     /// condition names it names. Mirrors `probierz/agent/lib.mjs`.
@@ -120,9 +111,7 @@ struct MetadataLoader: Sendable {
             verdicts: verdicts,
             preflights: latestPreflights(runs: history.runs),
             summaries: summaries(runs: history.runs, artifacts: history.artifacts),
-            loadedAt: Date(),
-            manifestsTruncated: history.truncated,
-            manifestLimit: Self.maximumManifests
+            loadedAt: Date()
         )
     }
 
@@ -225,7 +214,6 @@ struct MetadataLoader: Sendable {
                   let manifestURL = safeURL("\(entry.lastPathComponent)/probierz.yaml", root: appsRoot),
                   let attributes = try? manifestURL.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
                   attributes.isRegularFile == true,
-                  (attributes.fileSize ?? 0) <= Self.maximumAppManifestBytes,
                   let text = try? String(contentsOf: manifestURL, encoding: .utf8)
             else { continue }
             scans[entry.lastPathComponent] = Self.scanAppManifest(text)

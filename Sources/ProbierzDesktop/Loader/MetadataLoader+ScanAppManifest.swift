@@ -65,14 +65,14 @@ extension MetadataLoader {
         if value.hasPrefix("\""), value.hasSuffix("\""), value.count >= 2 {
             value = String(value.dropFirst().dropLast())
         }
-        return key.isEmpty || value.isEmpty ? nil : (key, String(value.prefix(maxFrontMatterValue)))
+        return key.isEmpty || value.isEmpty ? nil : (key, value)
     }
     static func isIdentifier(_ value: String) -> Bool {
         !value.isEmpty
-            && value.count <= maxIdentifierLength
             && value.allSatisfy { $0.isLetter || $0.isNumber || "-_.:".contains($0) }
     }
-    func loadHistory(repositoryRoot: URL) -> (runs: [RunRecord], artifacts: [ArtifactMetadata], truncated: Bool) {
+    /// Every run manifest under test-results, read whole: no count, entry or size ceiling.
+    func loadHistory(repositoryRoot: URL) -> (runs: [RunRecord], artifacts: [ArtifactMetadata]) {
         let resultsRoot = repositoryRoot.appendingPathComponent("test-results", isDirectory: true)
         guard let rootValues = try? resultsRoot.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
               rootValues.isDirectory == true,
@@ -82,18 +82,11 @@ extension MetadataLoader {
                 includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey, .contentModificationDateKey],
                 options: [.skipsHiddenFiles, .skipsPackageDescendants]
               ) else {
-            return ([], [], false)
+            return ([], [])
         }
 
         var manifestURLs: [URL] = []
-        var visitedEntries = 0
-        var truncated = false
         while let url = enumerator.nextObject() as? URL {
-            visitedEntries += 1
-            if visitedEntries >= Self.maximumVisitedEntries {
-                truncated = true
-                break
-            }
             guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]) else {
                 continue
             }
@@ -103,10 +96,6 @@ extension MetadataLoader {
             }
             guard values.isRegularFile == true, url.lastPathComponent == "run-manifest.json" else { continue }
             manifestURLs.append(url)
-            if manifestURLs.count >= Self.maximumManifests {
-                truncated = true
-                break
-            }
         }
 
         var runs: [RunRecord] = []
@@ -114,7 +103,6 @@ extension MetadataLoader {
         runs.reserveCapacity(manifestURLs.count)
         for manifestURL in manifestURLs {
             guard let attributes = try? manifestURL.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey]),
-                  (attributes.fileSize ?? 0) <= Self.maximumManifestBytes,
                   let data = try? Data(contentsOf: manifestURL, options: [.mappedIfSafe]),
                   let manifest = try? JSONDecoder().decode(RunManifest.self, from: data),
                   let runID = normalizedIdentifier(manifest.runId) else {
@@ -193,7 +181,7 @@ extension MetadataLoader {
         }
         runs.sort { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) }
         artifacts.sort { ($0.modifiedAt ?? .distantPast) > ($1.modifiedAt ?? .distantPast) }
-        return (runs, artifacts, truncated)
+        return (runs, artifacts)
     }
     /// Mirrors `normalizedStatus` in `probierz/agent/history.mjs`, including the
     /// fallback: a manifest that names an unknown status is failed once it has a

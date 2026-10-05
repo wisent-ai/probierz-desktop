@@ -41,18 +41,6 @@ struct WorkspaceView: View {
                 readingShape: .metrics(cells: 4, detail: true),
                 chooseWorkspace: chooseWorkspace
             ) {
-                if model.snapshot?.manifestsTruncated == true {
-                    WisentAlertPanel(
-                        tone: .warning,
-                        title: "Only recent runs were loaded",
-                        detail: "The newest \(model.snapshot?.manifestLimit.formatted(.number) ?? "0") runs are shown. Counts may omit older runs.",
-                        actions: [
-                            WisentAction("Re-read", symbol: "arrow.clockwise", kind: .secondary) {
-                                Task { await model.refresh() }
-                            }
-                        ]
-                    )
-                }
                 inventory
                 identity
                 projectAdoption
@@ -105,10 +93,6 @@ struct WorkspaceView: View {
                     WisentField(
                         label: "Last read",
                         value: ProbierzFormat.timestamp(model.snapshot?.loadedAt)
-                    )
-                    WisentField(
-                        label: "Run limit",
-                        value: "\((model.snapshot?.manifestLimit ?? MetadataLoader.maximumManifests).formatted(.number)) per refresh"
                     )
                 }
             }

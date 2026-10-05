@@ -77,7 +77,7 @@ extension MetadataLoader {
         guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
             return nil
         }
-        return String(value.prefix(maxFieldLength))
+        return value
     }
     static func normalizedDigest(_ value: String?) -> String? {
         guard let value = trimmed(value),
@@ -89,7 +89,6 @@ extension MetadataLoader {
     func normalizedIdentifier(_ value: String?) -> String? {
         guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
               !value.isEmpty,
-              value.count <= Self.maxDisplayNameLength,
               value.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) }) else {
             return nil
         }

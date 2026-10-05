@@ -85,8 +85,6 @@ struct ProbierzSnapshot: Sendable {
     let preflights: [PreflightRecord]
     let summaries: [String: ScopeSummary]
     let loadedAt: Date
-    let manifestsTruncated: Bool
-    let manifestLimit: Int
 
     func summary(for product: String?) -> ScopeSummary {
         summaries[product ?? Self.allProducts] ?? ScopeSummary()

@@ -201,11 +201,6 @@ struct ProbierzRootView: View {
             countBadge(model.blockingVerdicts.count, tone: WisentDesign.warning)
         case .preflight where blockedPreflightCount > 0:
             countBadge(blockedPreflightCount, tone: WisentDesign.warning)
-        case .workspace where model.snapshot?.manifestsTruncated == true:
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(WisentDesign.warning)
-                .accessibilityLabel("Older runs not shown")
         default:
             EmptyView()
         }

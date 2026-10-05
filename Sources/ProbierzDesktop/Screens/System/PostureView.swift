@@ -137,18 +137,6 @@ struct PostureView: View {
 
     @ViewBuilder
     private var alerts: some View {
-        if model.snapshot?.manifestsTruncated == true {
-            WisentAlertPanel(
-                tone: .warning,
-                title: "Run history is incomplete",
-                detail: "Only the newest \(model.snapshot?.manifestLimit.formatted(.number) ?? "0") runs are shown. Counts may be lower than the full history.",
-                actions: [
-                    WisentAction("Open Workspace", symbol: "internaldrive", kind: .secondary) {
-                        model.destination = .workspace
-                    }
-                ]
-            )
-        }
         ForEach(failingRuns) { run in
             if let failure = run.failure {
                 RunFailurePanel(
