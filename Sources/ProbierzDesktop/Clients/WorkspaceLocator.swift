@@ -1,9 +1,8 @@
 import Foundation
 
 enum WorkspaceLocator {
-    /// How many ancestors of the app bundle and of each candidate are tried before giving up.
-    private static let bundleAncestorDepth = 14
-    private static let candidateAncestorDepth = 10
+    /// Each candidate and every one of its ancestors up to the filesystem root is tried,
+    /// the app bundle among the candidates; there is no depth at which the search gives up.
     static func resolve(savedPath: String?) -> URL? {
         let manager = FileManager.default
         var candidates: [URL] = []
@@ -20,16 +19,12 @@ enum WorkspaceLocator {
                 .appendingPathComponent("Documents/CodingProjects/Wisent", isDirectory: true)
         )
 
-        var ancestor = Bundle.main.bundleURL.standardizedFileURL
-        for _ in 0..<bundleAncestorDepth {
-            candidates.append(ancestor)
-            ancestor.deleteLastPathComponent()
-        }
+        candidates.append(Bundle.main.bundleURL.standardizedFileURL)
 
         var seen = Set<String>()
         for candidate in candidates {
             var current = candidate.standardizedFileURL
-            for _ in 0..<candidateAncestorDepth {
+            while true {
                 let path = current.path
                 if seen.insert(path).inserted, isWorkspace(current) {
                     return current
