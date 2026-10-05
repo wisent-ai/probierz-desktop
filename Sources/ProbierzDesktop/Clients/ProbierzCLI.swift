@@ -10,9 +10,6 @@ import Foundation
 /// the `probierz-failure` line the CLI writes to stderr, so the window quotes
 /// the product's own sentence.
 enum ProbierzCLI {
-    /// A register or adoption answer is a bounded JSON document; a larger
-    /// stdout is not a Probierz answer.
-    private static let maxOutputBytes = 16 * 1024 * 1024
     private static let failurePrefix = "probierz-failure "
 
     enum Failure: LocalizedError, Equatable {
@@ -138,7 +135,6 @@ enum ProbierzCLI {
         let output = stdout.fileHandleForReading.readDataToEndOfFile()
         drained.wait()
         process.waitUntilExit()
-        guard output.count <= maxOutputBytes else { throw Failure.invalidResponse }
         return Outcome(status: process.terminationStatus, stdout: output, stderr: errors.data)
     }
 }

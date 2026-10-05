@@ -11,6 +11,8 @@ import WisentDesignSystem
 /// `spawnFailure`, `resourceLock` and `preflight`, each verbatim.
 struct RunsView: View {
     @ObservedObject var model: ProbierzModel
+    /// The drafts a repair may make, as the reader states them (`--rounds`).
+    @State var repairRounds = ""
 
     var body: some View {
         let visible = model.visibleRuns

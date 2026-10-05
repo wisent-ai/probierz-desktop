@@ -1,10 +1,6 @@
 import Foundation
 
 struct ProbierzCommandClient: Sendable {
-    /// An app id and a run id are short tokens; a CLI answer larger than this is not a Probierz answer.
-    private static let maxAppIDLength = 128
-    private static let maxRunIDLength = 256
-    private static let maxOutputBytes = 256_000
     enum CommandError: LocalizedError {
         case missingCLI
         case launch(String)
@@ -25,15 +21,14 @@ struct ProbierzCommandClient: Sendable {
         }
     }
 
-    func repair(repositoryRoot: URL, appID: String, runID: String) async throws -> String {
+    func repair(repositoryRoot: URL, appID: String, runID: String, rounds: Int) async throws -> String {
         let cli = repositoryRoot.appendingPathComponent("agent/cli.mjs", isDirectory: false)
         guard FileManager.default.fileExists(atPath: cli.path) else {
             throw CommandError.missingCLI
         }
         let appID = appID.trimmingCharacters(in: .whitespacesAndNewlines)
         let runID = runID.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !appID.isEmpty, appID.count <= Self.maxAppIDLength,
-              !runID.isEmpty, runID.count <= Self.maxRunIDLength else {
+        guard !appID.isEmpty, !runID.isEmpty else {
             throw CommandError.invalidResponse
         }
 
@@ -42,7 +37,7 @@ struct ProbierzCommandClient: Sendable {
         process.arguments = [
             "node", cli.path, "repair", appID,
             "--run", runID,
-            "--rounds", "1",
+            "--rounds", String(rounds),
         ]
         process.currentDirectoryURL = repositoryRoot
         var environment = ProcessInfo.processInfo.environment
@@ -62,9 +57,6 @@ struct ProbierzCommandClient: Sendable {
 
         let stdoutData = stdout.fileHandleForReading.readDataToEndOfFile()
         let stderrData = stderr.fileHandleForReading.readDataToEndOfFile()
-        guard stdoutData.count <= Self.maxOutputBytes, stderrData.count <= Self.maxOutputBytes else {
-            throw CommandError.invalidResponse
-        }
         if process.terminationStatus != 0 {
             let detail = String(data: stderrData, encoding: .utf8)?
                 .split(separator: "\n")

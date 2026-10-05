@@ -217,7 +217,7 @@ final class ProbierzModel: ObservableObject {
         return runs.first { $0.id == selectedRunID }
     }
 
-    func repair(_ run: RunRecord) {
+    func repair(_ run: RunRecord, rounds: Int) {
         guard !repairOutcome.isWorking else { return }
         guard run.status == .failed else {
             repairOutcome = .failed("Only a failed run can be repaired.")
@@ -235,7 +235,8 @@ final class ProbierzModel: ObservableObject {
                     try await commandClient.repair(
                         repositoryRoot: repositoryRoot,
                         appID: run.appID,
-                        runID: run.runID
+                        runID: run.runID,
+                        rounds: rounds
                     )
                 }.value
                 repairOutcome = .succeeded(message)

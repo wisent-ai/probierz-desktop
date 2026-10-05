@@ -14,13 +14,18 @@ extension RunsView {
             RecordedCommandRow(command: command)
         }
         if run.status == .failed {
+            TextField("Drafts the repair may make", text: $repairRounds)
+                .textFieldStyle(.roundedBorder)
             WisentAction(
                 "Repair Run",
                 symbol: "wrench.and.screwdriver",
                 kind: .primary,
+                isEnabled: Int(repairRounds.trimmingCharacters(in: .whitespaces)).map { $0 > 0 } ?? false,
                 isBusy: model.repairOutcome.isWorking
             ) {
-                model.repair(run)
+                if let rounds = Int(repairRounds.trimmingCharacters(in: .whitespaces)), rounds > 0 {
+                    model.repair(run, rounds: rounds)
+                }
             }
             .asButton()
         }
