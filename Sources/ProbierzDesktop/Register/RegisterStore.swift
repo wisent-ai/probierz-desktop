@@ -10,7 +10,8 @@ struct RegisterIncident: Decodable, Sendable {
     let envelope: RegisterEnvelope
 
     enum CodingKeys: String, CodingKey {
-        case incidentID = "incident_id", recordedAt = "recorded_at"
+        case incidentID = "incident_id"
+        case recordedAt = "recorded_at"
         case actor, claim, envelope
         case runID = "run_id"
     }
@@ -24,7 +25,8 @@ struct RegisterEnvelope: Decodable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case service, detail
-        case failurePoint = "failure_point", errorCode = "error_code"
+        case failurePoint = "failure_point"
+        case errorCode = "error_code"
     }
 }
 
@@ -36,7 +38,8 @@ struct RegisterResolution: Decodable, Sendable {
     let runID: String?
 
     enum CodingKeys: String, CodingKey {
-        case incidentID = "incident_id", resolvedAt = "resolved_at"
+        case incidentID = "incident_id"
+        case resolvedAt = "resolved_at"
         case actor, note
         case runID = "run_id"
     }
@@ -93,9 +96,11 @@ final class RegisterStore: ObservableObject {
         generation += 1
         let requested = generation
         do {
-            let data = try await request(workspaceRoot, [
-                "list", "--state=\(stateFilter ?? "all")", "--limit=\(limit)",
-            ])
+            let data = try await request(
+                workspaceRoot,
+                [
+                    "list", "--state=\(stateFilter ?? "all")", "--limit=\(limit)",
+                ])
             struct List: Decodable { let incidents: [RegisterEntry] }
             let response = try JSONDecoder().decode(List.self, from: data)
             guard requested == generation else { return }
@@ -118,7 +123,8 @@ final class RegisterStore: ObservableObject {
         do {
             let data = try await request(workspaceRoot, ["show"], id: id)
             let value = try JSONSerialization.jsonObject(with: data)
-            let formatted = try JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .sortedKeys])
+            let formatted = try JSONSerialization.data(
+                withJSONObject: value, options: [.prettyPrinted, .sortedKeys])
             guard selectedID == id else { return }
             detail = String(decoding: formatted, as: UTF8.self)
         } catch {
@@ -161,7 +167,9 @@ final class RegisterStore: ObservableObject {
 
     /// One `probierz incident` operation's JSON answer. The incident id goes
     /// after `--`, so no id can be read as an option.
-    private func request(_ root: URL, _ arguments: [String], id: String? = nil, input: Data? = nil) async throws -> Data {
+    private func request(_ root: URL, _ arguments: [String], id: String? = nil, input: Data? = nil)
+        async throws -> Data
+    {
         var command = ["incident"] + arguments + ["--json"]
         if let id { command += ["--", id] }
         return try await ProbierzCLI.answer(repositoryRoot: root, arguments: command, input: input)

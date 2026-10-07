@@ -21,7 +21,9 @@ struct ProbierzCommandClient: Sendable {
         }
     }
 
-    func repair(repositoryRoot: URL, appID: String, runID: String, rounds: Int) async throws -> String {
+    func repair(repositoryRoot: URL, appID: String, runID: String, rounds: Int) async throws
+        -> String
+    {
         let cli = repositoryRoot.appendingPathComponent("agent/cli.mjs", isDirectory: false)
         guard FileManager.default.fileExists(atPath: cli.path) else {
             throw CommandError.missingCLI
@@ -58,7 +60,8 @@ struct ProbierzCommandClient: Sendable {
         let stdoutData = stdout.fileHandleForReading.readDataToEndOfFile()
         let stderrData = stderr.fileHandleForReading.readDataToEndOfFile()
         if process.terminationStatus != 0 {
-            let detail = String(data: stderrData, encoding: .utf8)?
+            let detail =
+                String(data: stderrData, encoding: .utf8)?
                 .split(separator: "\n")
                 .last
                 .map(String.init)
@@ -66,7 +69,8 @@ struct ProbierzCommandClient: Sendable {
             throw CommandError.refused(detail)
         }
         guard let payload = try? JSONSerialization.jsonObject(with: stdoutData) as? [String: Any],
-              payload["ok"] as? Bool == true else {
+            payload["ok"] as? Bool == true
+        else {
             throw CommandError.invalidResponse
         }
         if let pullRequest = payload["pullRequest"] as? String, !pullRequest.isEmpty {

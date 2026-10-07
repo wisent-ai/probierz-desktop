@@ -10,7 +10,9 @@ enum WorkspaceLocator {
         if let savedPath, !savedPath.isEmpty {
             candidates.append(URL(fileURLWithPath: savedPath, isDirectory: true))
         }
-        if let environment = ProcessInfo.processInfo.environment["WISENT_WORKSPACE_ROOT"], !environment.isEmpty {
+        if let environment = ProcessInfo.processInfo.environment["WISENT_WORKSPACE_ROOT"],
+            !environment.isEmpty
+        {
             candidates.append(URL(fileURLWithPath: environment, isDirectory: true))
         }
         candidates.append(URL(fileURLWithPath: manager.currentDirectoryPath, isDirectory: true))
@@ -41,8 +43,12 @@ enum WorkspaceLocator {
         let repository = url.appendingPathComponent("probierz", isDirectory: true)
         let package = repository.appendingPathComponent("package.json")
         let historyBoundary = repository.appendingPathComponent("agent/history.mjs")
-        let packageValues = try? package.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
-        let boundaryValues = try? historyBoundary.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
+        let packageValues = try? package.resourceValues(forKeys: [
+            .isRegularFileKey, .isSymbolicLinkKey,
+        ])
+        let boundaryValues = try? historyBoundary.resourceValues(forKeys: [
+            .isRegularFileKey, .isSymbolicLinkKey,
+        ])
         return packageValues?.isRegularFile == true
             && packageValues?.isSymbolicLink != true
             && boundaryValues?.isRegularFile == true

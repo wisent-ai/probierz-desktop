@@ -26,14 +26,18 @@ struct RegisterInspector: View {
                 }
                 if let detail = store.detail {
                     section("Full entry") {
-                        Text(detail).font(.system(.body, design: .monospaced)).textSelection(.enabled)
+                        Text(detail).font(.system(.body, design: .monospaced)).textSelection(
+                            .enabled)
                     }
                 }
             }
             .padding(WisentDesign.Space.x5)
         }
         .frame(width: 340, alignment: .topLeading)
-        .onChange(of: store.selectedID) { note = ""; runID = "" }
+        .onChange(of: store.selectedID) {
+            note = ""
+            runID = ""
+        }
     }
 
     @ViewBuilder private func details(_ entry: RegisterEntry) -> some View {
@@ -66,32 +70,41 @@ struct RegisterInspector: View {
             section("Close it") {
                 TextField("What repaired it", text: $note).textFieldStyle(.roundedBorder)
                     .accessibilityLabel("What repaired this incident")
-                TextField("Verification run ID (optional)", text: $runID).textFieldStyle(.roundedBorder)
+                TextField("Verification run ID (optional)", text: $runID).textFieldStyle(
+                    .roundedBorder)
                 Button("Resolve") {
                     guard let root else { return }
                     let submitted = note
                     let verificationRun = runID
                     Task {
-                        await store.resolve(workspaceRoot: root, id: entry.id, note: submitted, runID: verificationRun)
+                        await store.resolve(
+                            workspaceRoot: root, id: entry.id, note: submitted,
+                            runID: verificationRun)
                         if store.problem == nil { note = "" }
                     }
                 }
-                .disabled(store.isWorking || note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(
+                    store.isWorking || note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
     }
 
-    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content)
+        -> some View
+    {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x2) {
-            Text(title.uppercased()).font(WisentTypeScale.identifierSmall()).foregroundStyle(WisentDesign.secondary)
+            Text(title.uppercased()).font(WisentTypeScale.identifierSmall()).foregroundStyle(
+                WisentDesign.secondary)
             content()
         }
     }
 
     private func row(_ key: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: WisentDesign.Space.x2) {
-            Text(key).font(WisentTypeScale.identifierSmall()).foregroundStyle(WisentDesign.secondary)
-            Text(value).font(WisentTypeScale.identifierSmall()).foregroundStyle(WisentDesign.ink).textSelection(.enabled)
+            Text(key).font(WisentTypeScale.identifierSmall()).foregroundStyle(
+                WisentDesign.secondary)
+            Text(value).font(WisentTypeScale.identifierSmall()).foregroundStyle(WisentDesign.ink)
+                .textSelection(.enabled)
         }
     }
 }

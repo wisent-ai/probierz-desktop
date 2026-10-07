@@ -15,15 +15,18 @@ struct BenchmarkInspector: View {
                 if let run = store.runs.first(where: { $0.id == store.selectedRunID }) {
                     selected(run)
                 } else {
-                    Text("Select a run to read it, its suite's standing, or compare it with an earlier run.")
-                        .font(WisentTypeScale.body()).foregroundStyle(WisentDesign.secondary)
+                    Text(
+                        "Select a run to read it, its suite's standing, or compare it with an earlier run."
+                    )
+                    .font(WisentTypeScale.body()).foregroundStyle(WisentDesign.secondary)
                 }
                 if let problem = store.problem {
                     Text(problem).foregroundStyle(WisentDesign.danger).textSelection(.enabled)
                 }
                 if let answer = store.answer {
                     section(store.answerTitle ?? "Answer") {
-                        Text(answer).font(.system(.body, design: .monospaced)).textSelection(.enabled)
+                        Text(answer).font(.system(.body, design: .monospaced)).textSelection(
+                            .enabled)
                     }
                 }
             }
@@ -55,19 +58,24 @@ struct BenchmarkInspector: View {
                 }
                 Button("Compare") {
                     guard let baseline = baselineID else { return }
-                    perform("\(baseline) → \(run.id)", ["compare", "--baseline", baseline, "--candidate", run.id])
+                    perform(
+                        "\(baseline) → \(run.id)",
+                        ["compare", "--baseline", baseline, "--candidate", run.id])
                 }
                 .disabled(baselineID == nil)
             }
         }
         section("Roadmap") {
-            Text("Writes one catalog roadmap item per case the newest run of \(run.suite.id) lost, and withdraws the items of cases ours now wins.")
-                .font(WisentTypeScale.body()).foregroundStyle(WisentDesign.secondary)
+            Text(
+                "Writes one catalog roadmap item per case the newest run of \(run.suite.id) lost, and withdraws the items of cases ours now wins."
+            )
+            .font(WisentTypeScale.body()).foregroundStyle(WisentDesign.secondary)
             Button("Write roadmap from \(run.suite.id)") {
                 guard let root, let app else { return }
                 Task {
-                    await store.act(root: root, app: app, title: "Roadmap of \(app)",
-                                    ["roadmap", app, "--suite", run.suite.id])
+                    await store.act(
+                        root: root, app: app, title: "Roadmap of \(app)",
+                        ["roadmap", app, "--suite", run.suite.id])
                 }
             }
         }
@@ -81,17 +89,22 @@ struct BenchmarkInspector: View {
         Task { await store.read(root: root, title: title, [verb, app] + arguments.dropFirst()) }
     }
 
-    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content)
+        -> some View
+    {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x2) {
-            Text(title.uppercased()).font(WisentTypeScale.identifierSmall()).foregroundStyle(WisentDesign.secondary)
+            Text(title.uppercased()).font(WisentTypeScale.identifierSmall()).foregroundStyle(
+                WisentDesign.secondary)
             content()
         }
     }
 
     private func row(_ key: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: WisentDesign.Space.x2) {
-            Text(key).font(WisentTypeScale.identifierSmall()).foregroundStyle(WisentDesign.secondary)
-            Text(value).font(WisentTypeScale.identifierSmall()).foregroundStyle(WisentDesign.ink).textSelection(.enabled)
+            Text(key).font(WisentTypeScale.identifierSmall()).foregroundStyle(
+                WisentDesign.secondary)
+            Text(value).font(WisentTypeScale.identifierSmall()).foregroundStyle(WisentDesign.ink)
+                .textSelection(.enabled)
         }
     }
 }

@@ -141,7 +141,9 @@ struct ProbierzRootView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(WisentDesign.Space.x3)
-        .background(WisentDesign.surface, in: RoundedRectangle(cornerRadius: WisentDesign.Radius.medium))
+        .background(
+            WisentDesign.surface, in: RoundedRectangle(cornerRadius: WisentDesign.Radius.medium)
+        )
         .overlay {
             RoundedRectangle(cornerRadius: WisentDesign.Radius.medium)
                 .stroke(WisentDesign.border, lineWidth: WisentDesign.hairline)
@@ -158,11 +160,17 @@ struct ProbierzRootView: View {
             HStack(spacing: WisentDesign.Space.x3) {
                 Image(systemName: destination.symbol)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(isSelected(destination) ? WisentDesign.brand : WisentDesign.muted)
+                    .foregroundStyle(
+                        isSelected(destination) ? WisentDesign.brand : WisentDesign.muted
+                    )
                     .frame(width: 16)
                 Text(destination.title)
-                    .font(isSelected(destination) ? WisentTypography.bodyMedium(13) : WisentTypography.body(13))
-                    .foregroundStyle(isSelected(destination) ? WisentDesign.ink : WisentDesign.secondary)
+                    .font(
+                        isSelected(destination)
+                            ? WisentTypography.bodyMedium(13) : WisentTypography.body(13)
+                    )
+                    .foregroundStyle(
+                        isSelected(destination) ? WisentDesign.ink : WisentDesign.secondary)
                 Spacer(minLength: WisentDesign.Space.x2)
                 indicator(for: destination)
             }
@@ -219,7 +227,6 @@ struct ProbierzRootView: View {
         model.snapshot?.preflights.filter { !$0.isReady }.count ?? 0
     }
 
-
     // MARK: - Detail
 
     /// The detail column is bound to the window, like every screen inside it.
@@ -237,7 +244,9 @@ struct ProbierzRootView: View {
                     WisentErrorBanner(
                         title: "Onboarding",
                         detail: failure,
-                        action: WisentAction("Dismiss", kind: .secondary) { onboarding.dismissError() }
+                        action: WisentAction("Dismiss", kind: .secondary) {
+                            onboarding.dismissError()
+                        }
                     )
                     .padding(.horizontal, WisentDesign.Space.x5)
                     .padding(.top, WisentDesign.Space.x4)
@@ -268,11 +277,6 @@ struct ProbierzRootView: View {
         .background { WisentCanvasBackground() }
     }
 
-
-
-
     // MARK: - Actions
-
-
 
 }

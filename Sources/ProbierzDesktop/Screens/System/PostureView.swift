@@ -56,7 +56,8 @@ struct PostureView: View {
         if model.summary.status.total == 0 {
             WisentEmptyPanel(
                 title: "No run has been recorded here",
-                detail: "No runs are available for \(model.scopeLabel.lowercased()), so there is no evidence to judge yet.",
+                detail:
+                    "No runs are available for \(model.scopeLabel.lowercased()), so there is no evidence to judge yet.",
                 symbol: "tray"
             )
         } else {
@@ -142,7 +143,9 @@ struct PostureView: View {
                 RunFailurePanel(
                     run: run,
                     failure: failure,
-                    action: WisentAction("Open Run", symbol: "list.bullet.rectangle", kind: .secondary) {
+                    action: WisentAction(
+                        "Open Run", symbol: "list.bullet.rectangle", kind: .secondary
+                    ) {
                         model.selectedRunID = run.id
                         model.destination = .runs
                     }
@@ -152,7 +155,8 @@ struct PostureView: View {
         if !model.blockingVerdicts.isEmpty {
             WisentAlertPanel(
                 tone: .warning,
-                title: "\(model.blockingVerdicts.count.formatted(.number)) journeys would block a merge",
+                title:
+                    "\(model.blockingVerdicts.count.formatted(.number)) journeys would block a merge",
                 detail: blockingDetail,
                 actions: [
                     WisentAction("Open Verdicts", symbol: "checkmark.seal", kind: .secondary) {
@@ -180,7 +184,9 @@ struct PostureView: View {
     @ViewBuilder
     private var queue: some View {
         let untested = model.journeys.filter { $0.runCount == 0 }
-        let weak = model.journeys.filter { $0.runCount > 0 && ($0.latestStatus?.needsAttention ?? false) }
+        let weak = model.journeys.filter {
+            $0.runCount > 0 && ($0.latestStatus?.needsAttention ?? false)
+        }
         if !untested.isEmpty || !weak.isEmpty {
             WisentSectionBox(
                 title: "Journeys waiting on evidence",
@@ -202,7 +208,8 @@ struct PostureView: View {
                                 journey: journey,
                                 symbol: journey.latestStatus?.symbol ?? "xmark.octagon.fill",
                                 tone: journey.latestStatus?.tone ?? .danger,
-                                detail: "Last run is \(journey.latestStatus?.title.lowercased() ?? "unresolved")"
+                                detail:
+                                    "Last run is \(journey.latestStatus?.title.lowercased() ?? "unresolved")"
                             )
                         }
                     }

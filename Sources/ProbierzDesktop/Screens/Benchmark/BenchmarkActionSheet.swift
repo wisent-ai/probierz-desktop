@@ -61,10 +61,14 @@ struct BenchmarkActionSheet: View {
         suitePicker
         Text("Contenders (none chosen runs every declared contender)")
         ForEach(store.contenders) { declared in
-            Toggle(declared.ours ? "\(declared.id) (ours)" : declared.id, isOn: Binding(
-                get: { chosen.contains(declared.id) },
-                set: { if $0 { chosen.insert(declared.id) } else { chosen.remove(declared.id) } }
-            ))
+            Toggle(
+                declared.ours ? "\(declared.id) (ours)" : declared.id,
+                isOn: Binding(
+                    get: { chosen.contains(declared.id) },
+                    set: {
+                        if $0 { chosen.insert(declared.id) } else { chosen.remove(declared.id) }
+                    }
+                ))
         }
         TextField("Repetitions (empty: the suite's own)", text: $repetitions)
     }
@@ -73,8 +77,10 @@ struct BenchmarkActionSheet: View {
         TextField("New suite id", text: $newSuite)
         TextField("Cases the suite holds", text: $cases)
         TextField("Drafts allowed", text: $rounds)
-        Text("Drafted from the catalog record of \(app) and its rivals through the Stado model router. An existing suite file is never overwritten.")
-            .foregroundStyle(.secondary)
+        Text(
+            "Drafted from the catalog record of \(app) and its rivals through the Stado model router. An existing suite file is never overwritten."
+        )
+        .foregroundStyle(.secondary)
     }
 
     @ViewBuilder private var authorContenderFields: some View {
@@ -82,16 +88,20 @@ struct BenchmarkActionSheet: View {
         Toggle("Our own contender", isOn: $ours)
         suitePicker
         TextField("Drafts allowed", text: $rounds)
-        Text("The driver is placed under benchmark/contenders/ or benchmark/rivals/, declared, and verified with a recorded run of that contender alone.")
-            .foregroundStyle(.secondary)
+        Text(
+            "The driver is placed under benchmark/contenders/ or benchmark/rivals/, declared, and verified with a recorded run of that contender alone."
+        )
+        .foregroundStyle(.secondary)
     }
 
     @ViewBuilder private var pursueFields: some View {
         suitePicker
         TextField("Case the newest run lost", text: $lostCase)
         TextField("Budget in US dollars", text: $budget)
-        Text("Jeden pursues the case in our product's checkout. Probierz then records a new run of the suite, and only that run's standing closes the case.")
-            .foregroundStyle(.secondary)
+        Text(
+            "Jeden pursues the case in our product's checkout. Probierz then records a new run of the suite, and only that run's standing closes the case."
+        )
+        .foregroundStyle(.secondary)
     }
 
     private var suitePicker: some View {
@@ -111,28 +121,39 @@ struct BenchmarkActionSheet: View {
         }
         /// A count the command requires: a positive whole number, or nil.
         func required(_ text: String, _ flag: String) -> [String]? {
-            guard let value = Int(text.trimmingCharacters(in: .whitespaces)), value > 0 else { return nil }
+            guard let value = Int(text.trimmingCharacters(in: .whitespaces)), value > 0 else {
+                return nil
+            }
             return [flag, String(value)]
         }
         switch kind {
         case .run:
-            guard !suite.isEmpty, let extra = count(repetitions, "--repetitions") else { return nil }
+            guard !suite.isEmpty, let extra = count(repetitions, "--repetitions") else {
+                return nil
+            }
             return ["run", app, "--suite", suite]
                 + chosen.sorted().flatMap { ["--contender", $0] } + (extra ?? [])
         case .authorSuite:
             let id = newSuite.trimmingCharacters(in: .whitespaces)
-            guard !id.isEmpty, let cap = required(cases, "--cases"), let drafts = required(rounds, "--rounds") else {
+            guard !id.isEmpty, let cap = required(cases, "--cases"),
+                let drafts = required(rounds, "--rounds")
+            else {
                 return nil
             }
             return ["author-suite", app, "--suite", id] + cap + drafts
         case .authorContender:
             let id = contender.trimmingCharacters(in: .whitespaces)
-            guard !id.isEmpty, !suite.isEmpty, let drafts = required(rounds, "--rounds") else { return nil }
-            return ["author", app, "--contender", id, "--suite", suite] + (ours ? ["--ours"] : []) + drafts
+            guard !id.isEmpty, !suite.isEmpty, let drafts = required(rounds, "--rounds") else {
+                return nil
+            }
+            return ["author", app, "--contender", id, "--suite", suite] + (ours ? ["--ours"] : [])
+                + drafts
         case .pursue:
             let id = lostCase.trimmingCharacters(in: .whitespaces)
             let dollars = budget.trimmingCharacters(in: .whitespaces)
-            guard !suite.isEmpty, !id.isEmpty, let amount = Double(dollars), amount > 0 else { return nil }
+            guard !suite.isEmpty, !id.isEmpty, let amount = Double(dollars), amount > 0 else {
+                return nil
+            }
             return ["pursue", app, "--suite", suite, "--case", id, "--budget-usd", dollars]
         }
     }

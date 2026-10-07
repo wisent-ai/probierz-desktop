@@ -75,10 +75,13 @@ struct PreflightView: View {
     private func detail(for preflight: PreflightRecord) -> String {
         var lines: [String] = []
         if !preflight.missing.isEmpty {
-            lines.append("Missing: \(preflight.missing.map { requirementLabel(forName: $0) }.joined(separator: ", "))")
+            lines.append(
+                "Missing: \(preflight.missing.map { requirementLabel(forName: $0) }.joined(separator: ", "))"
+            )
         }
         lines.append(contentsOf: preflight.remediation)
-        lines.append("Recorded \(ProbierzFormat.timestamp(preflight.observedAt)) by run \(preflight.runID).")
+        lines.append(
+            "Recorded \(ProbierzFormat.timestamp(preflight.observedAt)) by run \(preflight.runID).")
         return lines.joined(separator: "\n")
     }
 
@@ -107,7 +110,8 @@ struct PreflightView: View {
                     VStack(spacing: 0) {
                         ForEach(preflight.checks) { check in
                             WisentQueueRow(
-                                symbol: check.isSatisfied ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
+                                symbol: check.isSatisfied
+                                    ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
                                 tone: check.isSatisfied ? .success : .warning,
                                 title: requirementLabel(forName: check.name),
                                 detail: check.hint.isEmpty ? "No suggestion recorded" : check.hint,
@@ -128,7 +132,9 @@ struct PreflightView: View {
             // recorded defect that pushed a whole split view off the top edge.
             WisentPanel(padding: 0) {
                 VStack(spacing: 0) {
-                    ForEach(Array((model.snapshot?.conditions ?? []).enumerated()), id: \.element.id) { index, condition in
+                    ForEach(
+                        Array((model.snapshot?.conditions ?? []).enumerated()), id: \.element.id
+                    ) { index, condition in
                         if index > 0 {
                             Rectangle()
                                 .fill(WisentDesign.border)

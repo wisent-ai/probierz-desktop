@@ -1,8 +1,8 @@
 import Combine
 @preconcurrency import Foundation
 import SwiftUI
-import WisentOnboarding
 import WisentDesignSystem
+import WisentOnboarding
 
 @MainActor
 final class ProbierzOnboarding: ObservableObject {
@@ -34,7 +34,9 @@ final class ProbierzOnboarding: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         let installationID: String
-        if let saved = defaults.string(forKey: Self.installationIDKey), UUID(uuidString: saved) != nil {
+        if let saved = defaults.string(forKey: Self.installationIDKey),
+            UUID(uuidString: saved) != nil
+        {
             installationID = saved
         } else {
             installationID = UUID().uuidString.lowercased()
@@ -69,7 +71,8 @@ final class ProbierzOnboarding: ObservableObject {
             )
         } catch {
             client = nil
-            errorMessage = "The first-use walkthrough could not be prepared. \(Self.failureSentence(error))"
+            errorMessage =
+                "The first-use walkthrough could not be prepared. \(Self.failureSentence(error))"
         }
     }
 
@@ -91,7 +94,8 @@ final class ProbierzOnboarding: ObservableObject {
         } catch {
             screen = nil
             status = nil
-            errorMessage = "The first-use walkthrough could not load. \(Self.failureSentence(error))"
+            errorMessage =
+                "The first-use walkthrough could not load. \(Self.failureSentence(error))"
         }
     }
 
@@ -128,10 +132,12 @@ final class ProbierzOnboarding: ObservableObject {
         isWorking = true
         defer { isWorking = false }
         do {
-            guard try await client.advance(
-                evidence: evidence,
-                evidenceRevision: Self.evidenceRevision
-            ) != nil else { return .unavailable }
+            guard
+                try await client.advance(
+                    evidence: evidence,
+                    evidenceRevision: Self.evidenceRevision
+                ) != nil
+            else { return .unavailable }
             await synchronize(using: client)
             try await exposeCurrentScreenIfNeeded(using: client)
             errorMessage = nil
@@ -201,16 +207,16 @@ final class ProbierzOnboarding: ObservableObject {
             return "Onboarding progress could not be written on this machine."
         case .transport:
             return "The onboarding service could not be reached."
-        case let .invalid(reason):
+        case .invalid(let reason):
             return reason
         }
     }
 
     func observeEvidenceBundleInspected(_ artifact: ArtifactMetadata) async {
         guard artifact.kind == .protectedBundle,
-              artifact.isAvailableOnDisk,
-              let client,
-              status == .inProgress
+            artifact.isAvailableOnDisk,
+            let client,
+            status == .inProgress
         else { return }
 
         let revision = "evidence_bundle_inspected:\(artifact.id)"
@@ -223,7 +229,8 @@ final class ProbierzOnboarding: ObservableObject {
             await synchronize(using: client)
             try await client.flush()
         } catch {
-            errorMessage = "Opening the evidence bundle could not be recorded. \(Self.failureSentence(error))"
+            errorMessage =
+                "Opening the evidence bundle could not be recorded. \(Self.failureSentence(error))"
         }
     }
 
@@ -254,10 +261,10 @@ final class ProbierzOnboarding: ObservableObject {
     /// compiled the binary and traps on everyone else's Mac.
     private static func fallbackBundle() -> JourneyBundle? {
         guard let versionID = UUID(uuidString: "C8498F19-AD2A-4E7E-93F2-C173BE84256E"),
-              let data = try? JourneyResource.definitionData(
-                  resource: resourceName,
-                  bundleName: resourceBundleName
-              )
+            let data = try? JourneyResource.definitionData(
+                resource: resourceName,
+                bundleName: resourceBundleName
+            )
         else {
             return nil
         }

@@ -47,7 +47,8 @@ struct RunsView: View {
                     WisentFacetRail(
                         groups: facetGroups,
                         footerTitle: "Selection",
-                        footerDetail: "\(visible.count.formatted(.number)) of \(model.runs.count.formatted(.number)) runs"
+                        footerDetail:
+                            "\(visible.count.formatted(.number)) of \(model.runs.count.formatted(.number)) runs"
                     )
                     centre(visible: visible)
                     inspector
@@ -81,17 +82,18 @@ struct RunsView: View {
                     ) {
                         model.runStatusFilter = nil
                     }
-                ] + RunStatus.allCases.map { value in
-                    WisentFacet(
-                        id: "verdict.\(value.rawValue)",
-                        label: value.title,
-                        count: status.count(of: value),
-                        tone: value.needsAttention ? value.tone : .neutral,
-                        isSelected: model.runStatusFilter == value
-                    ) {
-                        model.runStatusFilter = value
+                ]
+                    + RunStatus.allCases.map { value in
+                        WisentFacet(
+                            id: "verdict.\(value.rawValue)",
+                            label: value.title,
+                            count: status.count(of: value),
+                            tone: value.needsAttention ? value.tone : .neutral,
+                            isSelected: model.runStatusFilter == value
+                        ) {
+                            model.runStatusFilter = value
+                        }
                     }
-                }
             ),
             WisentFacetGroup(
                 "Result",
@@ -104,17 +106,18 @@ struct RunsView: View {
                     ) {
                         model.runEvidenceFilter = nil
                     }
-                ] + EvidenceLevel.allCases.map { level in
-                    WisentFacet(
-                        id: "level.\(level.rawValue)",
-                        label: level.title,
-                        count: evidence.count(of: level),
-                        tone: level == .e0 ? .warning : .neutral,
-                        isSelected: model.runEvidenceFilter == level
-                    ) {
-                        model.runEvidenceFilter = level
+                ]
+                    + EvidenceLevel.allCases.map { level in
+                        WisentFacet(
+                            id: "level.\(level.rawValue)",
+                            label: level.title,
+                            count: evidence.count(of: level),
+                            tone: level == .e0 ? .warning : .neutral,
+                            isSelected: model.runEvidenceFilter == level
+                        ) {
+                            model.runEvidenceFilter = level
+                        }
                     }
-                }
             ),
         ]
     }
@@ -149,9 +152,12 @@ struct RunsView: View {
                 } else if visible.isEmpty {
                     WisentEmptyPanel(
                         title: "No run matches this selection",
-                        detail: "There are \(model.runs.count.formatted(.number)) runs. Current filters exclude all of them.",
+                        detail:
+                            "There are \(model.runs.count.formatted(.number)) runs. Current filters exclude all of them.",
                         symbol: "line.3.horizontal.decrease.circle",
-                        action: WisentAction("Clear filters", kind: .secondary) { model.clearRunFilters() }
+                        action: WisentAction("Clear filters", kind: .secondary) {
+                            model.clearRunFilters()
+                        }
                     )
                     Spacer(minLength: 0)
                 } else {
@@ -233,13 +239,18 @@ struct RunsView: View {
                 if let spec = run.spec {
                     WisentField(label: "Spec", value: spec)
                 }
-                WisentField(label: "Result", value: "\(run.evidenceLevel.title) — \(run.evidenceLevel.detail)", tone: run.evidenceLevel.tone)
+                WisentField(
+                    label: "Result",
+                    value: "\(run.evidenceLevel.title) — \(run.evidenceLevel.detail)",
+                    tone: run.evidenceLevel.tone)
                 WisentField(label: "Started", value: ProbierzFormat.timestamp(run.startedAt))
                 WisentField(label: "Completed", value: ProbierzFormat.timestamp(run.completedAt))
-                WisentField(label: "Duration", value: ProbierzFormat.duration(run.durationMilliseconds))
+                WisentField(
+                    label: "Duration", value: ProbierzFormat.duration(run.durationMilliseconds))
                 WisentField(
                     label: "Artifacts",
-                    value: "\(run.artifactCount.formatted(.number)) · \(ProbierzFormat.bytes(run.artifactBytes))"
+                    value:
+                        "\(run.artifactCount.formatted(.number)) · \(ProbierzFormat.bytes(run.artifactBytes))"
                 )
                 if !run.journeys.isEmpty {
                     WisentField(label: "Journeys", value: run.journeys.joined(separator: "\n"))
@@ -254,10 +265,12 @@ struct RunsView: View {
             }
         } else {
             WisentInspector(eyebrow: "Run details", title: "No run selected") {
-                Text("Select a run to see its verdict, evidence level, source, and failure details.")
-                    .font(WisentTypeScale.body())
-                    .foregroundStyle(WisentDesign.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "Select a run to see its verdict, evidence level, source, and failure details."
+                )
+                .font(WisentTypeScale.body())
+                .foregroundStyle(WisentDesign.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -269,7 +282,5 @@ struct RunsView: View {
         if run.hasProtectedBundle { badges.append(("Protected", .brand)) }
         return badges
     }
-
-
 
 }

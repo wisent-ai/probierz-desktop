@@ -6,7 +6,8 @@ extension ArtifactsView {
     var inspector: some View {
         if let artifact = model.selectedArtifact {
             WisentInspector(
-                eyebrow: artifact.kind == .protectedBundle ? "Protected bundle details" : "Artifact details",
+                eyebrow: artifact.kind == .protectedBundle
+                    ? "Protected bundle details" : "Artifact details",
                 title: artifact.runID,
                 badges: badges(for: artifact)
             ) {
@@ -49,8 +50,11 @@ extension ArtifactsView {
         }
     }
     func badges(for artifact: ArtifactMetadata) -> [(String, WisentTone)] {
-        var badges: [(String, WisentTone)] = [(artifact.kind.title, artifact.kind == .protectedBundle ? .brand : .neutral)]
-        badges.append(artifact.hasSHA256 ? ("Integrity recorded", .success) : ("No integrity code", .warning))
+        var badges: [(String, WisentTone)] = [
+            (artifact.kind.title, artifact.kind == .protectedBundle ? .brand : .neutral)
+        ]
+        badges.append(
+            artifact.hasSHA256 ? ("Integrity recorded", .success) : ("No integrity code", .warning))
         return badges
     }
     @ViewBuilder

@@ -5,7 +5,7 @@ let package = Package(
     name: "ProbierzDesktop",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "ProbierzDesktop", targets: ["ProbierzDesktop"]),
+        .executable(name: "ProbierzDesktop", targets: ["ProbierzDesktop"])
     ],
     dependencies: [
         .package(url: "https://github.com/wisent-ai/wisent-desktop-auth.git", exact: "0.3.6"),
@@ -29,6 +29,6 @@ let package = Package(
             // definition and the identity a published definition is checked
             // against.
             resources: [.process("Resources")]
-        ),
+        )
     ]
 )

@@ -79,7 +79,8 @@ struct MetadataLoader: Sendable {
     static let defaultMinimumEvidence = EvidenceLevel.e2
 
     func load() -> ProbierzSnapshot {
-        let repositoryRoot = workspaceRoot
+        let repositoryRoot =
+            workspaceRoot
             .appendingPathComponent(Self.repositoryName, isDirectory: true)
             .standardizedFileURL
         let apps = scanAppManifests(repositoryRoot: repositoryRoot)
@@ -132,18 +133,20 @@ struct MetadataLoader: Sendable {
             for directory in Self.specDirectories {
                 let relative = "\(spec.packagePath)/\(directory)"
                 guard let url = safeURL(relative, root: repositoryRoot),
-                      let entries = try? FileManager.default.contentsOfDirectory(
+                    let entries = try? FileManager.default.contentsOfDirectory(
                         at: url,
                         includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey],
                         options: [.skipsHiddenFiles]
-                      )
+                    )
                 else { continue }
                 for entry in entries {
                     let name = entry.lastPathComponent
                     guard Self.specSuffixes.contains(where: name.hasSuffix),
-                          let values = try? entry.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey]),
-                          values.isRegularFile == true,
-                          values.isSymbolicLink != true
+                        let values = try? entry.resourceValues(forKeys: [
+                            .isRegularFileKey, .isSymbolicLinkKey,
+                        ]),
+                        values.isRegularFile == true,
+                        values.isSymbolicLink != true
                     else { continue }
                     specPaths.append("\(relative)/\(name)")
                 }
@@ -177,9 +180,13 @@ struct MetadataLoader: Sendable {
         case "tui": "tui"
         case "desktop:cua": "desktop-cua"
         default:
-            if target.hasPrefix("mobile:") { "mobile" }
-            else if target.hasPrefix("desktop:") { "desktop-native" }
-            else { nil }
+            if target.hasPrefix("mobile:") {
+                "mobile"
+            } else if target.hasPrefix("desktop:") {
+                "desktop-native"
+            } else {
+                nil
+            }
         }
     }
 
@@ -199,64 +206,49 @@ struct MetadataLoader: Sendable {
 
     func scanAppManifests(repositoryRoot: URL) -> [String: AppManifestScan] {
         guard let appsRoot = safeURL("apps", root: repositoryRoot),
-              let entries = try? FileManager.default.contentsOfDirectory(
+            let entries = try? FileManager.default.contentsOfDirectory(
                 at: appsRoot,
                 includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
                 options: [.skipsHiddenFiles]
-              )
+            )
         else { return [:] }
 
         var scans: [String: AppManifestScan] = [:]
         for entry in entries {
-            guard let values = try? entry.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
-                  values.isDirectory == true,
-                  values.isSymbolicLink != true,
-                  let manifestURL = safeURL("\(entry.lastPathComponent)/probierz.yaml", root: appsRoot),
-                  let attributes = try? manifestURL.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
-                  attributes.isRegularFile == true,
-                  let text = try? String(contentsOf: manifestURL, encoding: .utf8)
+            guard
+                let values = try? entry.resourceValues(forKeys: [
+                    .isDirectoryKey, .isSymbolicLinkKey,
+                ]),
+                values.isDirectory == true,
+                values.isSymbolicLink != true,
+                let manifestURL = safeURL(
+                    "\(entry.lastPathComponent)/probierz.yaml", root: appsRoot),
+                let attributes = try? manifestURL.resourceValues(forKeys: [
+                    .isRegularFileKey, .fileSizeKey,
+                ]),
+                attributes.isRegularFile == true,
+                let text = try? String(contentsOf: manifestURL, encoding: .utf8)
             else { continue }
             scans[entry.lastPathComponent] = Self.scanAppManifest(text)
         }
         return scans
     }
 
-
-
-
     // MARK: - History
-
 
     // MARK: - Verdict normalization
 
-
-
     // MARK: - Failure reason
-
-
-
 
     // MARK: - Artifacts
 
-
-
-
     // MARK: - Journeys
-
 
     // MARK: - Merge verdicts
 
-
     // MARK: - Counters
 
-
     // MARK: - Boundary
-
-
-
-
-
-
 
 }
 

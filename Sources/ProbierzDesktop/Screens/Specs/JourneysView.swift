@@ -35,7 +35,8 @@ struct JourneysView: View {
                 WisentFacetRail(
                     groups: facetGroups,
                     footerTitle: "Selection",
-                    footerDetail: "\(visible.count.formatted(.number)) of \(model.journeys.count.formatted(.number)) journeys"
+                    footerDetail:
+                        "\(visible.count.formatted(.number)) of \(model.journeys.count.formatted(.number)) journeys"
                 )
                 centre(visible: visible)
                 inspector
@@ -46,19 +47,22 @@ struct JourneysView: View {
     }
 
     private var facetGroups: [WisentFacetGroup] {
-        let noEvidence = model.journeys.lazy.filter { $0.runCount == 0 || $0.bestEvidenceLevel == nil }.count
+        let noEvidence = model.journeys.lazy.filter {
+            $0.runCount == 0 || $0.bestEvidenceLevel == nil
+        }.count
         let attention = model.journeys.lazy.filter { $0.latestStatus?.needsAttention ?? true }.count
         let recorded = model.journeys.lazy.filter { $0.bestEvidenceLevel == .e3 }.count
         return [
             WisentFacetGroup(
                 "Coverage",
                 facets: ProbierzModel.JourneyFilter.allCases.map { filter in
-                    let count = switch filter {
-                    case .all: model.journeys.count
-                    case .noEvidence: noEvidence
-                    case .needsAttention: attention
-                    case .recorded: recorded
-                    }
+                    let count =
+                        switch filter {
+                        case .all: model.journeys.count
+                        case .noEvidence: noEvidence
+                        case .needsAttention: attention
+                        case .recorded: recorded
+                        }
                     return WisentFacet(
                         id: "journey.\(filter.rawValue)",
                         label: filter.title,
@@ -92,7 +96,8 @@ struct JourneysView: View {
                 } else if visible.isEmpty {
                     WisentEmptyPanel(
                         title: "No journey matches this selection",
-                        detail: "The scope holds \(model.journeys.count.formatted(.number)) journeys. The facet and search term in force exclude every one of them.",
+                        detail:
+                            "The scope holds \(model.journeys.count.formatted(.number)) journeys. The facet and search term in force exclude every one of them.",
                         symbol: "line.3.horizontal.decrease.circle",
                         action: WisentAction("Clear filters", kind: .secondary) {
                             model.journeyFilter = .all
@@ -182,7 +187,8 @@ struct JourneysView: View {
                     WisentAlertPanel(
                         tone: .warning,
                         title: "This journey has no evidence",
-                        detail: "No recorded run covers this journey. A merge decision needs evidence."
+                        detail:
+                            "No recorded run covers this journey. A merge decision needs evidence."
                     )
                 }
                 WisentField(label: "Product", value: journey.appID)
@@ -205,12 +211,16 @@ struct JourneysView: View {
                 )
                 WisentField(label: "Pass rate", value: ProbierzFormat.percent(journey.passRate))
                 if let best = journey.bestEvidenceLevel {
-                    WisentField(label: "Best result", value: "\(best.title) — \(best.detail)", tone: best.tone)
+                    WisentField(
+                        label: "Best result", value: "\(best.title) — \(best.detail)",
+                        tone: best.tone)
                 }
                 if let status = journey.latestStatus {
                     WisentField(label: "Last verdict", value: status.title, tone: status.tone)
                 }
-                WisentField(label: "Last run started", value: ProbierzFormat.timestamp(journey.latestStartedAt))
+                WisentField(
+                    label: "Last run started",
+                    value: ProbierzFormat.timestamp(journey.latestStartedAt))
                 if let runID = journey.latestRunID {
                     WisentField(label: "Last run id", value: runID)
                     WisentAction("Open Run", symbol: "list.bullet.rectangle", kind: .secondary) {
@@ -227,10 +237,12 @@ struct JourneysView: View {
             }
         } else {
             WisentInspector(eyebrow: "Journey coverage", title: "No journey selected") {
-                Text("Select a journey to read how many runs cover it, how they ended, the strongest evidence it has reached and its last run.")
-                    .font(WisentTypeScale.body())
-                    .foregroundStyle(WisentDesign.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "Select a journey to read how many runs cover it, how they ended, the strongest evidence it has reached and its last run."
+                )
+                .font(WisentTypeScale.body())
+                .foregroundStyle(WisentDesign.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

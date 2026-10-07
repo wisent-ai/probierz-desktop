@@ -20,7 +20,8 @@ extension RunsView {
                 "Repair Run",
                 symbol: "wrench.and.screwdriver",
                 kind: .primary,
-                isEnabled: Int(repairRounds.trimmingCharacters(in: .whitespaces)).map { $0 > 0 } ?? false,
+                isEnabled: Int(repairRounds.trimmingCharacters(in: .whitespaces)).map { $0 > 0 }
+                    ?? false,
                 isBusy: model.repairOutcome.isWorking
             ) {
                 if let rounds = Int(repairRounds.trimmingCharacters(in: .whitespaces)), rounds > 0 {

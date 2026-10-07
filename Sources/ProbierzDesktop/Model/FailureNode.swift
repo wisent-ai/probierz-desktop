@@ -107,7 +107,9 @@ enum FailureIntakeStore {
     static func directory(workspaceRoot: URL) -> URL {
         // workspaceRoot stays in the signature for the caller's sake; the store
         // itself is the operator-home path the intake writes.
-        if let override = ProcessInfo.processInfo.environment["PROBIERZ_FAILURES_DIR"], !override.isEmpty {
+        if let override = ProcessInfo.processInfo.environment["PROBIERZ_FAILURES_DIR"],
+            !override.isEmpty
+        {
             return URL(fileURLWithPath: override, isDirectory: true)
         }
         return FileManager.default.homeDirectoryForCurrentUser
@@ -116,41 +118,53 @@ enum FailureIntakeStore {
 
     static func load(workspaceRoot: URL) -> [FailureEntry] {
         let root = directory(workspaceRoot: workspaceRoot)
-        guard let rootValues = try? root.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
-              rootValues.isDirectory == true,
-              rootValues.isSymbolicLink != true
+        guard
+            let rootValues = try? root.resourceValues(forKeys: [
+                .isDirectoryKey, .isSymbolicLinkKey,
+            ]),
+            rootValues.isDirectory == true,
+            rootValues.isSymbolicLink != true
         else { return [] }
-        guard let files = try? FileManager.default.contentsOfDirectory(
-            at: root,
-            includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey, .contentModificationDateKey]
-        ) else { return [] }
+        guard
+            let files = try? FileManager.default.contentsOfDirectory(
+                at: root,
+                includingPropertiesForKeys: [
+                    .isRegularFileKey, .isSymbolicLinkKey, .contentModificationDateKey,
+                ]
+            )
+        else { return [] }
 
         let decoder = JSONDecoder()
         var parsed: [(modified: Date, file: String, line: Int, entry: FailureEntry)] = []
         for file in files where file.pathExtension == "jsonl" {
-            guard let values = try? file.resourceValues(
-                forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .contentModificationDateKey]
-            ), values.isRegularFile == true, values.isSymbolicLink != true else { continue }
+            guard
+                let values = try? file.resourceValues(
+                    forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .contentModificationDateKey]
+                ), values.isRegularFile == true, values.isSymbolicLink != true
+            else { continue }
             guard let content = try? String(contentsOf: file, encoding: .utf8) else { continue }
             let modified = values.contentModificationDate ?? .distantPast
             let name = file.lastPathComponent
             for (index, line) in content.split(separator: "\n").enumerated() {
-                guard let envelope = try? decoder.decode(FailureNode.self, from: Data(line.utf8)) else {
+                guard let envelope = try? decoder.decode(FailureNode.self, from: Data(line.utf8))
+                else {
                     continue
                 }
-                parsed.append((
-                    modified: modified,
-                    file: name,
-                    line: index,
-                    entry: FailureEntry(id: "\(name)#\(index)", envelope: envelope)
-                ))
+                parsed.append(
+                    (
+                        modified: modified,
+                        file: name,
+                        line: index,
+                        entry: FailureEntry(id: "\(name)#\(index)", envelope: envelope)
+                    ))
             }
         }
 
         // Newest first: within a service file the last appended line is the
         // newest; the envelope carries no timestamp, so across services the
         // file's modification date is the only honest ordering.
-        return parsed
+        return
+            parsed
             .sorted { lhs, rhs in
                 if lhs.modified != rhs.modified { return lhs.modified > rhs.modified }
                 if lhs.file != rhs.file { return lhs.file < rhs.file }

@@ -17,20 +17,28 @@ struct BenchmarkView: View {
         WisentScreen(
             title: "Benchmark", scope: model.scopeLabel, freshness: store.freshnessLabel,
             actions: [
-                WisentAction("Run or author", symbol: "play", kind: .primary,
-                             isEnabled: root != nil && app != nil && !store.isWorking) {
+                WisentAction(
+                    "Run or author", symbol: "play", kind: .primary,
+                    isEnabled: root != nil && app != nil && !store.isWorking
+                ) {
                     acting = true
                 },
-                WisentAction("Rivals", symbol: "person.2", kind: .secondary,
-                             isEnabled: root != nil && app != nil && !store.isWorking) {
+                WisentAction(
+                    "Rivals", symbol: "person.2", kind: .secondary,
+                    isEnabled: root != nil && app != nil && !store.isWorking
+                ) {
                     if let root, let app { Task { await store.rivals(root: root, app: app) } }
                 },
-                WisentAction("Scout a product", symbol: "binoculars", kind: .secondary,
-                             isEnabled: root != nil && !store.isWorking) {
+                WisentAction(
+                    "Scout a product", symbol: "binoculars", kind: .secondary,
+                    isEnabled: root != nil && !store.isWorking
+                ) {
                     scouting = true
                 },
-                WisentAction("Refresh", symbol: "arrow.clockwise", kind: .secondary,
-                             isEnabled: root != nil && app != nil) {
+                WisentAction(
+                    "Refresh", symbol: "arrow.clockwise", kind: .secondary,
+                    isEnabled: root != nil && app != nil
+                ) {
                     reload()
                 },
             ],
@@ -67,24 +75,37 @@ struct BenchmarkView: View {
     /// screen is scoped to.
     private var facetGroups: [WisentFacetGroup] {
         let products = model.snapshot?.productIDs ?? []
-        return [WisentFacetGroup("Product", facets: products.map { product in
-            WisentFacet(id: "product.\(product)", label: product, count: nil,
-                        isSelected: app == product) { model.productScope = product }
-        })]
+        return [
+            WisentFacetGroup(
+                "Product",
+                facets: products.map { product in
+                    WisentFacet(
+                        id: "product.\(product)", label: product, count: nil,
+                        isSelected: app == product
+                    ) { model.productScope = product }
+                })
+        ]
     }
 
     private var centre: some View {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
             if root == nil {
-                WisentEmptyPanel(title: "No workspace selected",
-                    detail: "Choose the workspace whose benchmarks you want to read.", symbol: "questionmark.folder")
+                WisentEmptyPanel(
+                    title: "No workspace selected",
+                    detail: "Choose the workspace whose benchmarks you want to read.",
+                    symbol: "questionmark.folder")
                 Spacer(minLength: 0)
             } else if app == nil {
-                WisentEmptyPanel(title: "Choose a product",
-                    detail: "A benchmark measures one product against its rivals. Pick it on the left.", symbol: "person.2")
+                WisentEmptyPanel(
+                    title: "Choose a product",
+                    detail:
+                        "A benchmark measures one product against its rivals. Pick it on the left.",
+                    symbol: "person.2")
                 Spacer(minLength: 0)
             } else if let problem = store.problem, store.loadedAt == nil {
-                WisentEmptyPanel(title: "The benchmark could not be read", detail: problem, symbol: "exclamationmark.triangle")
+                WisentEmptyPanel(
+                    title: "The benchmark could not be read", detail: problem,
+                    symbol: "exclamationmark.triangle")
                 Spacer(minLength: 0)
             } else if store.loadedAt == nil {
                 ProgressView("Reading the product's suites, contenders and runs")
@@ -99,17 +120,23 @@ struct BenchmarkView: View {
 
     private var declared: some View {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x2) {
-            Text("SUITES").font(WisentTypeScale.identifierSmall()).foregroundStyle(WisentDesign.secondary)
+            Text("SUITES").font(WisentTypeScale.identifierSmall()).foregroundStyle(
+                WisentDesign.secondary)
             ForEach(store.suites) { suite in
-                Text(suite.refused.map { "\(suite.id): \($0)" }
-                     ?? "\(suite.id) \(suite.version ?? "") — \(suite.cases ?? 0) cases")
-                    .font(WisentTypeScale.body())
-                    .foregroundStyle(suite.refused == nil ? WisentDesign.ink : WisentDesign.danger)
-                    .textSelection(.enabled)
+                Text(
+                    suite.refused.map { "\(suite.id): \($0)" }
+                        ?? "\(suite.id) \(suite.version ?? "") — \(suite.cases ?? 0) cases"
+                )
+                .font(WisentTypeScale.body())
+                .foregroundStyle(suite.refused == nil ? WisentDesign.ink : WisentDesign.danger)
+                .textSelection(.enabled)
             }
-            Text("CONTENDERS").font(WisentTypeScale.identifierSmall()).foregroundStyle(WisentDesign.secondary)
-            Text(store.contenders.map { $0.ours ? "\($0.id) (ours)" : $0.id }.joined(separator: ", "))
-                .font(WisentTypeScale.body()).foregroundStyle(WisentDesign.ink)
+            Text("CONTENDERS").font(WisentTypeScale.identifierSmall()).foregroundStyle(
+                WisentDesign.secondary)
+            Text(
+                store.contenders.map { $0.ours ? "\($0.id) (ours)" : $0.id }.joined(separator: ", ")
+            )
+            .font(WisentTypeScale.body()).foregroundStyle(WisentDesign.ink)
         }
     }
 
@@ -122,8 +149,10 @@ struct BenchmarkView: View {
                 }
                 .width(min: 150, ideal: 180)
                 TableColumn("SUITE") { run in
-                    Text("\(run.suite.id) \(run.suite.version)").font(WisentTypeScale.identifierSmall())
-                        .foregroundStyle(WisentDesign.ink).lineLimit(1)
+                    Text("\(run.suite.id) \(run.suite.version)").font(
+                        WisentTypeScale.identifierSmall()
+                    )
+                    .foregroundStyle(WisentDesign.ink).lineLimit(1)
                 }
                 .width(min: 110, ideal: 140)
                 TableColumn("OURS") { run in
@@ -134,7 +163,8 @@ struct BenchmarkView: View {
                 TableColumn("BEST RIVAL") { run in
                     Text(run.bestRival.map { "\($0.id) \(percent($0.passRate))" } ?? "none ran")
                         .font(WisentTypeScale.identifierSmall())
-                        .foregroundStyle(isBehind(run) ? WisentDesign.warning : WisentDesign.secondary)
+                        .foregroundStyle(
+                            isBehind(run) ? WisentDesign.warning : WisentDesign.secondary)
                 }
                 .width(min: 120, ideal: 160)
             }

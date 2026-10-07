@@ -49,7 +49,8 @@ extension ProbierzModel {
             projectAdoptions = try await adoptionClient.list(repositoryRoot: repositoryRoot)
             projectAdoptionsError = nil
         } catch {
-            projectAdoptionsError = (error as? LocalizedError)?.errorDescription ?? String(describing: error)
+            projectAdoptionsError =
+                (error as? LocalizedError)?.errorDescription ?? String(describing: error)
         }
     }
     /// The failures the operator has not resolved, newest first. Drives the
@@ -63,9 +64,15 @@ extension ProbierzModel {
     }
     var visibleArtifacts: [ArtifactMetadata] {
         artifacts.filter { artifact in
-            guard artifactKindFilter == nil || artifact.kind == artifactKindFilter else { return false }
-            guard artifactIntegrityFilter == nil || artifact.hasSHA256 == artifactIntegrityFilter else { return false }
-            guard artifactAvailabilityFilter == nil || artifact.isAvailableOnDisk == artifactAvailabilityFilter else {
+            guard artifactKindFilter == nil || artifact.kind == artifactKindFilter else {
+                return false
+            }
+            guard artifactIntegrityFilter == nil || artifact.hasSHA256 == artifactIntegrityFilter
+            else { return false }
+            guard
+                artifactAvailabilityFilter == nil
+                    || artifact.isAvailableOnDisk == artifactAvailabilityFilter
+            else {
                 return false
             }
             guard !query.isEmpty else { return true }
@@ -102,15 +109,18 @@ extension ProbierzModel {
         // and the first-use journey only closes once one of their inspectors is
         // on screen. Widening beats leaving the journey unfinishable.
         let inScope = artifacts.contains { $0.kind == .protectedBundle && $0.isAvailableOnDisk }
-        let anywhere = snapshot?.artifacts.contains { $0.kind == .protectedBundle && $0.isAvailableOnDisk } ?? false
+        let anywhere =
+            snapshot?.artifacts.contains { $0.kind == .protectedBundle && $0.isAvailableOnDisk }
+            ?? false
         if !inScope, anywhere { productScope = nil }
         artifactKindFilter = .protectedBundle
         artifactIntegrityFilter = nil
         artifactAvailabilityFilter = nil
         query = ""
-        selectedArtifactID = artifacts.first {
-            $0.kind == .protectedBundle && $0.isAvailableOnDisk
-        }?.id ?? artifacts.first { $0.kind == .protectedBundle }?.id
+        selectedArtifactID =
+            artifacts.first {
+                $0.kind == .protectedBundle && $0.isAvailableOnDisk
+            }?.id ?? artifacts.first { $0.kind == .protectedBundle }?.id
     }
     var visibleJourneys: [JourneyRecord] {
         journeys.filter { journey in
@@ -121,7 +131,10 @@ extension ProbierzModel {
             case .recorded: journey.bestEvidenceLevel == .e3
             }
         }
-        .filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) || $0.appID.localizedCaseInsensitiveContains(query) }
+        .filter {
+            query.isEmpty || $0.name.localizedCaseInsensitiveContains(query)
+                || $0.appID.localizedCaseInsensitiveContains(query)
+        }
     }
     var selectedJourney: JourneyRecord? {
         guard let selectedJourneyID else { return nil }
@@ -135,7 +148,10 @@ extension ProbierzModel {
             case .eligible: !verdict.isBlocking
             }
         }
-        .filter { query.isEmpty || $0.journey.localizedCaseInsensitiveContains(query) || $0.appID.localizedCaseInsensitiveContains(query) }
+        .filter {
+            query.isEmpty || $0.journey.localizedCaseInsensitiveContains(query)
+                || $0.appID.localizedCaseInsensitiveContains(query)
+        }
     }
     var selectedVerdict: VerdictRecord? {
         guard let selectedVerdictID else { return nil }
@@ -144,7 +160,9 @@ extension ProbierzModel {
     var blockingVerdicts: [VerdictRecord] { verdicts.filter(\.isBlocking) }
     var runsForSelectedJourney: [RunRecord] {
         guard let selectedJourney else { return [] }
-        return runs.filter { $0.appID == selectedJourney.appID && $0.journeys.contains(selectedJourney.name) }
+        return runs.filter {
+            $0.appID == selectedJourney.appID && $0.journeys.contains(selectedJourney.name)
+        }
     }
     func refresh() async {
         guard !isRefreshing else { return }
@@ -215,17 +233,26 @@ extension ProbierzModel {
             return
         }
         let scope = productScope
-        runs = scope.map { product in snapshot.runs.filter { $0.appID == product } } ?? snapshot.runs
-        artifacts = scope.map { product in snapshot.artifacts.filter { $0.appID == product } } ?? snapshot.artifacts
-        journeys = scope.map { product in snapshot.journeys.filter { $0.appID == product } } ?? snapshot.journeys
-        verdicts = scope.map { product in snapshot.verdicts.filter { $0.appID == product } } ?? snapshot.verdicts
+        runs =
+            scope.map { product in snapshot.runs.filter { $0.appID == product } } ?? snapshot.runs
+        artifacts =
+            scope.map { product in snapshot.artifacts.filter { $0.appID == product } }
+            ?? snapshot.artifacts
+        journeys =
+            scope.map { product in snapshot.journeys.filter { $0.appID == product } }
+            ?? snapshot.journeys
+        verdicts =
+            scope.map { product in snapshot.verdicts.filter { $0.appID == product } }
+            ?? snapshot.verdicts
         summary = snapshot.summary(for: scope)
 
         var kinds: [ArtifactKind: Int] = [:]
         for artifact in artifacts { kinds[artifact.kind, default: 0] += 1 }
         artifactKindCounts = kinds
 
-        if let selectedRunID, !runs.contains(where: { $0.id == selectedRunID }) { self.selectedRunID = nil }
+        if let selectedRunID, !runs.contains(where: { $0.id == selectedRunID }) {
+            self.selectedRunID = nil
+        }
         if let selectedArtifactID, !artifacts.contains(where: { $0.id == selectedArtifactID }) {
             self.selectedArtifactID = nil
         }

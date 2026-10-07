@@ -65,23 +65,30 @@ struct BenchmarkScoutSheet: View {
         TextField("GitHub owner of the new repository", text: $owner)
         TextField("Observations the model reads", text: $observations)
         TextField("Drafts allowed per question", text: $rounds)
-        Text("Refused while Trends holds too little evidence for the topic or reads it falling. Every product, rival and gap the model names must cite an observation it was given.")
-            .foregroundStyle(.secondary)
+        Text(
+            "Refused while Trends holds too little evidence for the topic or reads it falling. Every product, rival and gap the model names must cite an observation it was given."
+        )
+        .foregroundStyle(.secondary)
     }
 
     @ViewBuilder private var adoptFields: some View {
         TextField("Brief file written by scout", text: $brief)
-        Toggle("Create the brief's private repository and preview catalog record", isOn: $authorised)
+        Toggle(
+            "Create the brief's private repository and preview catalog record", isOn: $authorised)
         TextField("Cases the first suite holds", text: $cases)
         TextField("Suite drafts allowed", text: $rounds)
-        Text("Stado creates the repository, its checkout and the catalog record; the catalog then names the rivals and the benchmark, and Probierz drafts the first suite.")
-            .foregroundStyle(.secondary)
+        Text(
+            "Stado creates the repository, its checkout and the catalog record; the catalog then names the rivals and the benchmark, and Probierz drafts the first suite."
+        )
+        .foregroundStyle(.secondary)
     }
 
     @ViewBuilder private var cycleFields: some View {
         TextField("Policy file (empty: autonomy.yaml in the harness)", text: $policy)
-        Text("Gives every catalog product a Trends topic, scouts every rising topic within the policy's weekly product limit, has the model judge and adopt briefs, runs every suite, writes the roadmap, pursues losses within the policy's budget, and turns open incidents into roadmap items. The report lands under test-results/.autonomy/.")
-            .foregroundStyle(.secondary)
+        Text(
+            "Gives every catalog product a Trends topic, scouts every rising topic within the policy's weekly product limit, has the model judge and adopt briefs, runs every suite, writes the roadmap, pursues losses within the policy's budget, and turns open incidents into roadmap items. The report lands under test-results/.autonomy/."
+        )
+        .foregroundStyle(.secondary)
     }
 
     @ViewBuilder private var scheduleFields: some View {
@@ -89,7 +96,8 @@ struct BenchmarkScoutSheet: View {
         TextField("Stado host", text: $host)
         TextField("Probierz harness directory on that host", text: $harnessDir)
         TextField("Secrets as NAME=ITEM#FIELD, separated by spaces", text: $secrets)
-        TextField("Settings as NAME=VALUE, separated by spaces (router URL, agent id)", text: $settings)
+        TextField(
+            "Settings as NAME=VALUE, separated by spaces (router URL, agent id)", text: $settings)
         TextField("Policy file on that host (empty: the harness's autonomy.yaml)", text: $policy)
     }
 
@@ -97,7 +105,9 @@ struct BenchmarkScoutSheet: View {
     /// empty, a number is not one, or adoption is not authorised.
     private var arguments: [String]? {
         func positive(_ text: String) -> String? {
-            guard let value = Int(text.trimmingCharacters(in: .whitespaces)), value > 0 else { return nil }
+            guard let value = Int(text.trimmingCharacters(in: .whitespaces)), value > 0 else {
+                return nil
+            }
             return String(value)
         }
         switch kind {
@@ -105,11 +115,14 @@ struct BenchmarkScoutSheet: View {
             let name = topic.trimmingCharacters(in: .whitespaces)
             let github = owner.trimmingCharacters(in: .whitespaces)
             guard !name.isEmpty, !github.isEmpty,
-                  let read = positive(observations), let drafts = positive(rounds) else { return nil }
+                let read = positive(observations), let drafts = positive(rounds)
+            else { return nil }
             return ["scout", name, "--owner", github, "--observations", read, "--rounds", drafts]
         case .adopt:
             let file = brief.trimmingCharacters(in: .whitespaces)
-            guard !file.isEmpty, authorised, let suiteCases = positive(cases), let drafts = positive(rounds) else {
+            guard !file.isEmpty, authorised, let suiteCases = positive(cases),
+                let drafts = positive(rounds)
+            else {
                 return nil
             }
             return ["adopt", file, "--allow-create", "--cases", suiteCases, "--rounds", drafts]
@@ -121,7 +134,9 @@ struct BenchmarkScoutSheet: View {
             let target = host.trimmingCharacters(in: .whitespaces)
             let directory = harnessDir.trimmingCharacters(in: .whitespaces)
             guard !expression.isEmpty, !target.isEmpty, !directory.isEmpty else { return nil }
-            var line = ["schedule", "--cron", expression, "--host", target, "--harness-dir", directory]
+            var line = [
+                "schedule", "--cron", expression, "--host", target, "--harness-dir", directory,
+            ]
             for secret in secrets.split(separator: " ") where !secret.isEmpty {
                 line += ["--secret-env", String(secret)]
             }
@@ -151,7 +166,7 @@ struct BenchmarkScoutSheet: View {
     /// The brief file the scout answer names, so adoption starts from it.
     private func writtenBrief() -> String? {
         guard let text = store.answer,
-              let value = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any]
+            let value = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any]
         else { return nil }
         return value["brief"] as? String
     }

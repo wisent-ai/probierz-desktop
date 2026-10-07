@@ -54,7 +54,8 @@ struct SurfacesView: View {
                     WisentAlertPanel(
                         tone: .warning,
                         title: "\(missing.count.formatted(.number)) surfaces are unavailable",
-                        detail: "These surfaces are unavailable: \(missing.map(\.name).joined(separator: ", ")). Their targets cannot run."
+                        detail:
+                            "These surfaces are unavailable: \(missing.map(\.name).joined(separator: ", ")). Their targets cannot run."
                     )
                 }
                 table
@@ -143,7 +144,8 @@ struct SurfacesView: View {
                         : ("Package absent", WisentTone.warning)
                 ]
             ) {
-                WisentField(label: "Package", value: surface.isPackagePresent ? "Available" : "Unavailable")
+                WisentField(
+                    label: "Package", value: surface.isPackagePresent ? "Available" : "Unavailable")
                 WisentField(label: "Tool", value: surface.tool)
                 WisentField(label: "Script", value: surface.scriptLabel)
                 WisentField(label: "Runs on", value: surface.targetsLabel)
@@ -175,10 +177,12 @@ struct SurfacesView: View {
             }
         } else {
             WisentInspector(eyebrow: "Surface details", title: "No surface selected") {
-                Text("Select a surface to see its tools, requirements, available specs, and latest run.")
-                    .font(WisentTypeScale.body())
-                    .foregroundStyle(WisentDesign.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "Select a surface to see its tools, requirements, available specs, and latest run."
+                )
+                .font(WisentTypeScale.body())
+                .foregroundStyle(WisentDesign.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

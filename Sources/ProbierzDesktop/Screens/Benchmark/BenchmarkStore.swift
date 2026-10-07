@@ -141,7 +141,8 @@ final class BenchmarkStore: ObservableObject {
         }
     }
 
-    private func perform(root: URL, title: String, _ arguments: [String], reload app: String?) async {
+    private func perform(root: URL, title: String, _ arguments: [String], reload app: String?) async
+    {
         guard !isWorking else { return }
         isWorking = true
         defer { isWorking = false }
@@ -162,8 +163,9 @@ final class BenchmarkStore: ObservableObject {
 
     private func pretty(_ data: Data) -> String {
         guard let value = try? JSONSerialization.jsonObject(with: data),
-              let formatted = try? JSONSerialization.data(
-                withJSONObject: value, options: [.prettyPrinted, .sortedKeys]) else {
+            let formatted = try? JSONSerialization.data(
+                withJSONObject: value, options: [.prettyPrinted, .sortedKeys])
+        else {
             return String(decoding: data, as: UTF8.self)
         }
         return String(decoding: formatted, as: UTF8.self)

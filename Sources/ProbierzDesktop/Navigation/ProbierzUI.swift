@@ -40,7 +40,9 @@ enum ProbierzFormat {
     static func duration(_ milliseconds: Double) -> String {
         guard milliseconds > 0 else { return "—" }
         let seconds = milliseconds / millisecondsPerSecond
-        if seconds < Double(secondsPerMinute) { return seconds.formatted(.number.precision(.fractionLength(1))) + " s" }
+        if seconds < Double(secondsPerMinute) {
+            return seconds.formatted(.number.precision(.fractionLength(1))) + " s"
+        }
         let minutes = Int(seconds) / secondsPerMinute
         let remainder = Int(seconds) % secondsPerMinute
         return "\(minutes)m \(remainder)s"
@@ -212,16 +214,16 @@ enum ProbierzReadShape {
     @ViewBuilder
     func skeleton(label: String) -> some View {
         switch self {
-        case let .table(columns, rows, header):
+        case .table(let columns, let rows, let header):
             WisentSkeletonTable(rows: rows, columns: columns, header: header, label: label)
-        case let .list(rows, lines, media):
+        case .list(let rows, let lines, let media):
             WisentSkeletonList(rows: rows, lines: lines, media: media, label: label)
-        case let .prose(lines):
+        case .prose(let lines):
             WisentSkeletonText(lines: lines, label: label)
-        case let .metrics(cells, detail):
+        case .metrics(let cells, let detail):
             WisentSkeletonGroup(label: label, spacing: WisentDesign.Space.x3) {
                 HStack(alignment: .top, spacing: WisentDesign.Space.x5) {
-                    ForEach(0 ..< cells, id: \.self) { _ in
+                    ForEach(0..<cells, id: \.self) { _ in
                         VStack(alignment: .leading, spacing: WisentDesign.Space.x2) {
                             WisentSkeleton(.line, width: 52)
                             WisentSkeleton(.heading)
@@ -259,7 +261,8 @@ struct ProbierzSnapshotGate<Content: View>: View {
                     ?? "Choose the workspace you want to review.",
                 symbol: "questionmark.folder",
                 action: chooseWorkspace.map { choose in
-                    WisentAction("Choose Workspace", symbol: "folder", kind: .primary, perform: choose)
+                    WisentAction(
+                        "Choose Workspace", symbol: "folder", kind: .primary, perform: choose)
                 }
             )
             Spacer(minLength: 0)

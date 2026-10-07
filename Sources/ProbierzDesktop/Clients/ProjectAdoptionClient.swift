@@ -58,13 +58,17 @@ struct ProjectAdoptionIndex: Decodable, Sendable {
 /// `probierz project adoptions`: the same core transaction an operator runs,
 /// one finite call per operation.
 struct ProjectAdoptionClient: Sendable {
-    func adopt(repositoryRoot: URL, sourceRoot: URL, replace: Bool) async throws -> ProjectAdoptionResult {
+    func adopt(repositoryRoot: URL, sourceRoot: URL, replace: Bool) async throws
+        -> ProjectAdoptionResult
+    {
         var arguments = ["project", "adopt", "--source=\(sourceRoot.standardizedFileURL.path)"]
         if replace { arguments.append("--replace") }
-        let outcome = try await ProbierzCLI.run(repositoryRoot: repositoryRoot, arguments: arguments)
+        let outcome = try await ProbierzCLI.run(
+            repositoryRoot: repositoryRoot, arguments: arguments)
         // A conflict is an answer: the command prints the result, names every
         // conflicting definition, and exits 1 without writing.
-        if let result = try? JSONDecoder().decode(ProjectAdoptionResult.self, from: outcome.stdout) {
+        if let result = try? JSONDecoder().decode(ProjectAdoptionResult.self, from: outcome.stdout)
+        {
             return result
         }
         guard outcome.status == 0 else { throw ProbierzCLI.refusal(outcome) }
@@ -72,7 +76,8 @@ struct ProjectAdoptionClient: Sendable {
     }
 
     func list(repositoryRoot: URL) async throws -> ProjectAdoptionIndex {
-        let data = try await ProbierzCLI.answer(repositoryRoot: repositoryRoot, arguments: ["project", "adoptions"])
+        let data = try await ProbierzCLI.answer(
+            repositoryRoot: repositoryRoot, arguments: ["project", "adoptions"])
         guard let index = try? JSONDecoder().decode(ProjectAdoptionIndex.self, from: data) else {
             throw ProbierzCLI.Failure.invalidResponse
         }

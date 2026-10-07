@@ -21,7 +21,9 @@ struct WorkspaceView: View {
             scope: model.scopeLabel,
             freshness: model.freshnessLabel,
             actions: [
-                WisentAction("Choose Workspace", symbol: "folder", kind: .secondary, perform: chooseWorkspace),
+                WisentAction(
+                    "Choose Workspace", symbol: "folder", kind: .secondary, perform: chooseWorkspace
+                ),
                 WisentAction(
                     "Refresh",
                     symbol: "arrow.clockwise",
@@ -71,7 +73,8 @@ struct WorkspaceView: View {
             ),
             WisentCounterRow.Counter(
                 "Protected bundles",
-                value: (model.snapshot?.summary(for: nil).protectedBundleCount ?? 0).formatted(.number),
+                value: (model.snapshot?.summary(for: nil).protectedBundleCount ?? 0).formatted(
+                    .number),
                 detail: "available",
                 tone: .brand
             ),
@@ -102,7 +105,8 @@ struct WorkspaceView: View {
     private var projectAdoption: some View {
         WisentSectionBox(
             title: "Adopt existing project",
-            detail: "Import validated app manifests and established spec directories. Adoption never runs a journey.",
+            detail:
+                "Import validated app manifests and established spec directories. Adoption never runs a journey.",
             trailing: "\(model.projectAdoptions?.sources.count ?? 0) source(s)"
         ) {
             WisentPanel {
@@ -129,7 +133,8 @@ struct WorkspaceView: View {
                             Button("Replace these reviewed definitions") {
                                 Task {
                                     _ = await model.adoptProject(
-                                        from: URL(fileURLWithPath: result.sourceRoot, isDirectory: true),
+                                        from: URL(
+                                            fileURLWithPath: result.sourceRoot, isDirectory: true),
                                         replace: true
                                     )
                                 }
@@ -151,15 +156,19 @@ struct WorkspaceView: View {
                                     .font(.system(size: 11, design: .monospaced))
                                     .foregroundStyle(WisentDesign.ink)
                                     .textSelection(.enabled)
-                                Text("\(source.fileCount) definitions · \(source.applications.count) applications · SHA-256 \(source.sourceDigest.prefix(12))…")
-                                    .font(WisentTypography.body(11))
-                                    .foregroundStyle(WisentDesign.secondary)
+                                Text(
+                                    "\(source.fileCount) definitions · \(source.applications.count) applications · SHA-256 \(source.sourceDigest.prefix(12))…"
+                                )
+                                .font(WisentTypography.body(11))
+                                .foregroundStyle(WisentDesign.secondary)
                             }
                         }
                     } else if model.projectAdoptionsError == nil {
-                        Text("No existing project has been adopted. Skipping leaves this workspace empty and usable.")
-                            .font(WisentTypography.body(12))
-                            .foregroundStyle(WisentDesign.secondary)
+                        Text(
+                            "No existing project has been adopted. Skipping leaves this workspace empty and usable."
+                        )
+                        .font(WisentTypography.body(12))
+                        .foregroundStyle(WisentDesign.secondary)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

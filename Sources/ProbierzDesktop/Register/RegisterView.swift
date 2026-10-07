@@ -12,10 +12,14 @@ struct RegisterView: View {
         WisentScreen(
             title: "Register", scope: model.scopeLabel, freshness: store.freshnessLabel,
             actions: [
-                WisentAction("Record incident", symbol: "plus", kind: .primary, isEnabled: root != nil) {
+                WisentAction(
+                    "Record incident", symbol: "plus", kind: .primary, isEnabled: root != nil
+                ) {
                     recording = true
                 },
-                WisentAction("Refresh", symbol: "arrow.clockwise", kind: .secondary, isEnabled: root != nil) {
+                WisentAction(
+                    "Refresh", symbol: "arrow.clockwise", kind: .secondary, isEnabled: root != nil
+                ) {
                     reload()
                 },
             ],
@@ -52,29 +56,44 @@ struct RegisterView: View {
     }
 
     private var facetGroups: [WisentFacetGroup] {
-        [WisentFacetGroup("State", facets: [
-            WisentFacet(id: "state.all", label: "Everything recorded", count: store.entries.count,
-                        isSelected: store.stateFilter == nil) { store.stateFilter = nil },
-            WisentFacet(id: "state.open", label: "Open", count: store.openCount,
-                        isSelected: store.stateFilter == "open") { store.stateFilter = "open" },
-            WisentFacet(id: "state.resolved", label: "Resolved", count: store.resolvedCount,
-                        isSelected: store.stateFilter == "resolved") { store.stateFilter = "resolved" },
-        ])]
+        [
+            WisentFacetGroup(
+                "State",
+                facets: [
+                    WisentFacet(
+                        id: "state.all", label: "Everything recorded", count: store.entries.count,
+                        isSelected: store.stateFilter == nil
+                    ) { store.stateFilter = nil },
+                    WisentFacet(
+                        id: "state.open", label: "Open", count: store.openCount,
+                        isSelected: store.stateFilter == "open"
+                    ) { store.stateFilter = "open" },
+                    WisentFacet(
+                        id: "state.resolved", label: "Resolved", count: store.resolvedCount,
+                        isSelected: store.stateFilter == "resolved"
+                    ) { store.stateFilter = "resolved" },
+                ])
+        ]
     }
 
     private var centre: some View {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
             if root == nil {
-                WisentEmptyPanel(title: "No workspace selected",
-                    detail: "Choose the workspace whose register you want to read.", symbol: "questionmark.folder")
+                WisentEmptyPanel(
+                    title: "No workspace selected",
+                    detail: "Choose the workspace whose register you want to read.",
+                    symbol: "questionmark.folder")
                 Spacer(minLength: 0)
             } else if let problem = store.problem, store.entries.isEmpty {
-                WisentEmptyPanel(title: "The register could not be read", detail: problem, symbol: "exclamationmark.triangle")
+                WisentEmptyPanel(
+                    title: "The register could not be read", detail: problem,
+                    symbol: "exclamationmark.triangle")
                 Spacer(minLength: 0)
             } else if store.loadedAt == nil {
                 ProgressView("Reading the selected repository's register")
             } else if store.entries.isEmpty {
-                WisentEmptyPanel(title: "No entries match this state",
+                WisentEmptyPanel(
+                    title: "No entries match this state",
                     detail: "Choose another state or record an incident.", symbol: "book.closed")
                 Spacer(minLength: 0)
             } else {
@@ -95,7 +114,8 @@ struct RegisterView: View {
                 .width(min: 150, ideal: 180)
                 TableColumn("STATE") { entry in
                     Text(entry.state).font(WisentTypeScale.identifierSmall())
-                        .foregroundStyle(entry.isOpen ? WisentDesign.warning : WisentDesign.secondary)
+                        .foregroundStyle(
+                            entry.isOpen ? WisentDesign.warning : WisentDesign.secondary)
                 }
                 .width(min: 64, ideal: 76)
                 TableColumn("ACTOR") { entry in

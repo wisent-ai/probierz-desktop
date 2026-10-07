@@ -6,7 +6,8 @@ extension MetadataLoader {
         runs: [RunRecord],
         apps: [String: AppManifestScan]
     ) -> [VerdictRecord] {
-        let runsByID = Dictionary(runs.map { ($0.runID, $0) }, uniquingKeysWith: { first, _ in first })
+        let runsByID = Dictionary(
+            runs.map { ($0.runID, $0) }, uniquingKeysWith: { first, _ in first })
         return journeys.map { journey in
             let minimum = apps[journey.appID]?.minimumEvidence ?? Self.defaultMinimumEvidence
             let latest = journey.latestRunID.flatMap { runsByID[$0] }
@@ -16,7 +17,8 @@ extension MetadataLoader {
                     reasons.append("\(journey.name): last run is \(latest.status.rawValue)")
                 }
                 if latest.evidenceLevel.ordinal < minimum.ordinal {
-                    reasons.append("\(journey.name): \(latest.evidenceLevel.title) is below \(minimum.title)")
+                    reasons.append(
+                        "\(journey.name): \(latest.evidenceLevel.title) is below \(minimum.title)")
                 }
             } else {
                 reasons.append("\(journey.name): no runs recorded")
@@ -47,14 +49,18 @@ extension MetadataLoader {
                 update(key) { summary in
                     summary.status.add(run.status)
                     summary.evidence.add(run.evidenceLevel)
-                    if summary.lastStartedAt == nil || (run.startedAt ?? .distantPast) > (summary.lastStartedAt ?? .distantPast) {
+                    if summary.lastStartedAt == nil
+                        || (run.startedAt ?? .distantPast) > (summary.lastStartedAt ?? .distantPast)
+                    {
                         summary.lastRunID = run.runID
                         summary.lastStatus = run.status
                         summary.lastStartedAt = run.startedAt
                     }
                     if run.status == .passed,
-                       summary.lastGreenStartedAt == nil
-                           || (run.startedAt ?? .distantPast) > (summary.lastGreenStartedAt ?? .distantPast) {
+                        summary.lastGreenStartedAt == nil
+                            || (run.startedAt ?? .distantPast)
+                                > (summary.lastGreenStartedAt ?? .distantPast)
+                    {
                         summary.lastGreenRunID = run.runID
                         summary.lastGreenStartedAt = run.startedAt
                     }
@@ -74,22 +80,24 @@ extension MetadataLoader {
         return summaries
     }
     static func trimmed(_ value: String?) -> String? {
-        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty
+        else {
             return nil
         }
         return value
     }
     static func normalizedDigest(_ value: String?) -> String? {
         guard let value = trimmed(value),
-              value.count == sha256HexLength,
-              value.allSatisfy(\.isHexDigit)
+            value.count == sha256HexLength,
+            value.allSatisfy(\.isHexDigit)
         else { return nil }
         return value.lowercased()
     }
     func normalizedIdentifier(_ value: String?) -> String? {
         guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !value.isEmpty,
-              value.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) }) else {
+            !value.isEmpty,
+            value.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) })
+        else {
             return nil
         }
         return value
@@ -109,9 +117,9 @@ extension MetadataLoader {
     func safeURL(_ relativePath: String, root: URL) -> URL? {
         let components = relativePath.split(separator: "/", omittingEmptySubsequences: false)
         guard !relativePath.hasPrefix("/"),
-              !components.isEmpty,
-              !components.contains(".."),
-              !components.contains("")
+            !components.isEmpty,
+            !components.contains(".."),
+            !components.contains("")
         else {
             return nil
         }
@@ -119,7 +127,9 @@ extension MetadataLoader {
         var candidate = root
         for component in components {
             candidate.appendPathComponent(String(component))
-            if (try? candidate.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true {
+            if (try? candidate.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink
+                == true
+            {
                 return nil
             }
         }
@@ -136,8 +146,10 @@ extension MetadataLoader {
         guard absolutePath.hasPrefix("/") else { return nil }
         let normalizedRoot = root.resolvingSymlinksInPath().standardizedFileURL
         let candidate = URL(fileURLWithPath: absolutePath).standardizedFileURL
-        guard candidate.resolvingSymlinksInPath().standardizedFileURL.path
-            .hasPrefix(normalizedRoot.path + "/") else { return nil }
+        guard
+            candidate.resolvingSymlinksInPath().standardizedFileURL.path
+                .hasPrefix(normalizedRoot.path + "/")
+        else { return nil }
         let relative = candidate.path.dropFirst(root.standardizedFileURL.path.count)
         return safeURL(String(relative.drop(while: { $0 == "/" })), root: root)
     }

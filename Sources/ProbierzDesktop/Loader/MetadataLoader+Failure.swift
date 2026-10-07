@@ -30,7 +30,9 @@ extension MetadataLoader {
         }
         reasons.append(contentsOf: (manifest.evidence?.errors ?? []).compactMap(trimmed))
         reasons.append(contentsOf: (manifest.evidence?.captureErrors ?? []).compactMap(trimmed))
-        if manifest.reportValidation?.ok != true, let error = trimmed(manifest.reportValidation?.error) {
+        if manifest.reportValidation?.ok != true,
+            let error = trimmed(manifest.reportValidation?.error)
+        {
             reasons.append(error)
         }
         if let cleanupError = trimmed(manifest.cleanupError) { reasons.append(cleanupError) }
@@ -42,7 +44,9 @@ extension MetadataLoader {
             if !preflight.missing.isEmpty {
                 let missing = preflight.missing.joined(separator: ", ")
                 let hint = preflight.remediation.joined(separator: "; ")
-                reasons.append(hint.isEmpty ? "missing: \(missing)" : "missing: \(missing); remediation: \(hint)")
+                reasons.append(
+                    hint.isEmpty
+                        ? "missing: \(missing)" : "missing: \(missing); remediation: \(hint)")
             }
         }
 
@@ -61,13 +65,16 @@ extension MetadataLoader {
         if manifest.reportValidation?.ok == true { facts.append("report validation recorded ok") }
         if manifest.evidence?.analysis == true { facts.append("analysis recorded valid") }
 
-        let headline = status == .blocked
+        let headline =
+            status == .blocked
             ? "Run blocked before the suite started"
             : "Run failed"
-        let sentence = reasons.first ?? [
-            "The run manifest records status \"\(manifest.status ?? "unknown")\" without a reason sentence:",
-            "evidence.errors, reportValidation.error, setupError, spawnFailure, resourceLock and preflight are all absent or empty.",
-        ].joined(separator: " ")
+        let sentence =
+            reasons.first
+            ?? [
+                "The run manifest records status \"\(manifest.status ?? "unknown")\" without a reason sentence:",
+                "evidence.errors, reportValidation.error, setupError, spawnFailure, resourceLock and preflight are all absent or empty.",
+            ].joined(separator: " ")
 
         return RunFailure(
             headline: headline,
@@ -230,7 +237,8 @@ extension MetadataLoader {
                 accumulator.summary.add(run.status)
                 if accumulator.latest == nil { accumulator.latest = run }
                 if run.status == .passed,
-                   run.evidenceLevel.ordinal > (accumulator.best?.ordinal ?? -1) {
+                    run.evidenceLevel.ordinal > (accumulator.best?.ordinal ?? -1)
+                {
                     accumulator.best = run.evidenceLevel
                 }
                 accumulators[identifier] = accumulator

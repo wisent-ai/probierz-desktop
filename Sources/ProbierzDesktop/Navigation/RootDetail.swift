@@ -56,7 +56,8 @@ extension ProbierzRootView {
     func chooseAdoptionSource() {
         let panel = NSOpenPanel()
         panel.title = "Choose an existing Probierz project"
-        panel.message = "Choose a Git repository containing apps/<appId>/probierz.yaml and established Probierz package spec directories. Nothing will run."
+        panel.message =
+            "Choose a Git repository containing apps/<appId>/probierz.yaml and established Probierz package spec directories. Nothing will run."
         panel.prompt = "Adopt"
         panel.canChooseFiles = false
         panel.canChooseDirectories = true

@@ -22,11 +22,12 @@ extension MetadataLoader {
 
             if indent == 0 {
                 currentJourney = nil
-                block = switch entry.key {
-                case "journeys": .journeys
-                case "pullRequestPolicy": .policy
-                default: .other
-                }
+                block =
+                    switch entry.key {
+                    case "journeys": .journeys
+                    case "pullRequestPolicy": .policy
+                    default: .other
+                    }
                 continue
             }
 
@@ -41,8 +42,8 @@ extension MetadataLoader {
                 if entry.key == "description" { scan.journeyDescriptions[journey] = value }
             case (.policy, 2):
                 guard entry.key == "minimumEvidence",
-                      let value = entry.value,
-                      let level = EvidenceLevel(rawValue: value.lowercased())
+                    let value = entry.value,
+                    let level = EvidenceLevel(rawValue: value.lowercased())
                 else { continue }
                 scan.minimumEvidence = level
             default:
@@ -74,27 +75,40 @@ extension MetadataLoader {
     /// Every run manifest under test-results, read whole: no count, entry or size ceiling.
     func loadHistory(repositoryRoot: URL) -> (runs: [RunRecord], artifacts: [ArtifactMetadata]) {
         let resultsRoot = repositoryRoot.appendingPathComponent("test-results", isDirectory: true)
-        guard let rootValues = try? resultsRoot.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
-              rootValues.isDirectory == true,
-              rootValues.isSymbolicLink != true,
-              let enumerator = FileManager.default.enumerator(
+        guard
+            let rootValues = try? resultsRoot.resourceValues(forKeys: [
+                .isDirectoryKey, .isSymbolicLinkKey,
+            ]),
+            rootValues.isDirectory == true,
+            rootValues.isSymbolicLink != true,
+            let enumerator = FileManager.default.enumerator(
                 at: resultsRoot,
-                includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey, .contentModificationDateKey],
+                includingPropertiesForKeys: [
+                    .isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey,
+                    .contentModificationDateKey,
+                ],
                 options: [.skipsHiddenFiles, .skipsPackageDescendants]
-              ) else {
+            )
+        else {
             return ([], [])
         }
 
         var manifestURLs: [URL] = []
         while let url = enumerator.nextObject() as? URL {
-            guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]) else {
+            guard
+                let values = try? url.resourceValues(forKeys: [
+                    .isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey,
+                ])
+            else {
                 continue
             }
             if values.isSymbolicLink == true {
                 if values.isDirectory == true { enumerator.skipDescendants() }
                 continue
             }
-            guard values.isRegularFile == true, url.lastPathComponent == "run-manifest.json" else { continue }
+            guard values.isRegularFile == true, url.lastPathComponent == "run-manifest.json" else {
+                continue
+            }
             manifestURLs.append(url)
         }
 
@@ -102,10 +116,14 @@ extension MetadataLoader {
         var artifacts: [ArtifactMetadata] = []
         runs.reserveCapacity(manifestURLs.count)
         for manifestURL in manifestURLs {
-            guard let attributes = try? manifestURL.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey]),
-                  let data = try? Data(contentsOf: manifestURL, options: [.mappedIfSafe]),
-                  let manifest = try? JSONDecoder().decode(RunManifest.self, from: data),
-                  let runID = normalizedIdentifier(manifest.runId) else {
+            guard
+                let attributes = try? manifestURL.resourceValues(forKeys: [
+                    .fileSizeKey, .contentModificationDateKey,
+                ]),
+                let data = try? Data(contentsOf: manifestURL, options: [.mappedIfSafe]),
+                let manifest = try? JSONDecoder().decode(RunManifest.self, from: data),
+                let runID = normalizedIdentifier(manifest.runId)
+            else {
                 continue
             }
             let runDirectory = manifestURL.deletingLastPathComponent()
@@ -136,47 +154,52 @@ extension MetadataLoader {
             let startedAt = parseDate(manifest.startedAt)
             let completedAt = parseDate(manifest.completedAt)
             let status = Self.normalizedStatus(manifest.status, completedAt: completedAt)
-            let preflight = preflightRecord(manifest.preflight, runID: runID, target: target, observedAt: completedAt ?? startedAt)
-            runs.append(RunRecord(
-                runID: runID,
-                appID: appID,
-                target: target,
-                kind: normalizedLabel(manifest.kind, fallback: "adhoc"),
-                spec: normalizedIdentifier(manifest.spec),
-                status: status,
-                evidenceLevel: Self.evidenceLevel(manifest, status: status),
-                startedAt: startedAt,
-                completedAt: completedAt,
-                durationMilliseconds: max(0, manifest.durationMs ?? 0),
-                manifestModifiedAt: attributes.contentModificationDate,
-                artifactCount: runArtifacts.count,
-                artifactBytes: runArtifacts.reduce(0) { $0 + $1.bytes },
-                journeys: (manifest.appManifest?.journeys ?? []).compactMap(normalizedIdentifier),
-                isRecorded: manifest.conditions?.record == true,
-                hasReportEvidence: manifest.evidence?.report == true,
-                hasAnalysisEvidence: manifest.evidence?.analysis == true,
-                isCapturePresent: manifest.evidence?.capturePresent == true,
-                exitCode: manifest.exitCode,
-                signalName: normalizedIdentifier(manifest.signal),
-                didTimeOut: manifest.timedOut == true,
-                hostPlatform: normalizedIdentifier(manifest.host?.platform),
-                hostName: normalizedIdentifier(manifest.host?.hostname),
-                deviceName: normalizedIdentifier(manifest.device?.name),
-                deviceRuntime: normalizedIdentifier(manifest.device?.runtime),
-                harnessGitSHA: normalizedIdentifier(manifest.harness?.gitSha),
-                harnessIsDirty: manifest.harness?.dirty == true,
-                sourceRepositories: (manifest.source?.repositories ?? []).compactMap { repository in
-                    guard let name = normalizedIdentifier(repository.name) else { return nil }
-                    return SourceIdentityRecord(
-                        name: name,
-                        gitSHA: normalizedIdentifier(repository.gitSha),
-                        isDirty: repository.dirty == true
-                    )
-                },
-                failure: Self.failure(manifest, status: status, preflight: preflight),
-                preflight: preflight,
-                hasProtectedBundle: manifest.protection != nil
-            ))
+            let preflight = preflightRecord(
+                manifest.preflight, runID: runID, target: target,
+                observedAt: completedAt ?? startedAt)
+            runs.append(
+                RunRecord(
+                    runID: runID,
+                    appID: appID,
+                    target: target,
+                    kind: normalizedLabel(manifest.kind, fallback: "adhoc"),
+                    spec: normalizedIdentifier(manifest.spec),
+                    status: status,
+                    evidenceLevel: Self.evidenceLevel(manifest, status: status),
+                    startedAt: startedAt,
+                    completedAt: completedAt,
+                    durationMilliseconds: max(0, manifest.durationMs ?? 0),
+                    manifestModifiedAt: attributes.contentModificationDate,
+                    artifactCount: runArtifacts.count,
+                    artifactBytes: runArtifacts.reduce(0) { $0 + $1.bytes },
+                    journeys: (manifest.appManifest?.journeys ?? []).compactMap(
+                        normalizedIdentifier),
+                    isRecorded: manifest.conditions?.record == true,
+                    hasReportEvidence: manifest.evidence?.report == true,
+                    hasAnalysisEvidence: manifest.evidence?.analysis == true,
+                    isCapturePresent: manifest.evidence?.capturePresent == true,
+                    exitCode: manifest.exitCode,
+                    signalName: normalizedIdentifier(manifest.signal),
+                    didTimeOut: manifest.timedOut == true,
+                    hostPlatform: normalizedIdentifier(manifest.host?.platform),
+                    hostName: normalizedIdentifier(manifest.host?.hostname),
+                    deviceName: normalizedIdentifier(manifest.device?.name),
+                    deviceRuntime: normalizedIdentifier(manifest.device?.runtime),
+                    harnessGitSHA: normalizedIdentifier(manifest.harness?.gitSha),
+                    harnessIsDirty: manifest.harness?.dirty == true,
+                    sourceRepositories: (manifest.source?.repositories ?? []).compactMap {
+                        repository in
+                        guard let name = normalizedIdentifier(repository.name) else { return nil }
+                        return SourceIdentityRecord(
+                            name: name,
+                            gitSHA: normalizedIdentifier(repository.gitSha),
+                            isDirty: repository.dirty == true
+                        )
+                    },
+                    failure: Self.failure(manifest, status: status, preflight: preflight),
+                    preflight: preflight,
+                    hasProtectedBundle: manifest.protection != nil
+                ))
             artifacts.append(contentsOf: runArtifacts)
         }
         runs.sort { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) }
@@ -200,9 +223,10 @@ extension MetadataLoader {
     static func evidenceLevel(_ manifest: RunManifest, status: RunStatus) -> EvidenceLevel {
         guard status == .passed else { return .e0 }
         if manifest.conditions?.record == true,
-           manifest.evidence?.report == true,
-           manifest.evidence?.analysis == true,
-           manifest.evidence?.capturePresent == true {
+            manifest.evidence?.report == true,
+            manifest.evidence?.analysis == true,
+            manifest.evidence?.capturePresent == true
+        {
             return .e3
         }
         return .e2

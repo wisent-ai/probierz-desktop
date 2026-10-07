@@ -36,7 +36,8 @@ struct ArtifactsView: View {
                 WisentFacetRail(
                     groups: facetGroups,
                     footerTitle: "Selection",
-                    footerDetail: "\(visible.count.formatted(.number)) of \(model.artifacts.count.formatted(.number)) · \(ProbierzFormat.bytes(visible.reduce(0) { $0 + $1.bytes }))"
+                    footerDetail:
+                        "\(visible.count.formatted(.number)) of \(model.artifacts.count.formatted(.number)) · \(ProbierzFormat.bytes(visible.reduce(0) { $0 + $1.bytes }))"
                 )
                 centre(visible: visible)
                 inspector
@@ -79,19 +80,20 @@ struct ArtifactsView: View {
                     ) {
                         model.artifactKindFilter = nil
                     }
-                ] + ArtifactKind.allCases.compactMap { kind in
-                    let count = model.artifactKindCounts[kind] ?? 0
-                    guard count > 0 || model.artifactKindFilter == kind else { return nil }
-                    return WisentFacet(
-                        id: "kind.\(kind.rawValue)",
-                        label: kind.title,
-                        count: count,
-                        tone: kind == .protectedBundle ? .brand : .neutral,
-                        isSelected: model.artifactKindFilter == kind
-                    ) {
-                        model.artifactKindFilter = kind
+                ]
+                    + ArtifactKind.allCases.compactMap { kind in
+                        let count = model.artifactKindCounts[kind] ?? 0
+                        guard count > 0 || model.artifactKindFilter == kind else { return nil }
+                        return WisentFacet(
+                            id: "kind.\(kind.rawValue)",
+                            label: kind.title,
+                            count: count,
+                            tone: kind == .protectedBundle ? .brand : .neutral,
+                            isSelected: model.artifactKindFilter == kind
+                        ) {
+                            model.artifactKindFilter = kind
+                        }
                     }
-                }
             ),
             WisentFacetGroup(
                 "Integrity",
@@ -183,16 +185,20 @@ struct ArtifactsView: View {
                 if model.artifacts.isEmpty {
                     WisentEmptyPanel(
                         title: "No artifacts available",
-                        detail: "No completed run in \(model.scopeLabel.lowercased()) includes an artifact.",
+                        detail:
+                            "No completed run in \(model.scopeLabel.lowercased()) includes an artifact.",
                         symbol: "archivebox"
                     )
                     Spacer(minLength: 0)
                 } else if visible.isEmpty {
                     WisentEmptyPanel(
                         title: "No artifact matches this selection",
-                        detail: "There are \(model.artifacts.count.formatted(.number)) artifacts. Current filters exclude all of them.",
+                        detail:
+                            "There are \(model.artifacts.count.formatted(.number)) artifacts. Current filters exclude all of them.",
                         symbol: "line.3.horizontal.decrease.circle",
-                        action: WisentAction("Clear filters", kind: .secondary) { model.clearArtifactFilters() }
+                        action: WisentAction("Clear filters", kind: .secondary) {
+                            model.clearArtifactFilters()
+                        }
                     )
                     Spacer(minLength: 0)
                 } else {
@@ -264,7 +270,5 @@ struct ArtifactsView: View {
     }
 
     // MARK: - Inspector
-
-
 
 }

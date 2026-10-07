@@ -38,7 +38,8 @@ struct FailuresView: View {
                 WisentFacetRail(
                     groups: facetGroups,
                     footerTitle: "Selection",
-                    footerDetail: "\(visible.count.formatted(.number)) of \(model.failures.count.formatted(.number)) failures"
+                    footerDetail:
+                        "\(visible.count.formatted(.number)) of \(model.failures.count.formatted(.number)) failures"
                 )
                 centre(visible: visible)
                 inspector
@@ -63,16 +64,17 @@ struct FailuresView: View {
                     ) {
                         model.failureServiceFilter = nil
                     }
-                ] + model.failureServiceCounts.map { pair in
-                    WisentFacet(
-                        id: "service.\(pair.service)",
-                        label: pair.service,
-                        count: pair.count,
-                        isSelected: model.failureServiceFilter == pair.service
-                    ) {
-                        model.failureServiceFilter = pair.service
+                ]
+                    + model.failureServiceCounts.map { pair in
+                        WisentFacet(
+                            id: "service.\(pair.service)",
+                            label: pair.service,
+                            count: pair.count,
+                            isSelected: model.failureServiceFilter == pair.service
+                        ) {
+                            model.failureServiceFilter = pair.service
+                        }
                     }
-                }
             ),
             WisentFacetGroup(
                 "Error code",
@@ -85,16 +87,17 @@ struct FailuresView: View {
                     ) {
                         model.failureCodeFilter = nil
                     }
-                ] + model.failureCodeCounts.map { pair in
-                    WisentFacet(
-                        id: "code.\(pair.code)",
-                        label: pair.code,
-                        count: pair.count,
-                        isSelected: model.failureCodeFilter == pair.code
-                    ) {
-                        model.failureCodeFilter = pair.code
+                ]
+                    + model.failureCodeCounts.map { pair in
+                        WisentFacet(
+                            id: "code.\(pair.code)",
+                            label: pair.code,
+                            count: pair.count,
+                            isSelected: model.failureCodeFilter == pair.code
+                        ) {
+                            model.failureCodeFilter = pair.code
+                        }
                     }
-                }
             ),
         ]
     }
@@ -115,7 +118,8 @@ struct FailuresView: View {
             } else if model.failures.isEmpty, model.failuresLoadedAt == nil {
                 // The reported failures land in the five-column table below,
                 // header included, so the read is drawn as that table.
-                WisentSkeletonTable(rows: 6, columns: 5, header: true, label: "Loading reported failures")
+                WisentSkeletonTable(
+                    rows: 6, columns: 5, header: true, label: "Loading reported failures")
                 Spacer(minLength: 0)
             } else if model.failures.isEmpty {
                 WisentEmptyPanel(
@@ -127,9 +131,12 @@ struct FailuresView: View {
             } else if visible.isEmpty {
                 WisentEmptyPanel(
                     title: "No failure matches this selection",
-                    detail: "There are \(model.failures.count.formatted(.number)) failures. Current filters exclude all of them.",
+                    detail:
+                        "There are \(model.failures.count.formatted(.number)) failures. Current filters exclude all of them.",
                     symbol: "line.3.horizontal.decrease.circle",
-                    action: WisentAction("Clear filters", kind: .secondary) { model.clearFailureFilters() }
+                    action: WisentAction("Clear filters", kind: .secondary) {
+                        model.clearFailureFilters()
+                    }
                 )
                 Spacer(minLength: 0)
             } else {
@@ -202,7 +209,9 @@ struct FailuresView: View {
         } else {
             Text(envelope.severity)
                 .font(WisentTypeScale.body())
-                .foregroundStyle(envelope.severityTone == .warning ? WisentDesign.warning : WisentDesign.secondary)
+                .foregroundStyle(
+                    envelope.severityTone == .warning
+                        ? WisentDesign.warning : WisentDesign.secondary)
         }
     }
 
@@ -225,7 +234,8 @@ struct FailuresView: View {
                 WisentField(label: "Failure point", value: envelope.failurePoint)
                 WisentField(label: "Service", value: envelope.service)
                 WisentField(label: "Error code", value: envelope.errorCode)
-                WisentField(label: "Severity", value: envelope.severity, tone: envelope.severityTone)
+                WisentField(
+                    label: "Severity", value: envelope.severity, tone: envelope.severityTone)
                 WisentField(
                     label: "Try again",
                     value: envelope.retryable ? "Yes — the same action may succeed" : "No"

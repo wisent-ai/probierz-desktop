@@ -52,11 +52,12 @@ struct VerdictsView: View {
             WisentFacetGroup(
                 "Eligibility",
                 facets: ProbierzModel.VerdictFilter.allCases.map { filter in
-                    let count = switch filter {
-                    case .all: model.verdicts.count
-                    case .blocking: blocking
-                    case .eligible: model.verdicts.count - blocking
-                    }
+                    let count =
+                        switch filter {
+                        case .all: model.verdicts.count
+                        case .blocking: blocking
+                        case .eligible: model.verdicts.count - blocking
+                        }
                     return WisentFacet(
                         id: "verdict.\(filter.rawValue)",
                         label: filter.title,
@@ -83,14 +84,16 @@ struct VerdictsView: View {
                 if model.verdicts.isEmpty {
                     WisentEmptyPanel(
                         title: "No journey declared or recorded",
-                        detail: "A verdict requires a journey. None is available for \(model.scopeLabel.lowercased()).",
+                        detail:
+                            "A verdict requires a journey. None is available for \(model.scopeLabel.lowercased()).",
                         symbol: "checkmark.seal"
                     )
                     Spacer(minLength: 0)
                 } else if visible.isEmpty {
                     WisentEmptyPanel(
                         title: "No journey matches this selection",
-                        detail: "The scope holds \(model.verdicts.count.formatted(.number)) journeys. The facet and search term in force exclude every one of them.",
+                        detail:
+                            "The scope holds \(model.verdicts.count.formatted(.number)) journeys. The facet and search term in force exclude every one of them.",
                         symbol: "line.3.horizontal.decrease.circle",
                         action: WisentAction("Clear filters", kind: .secondary) {
                             model.verdictFilter = .all
@@ -179,7 +182,8 @@ struct VerdictsView: View {
                 eyebrow: "Merge eligibility",
                 title: verdict.journey,
                 badges: [
-                    verdict.isBlocking ? ("Blocking", WisentTone.warning) : ("Eligible", WisentTone.success),
+                    verdict.isBlocking
+                        ? ("Blocking", WisentTone.warning) : ("Eligible", WisentTone.success),
                     ("\(verdict.minimumEvidence.title) required", WisentTone.neutral),
                 ]
             ) {
@@ -205,7 +209,9 @@ struct VerdictsView: View {
                 if let status = verdict.latestStatus {
                     WisentField(label: "Last verdict", value: status.title, tone: status.tone)
                 }
-                WisentField(label: "Last run started", value: ProbierzFormat.timestamp(verdict.latestStartedAt))
+                WisentField(
+                    label: "Last run started",
+                    value: ProbierzFormat.timestamp(verdict.latestStartedAt))
                 if let runID = verdict.latestRunID {
                     WisentField(label: "Last run id", value: runID)
                 }

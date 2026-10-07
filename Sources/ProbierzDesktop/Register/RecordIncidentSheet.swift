@@ -15,7 +15,9 @@ struct RecordIncidentSheet: View {
         Form {
             Text("Record an incident").font(.title2)
             TextField("What was claimed", text: $claim, axis: .vertical)
-            Text("Failure envelope JSON: service, failure_point, error_code and detail are required. Additional context is kept unchanged.")
+            Text(
+                "Failure envelope JSON: service, failure_point, error_code and detail are required. Additional context is kept unchanged."
+            )
             TextEditor(text: $envelope)
                 .font(.system(.body, design: .monospaced))
                 .accessibilityLabel("Incident failure envelope JSON")
@@ -28,7 +30,8 @@ struct RecordIncidentSheet: View {
                 Button("Cancel") { dismiss() }.disabled(store.isWorking)
                 Button("Record") {
                     Task {
-                        await store.record(workspaceRoot: root, claim: claim, envelope: envelope, runID: runID)
+                        await store.record(
+                            workspaceRoot: root, claim: claim, envelope: envelope, runID: runID)
                         if store.problem == nil { dismiss() }
                     }
                 }

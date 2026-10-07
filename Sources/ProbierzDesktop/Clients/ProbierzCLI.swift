@@ -41,21 +41,27 @@ enum ProbierzCLI {
     /// Run `arguments` against the Probierz project at `repositoryRoot` and
     /// wait for the command to exit. `input`, when given, is the command's
     /// stdin; otherwise stdin is empty.
-    static func run(repositoryRoot: URL, arguments: [String], input: Data? = nil) async throws -> Outcome {
+    static func run(repositoryRoot: URL, arguments: [String], input: Data? = nil) async throws
+        -> Outcome
+    {
         let root = repositoryRoot.standardizedFileURL
         let executable = try binary(repositoryRoot: root)
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                continuation.resume(with: Result {
-                    try execute(executable, root: root, arguments: arguments, input: input)
-                })
+                continuation.resume(
+                    with: Result {
+                        try execute(executable, root: root, arguments: arguments, input: input)
+                    })
             }
         }
     }
 
     /// The JSON answer of a command that must succeed, or its refusal.
-    static func answer(repositoryRoot: URL, arguments: [String], input: Data? = nil) async throws -> Data {
-        let outcome = try await run(repositoryRoot: repositoryRoot, arguments: arguments, input: input)
+    static func answer(repositoryRoot: URL, arguments: [String], input: Data? = nil) async throws
+        -> Data
+    {
+        let outcome = try await run(
+            repositoryRoot: repositoryRoot, arguments: arguments, input: input)
         guard outcome.status == 0 else { throw refusal(outcome) }
         return outcome.stdout
     }
@@ -71,7 +77,8 @@ enum ProbierzCLI {
         for line in lines where line.hasPrefix(failurePrefix) {
             let payload = Data(line.dropFirst(failurePrefix.count).utf8)
             if let failure = try? JSONSerialization.jsonObject(with: payload) as? [String: Any],
-               let detail = failure["detail"] as? String, !detail.isEmpty {
+                let detail = failure["detail"] as? String, !detail.isEmpty
+            {
                 return .refused(detail)
             }
         }
@@ -88,15 +95,22 @@ enum ProbierzCLI {
         let candidates = [
             repositoryRoot.appendingPathComponent("probierz-rs/target/release/probierz"),
             repositoryRoot.appendingPathComponent("probierz-rs/target/debug/probierz"),
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".local/bin/probierz"),
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(
+                ".local/bin/probierz"),
         ]
-        guard let binary = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0.path) }) else {
+        guard
+            let binary = candidates.first(where: {
+                FileManager.default.isExecutableFile(atPath: $0.path)
+            })
+        else {
             throw Failure.missingCLI
         }
         return binary
     }
 
-    private static func execute(_ executable: URL, root: URL, arguments: [String], input: Data?) throws -> Outcome {
+    private static func execute(_ executable: URL, root: URL, arguments: [String], input: Data?)
+        throws -> Outcome
+    {
         let process = Process()
         process.executableURL = executable
         process.arguments = ["--harness", root.path] + arguments

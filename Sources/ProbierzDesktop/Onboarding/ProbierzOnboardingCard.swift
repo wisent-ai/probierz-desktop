@@ -1,8 +1,8 @@
 import Combine
 @preconcurrency import Foundation
 import SwiftUI
-import WisentOnboarding
 import WisentDesignSystem
+import WisentOnboarding
 
 struct ProbierzOnboardingCard: View {
     let screen: JourneyScreen
@@ -41,8 +41,10 @@ struct ProbierzOnboardingCard: View {
                     Spacer(minLength: WisentDesign.Space.x4)
                     if isProjectImport {
                         VStack(alignment: .trailing, spacing: WisentDesign.Space.x2) {
-                            WisentAction(actionLabel, kind: .primary, isBusy: isWorking, perform: action)
-                                .asButton()
+                            WisentAction(
+                                actionLabel, kind: .primary, isBusy: isWorking, perform: action
+                            )
+                            .asButton()
                             if !adoptionAccepted {
                                 Button("Skip", action: skip)
                                     .buttonStyle(WisentSecondaryButtonStyle())
@@ -50,8 +52,10 @@ struct ProbierzOnboardingCard: View {
                             }
                         }
                     } else {
-                        WisentAction(actionLabel, kind: .primary, isBusy: isWorking, perform: action)
-                            .asButton()
+                        WisentAction(
+                            actionLabel, kind: .primary, isBusy: isWorking, perform: action
+                        )
+                        .asButton()
                     }
                 }
                 if isProjectImport, adoptionOutcome != .idle {

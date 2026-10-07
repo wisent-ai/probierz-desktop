@@ -129,10 +129,13 @@ final class ProbierzModel: ObservableObject {
 
     var visibleFailures: [FailureEntry] {
         failures.filter { entry in
-            guard failureServiceFilter == nil || entry.envelope.service == failureServiceFilter else {
+            guard failureServiceFilter == nil || entry.envelope.service == failureServiceFilter
+            else {
                 return false
             }
-            guard failureCodeFilter == nil || entry.envelope.errorCode == failureCodeFilter else { return false }
+            guard failureCodeFilter == nil || entry.envelope.errorCode == failureCodeFilter else {
+                return false
+            }
             return true
         }
     }
@@ -158,7 +161,8 @@ final class ProbierzModel: ObservableObject {
     func failureCounts(_ keyPath: KeyPath<FailureEntry, String>) -> [(value: String, count: Int)] {
         var counts: [String: Int] = [:]
         for entry in failures { counts[entry[keyPath: keyPath], default: 0] += 1 }
-        return counts
+        return
+            counts
             .map { (value: $0.key, count: $0.value) }
             .sorted { $0.count != $1.count ? $0.count > $1.count : $0.value < $1.value }
     }
@@ -191,7 +195,9 @@ final class ProbierzModel: ObservableObject {
     var visibleRuns: [RunRecord] {
         runs.filter { run in
             guard runStatusFilter == nil || run.status == runStatusFilter else { return false }
-            guard runEvidenceFilter == nil || run.evidenceLevel == runEvidenceFilter else { return false }
+            guard runEvidenceFilter == nil || run.evidenceLevel == runEvidenceFilter else {
+                return false
+            }
             guard !query.isEmpty else { return true }
             return run.runID.localizedCaseInsensitiveContains(query)
                 || run.target.localizedCaseInsensitiveContains(query)
@@ -253,29 +259,10 @@ final class ProbierzModel: ObservableObject {
         repairOutcome = .idle
     }
 
-
-
-
-
-
     // MARK: - Artifacts
-
-
-
-
-
-
 
     // MARK: - Journeys and verdicts
 
-
-
-
-
-
-
     // MARK: - Loading
-
-
 
 }

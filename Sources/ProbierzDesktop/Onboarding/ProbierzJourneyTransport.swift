@@ -1,8 +1,8 @@
 import Combine
 @preconcurrency import Foundation
 import SwiftUI
-import WisentOnboarding
 import WisentDesignSystem
+import WisentOnboarding
 
 struct ProbierzJourneyTransport: JourneyTransport {
     private let base: EnvironmentJourneyTransport
@@ -16,14 +16,16 @@ struct ProbierzJourneyTransport: JourneyTransport {
     func readBundle(productId: String, journeyId: String) async throws -> JourneyBundle {
         let bundle = try await base.readBundle(productId: productId, journeyId: journeyId)
         guard bundle.definition.journeyVersion == "2026-09-03.2",
-              bundle.definition.firstSuccessFact == "evidence_bundle_inspected"
+            bundle.definition.firstSuccessFact == "evidence_bundle_inspected"
         else {
             throw JourneyClientError.invalid("Probierz journey identity")
         }
         return bundle
     }
 
-    func readState(productId: String, attemptId: UUID, subjectHash: String) async throws -> JSONValue? {
+    func readState(productId: String, attemptId: UUID, subjectHash: String) async throws
+        -> JSONValue?
+    {
         try await base.readState(
             productId: productId,
             attemptId: attemptId,
@@ -31,7 +33,9 @@ struct ProbierzJourneyTransport: JourneyTransport {
         )
     }
 
-    func assignExperiment(request: JourneyAssignmentRequest) async throws -> JourneyAssignmentResponse {
+    func assignExperiment(request: JourneyAssignmentRequest) async throws
+        -> JourneyAssignmentResponse
+    {
         try await base.assignExperiment(request: request)
     }
 
