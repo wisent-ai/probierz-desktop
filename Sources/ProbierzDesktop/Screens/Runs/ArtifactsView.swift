@@ -49,17 +49,21 @@ struct ArtifactsView: View {
             placement: .toolbar,
             prompt: "Search run id, type, format or integrity"
         )
-        // The first-use journey finishes when a protected bundle's real
-        // provenance inspector is on screen. The inspector is a pane now rather
-        // than a sheet, so selection is the moment that happens.
-        .onChange(of: model.selectedArtifactID) { _, _ in
-            guard let artifact = model.selectedArtifact else { return }
+        // Selection, local availability and journey startup can become ready
+        // independently; observe their combined state without repeating a run.
+        .onChange(of: evidenceObservationID, initial: true) { _, observation in
+            guard observation != nil, let artifact = model.selectedArtifact else { return }
             Task { await onboarding.observeEvidenceBundleInspected(artifact) }
         }
-        .onAppear {
-            guard let artifact = model.selectedArtifact else { return }
-            Task { await onboarding.observeEvidenceBundleInspected(artifact) }
-        }
+    }
+
+    private var evidenceObservationID: String? {
+        guard onboarding.status == .inProgress,
+            let artifact = model.selectedArtifact,
+            artifact.kind == .protectedBundle,
+            artifact.isAvailableOnDisk
+        else { return nil }
+        return artifact.id
     }
 
     // MARK: - Facets
