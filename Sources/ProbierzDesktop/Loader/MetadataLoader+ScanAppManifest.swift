@@ -198,6 +198,7 @@ extension MetadataLoader {
                     },
                     failure: Self.failure(manifest, status: status, preflight: preflight),
                     preflight: preflight,
+                    platformDiagnostics: manifest.platformDiagnostics,
                     hasProtectedBundle: manifest.protection != nil
                 ))
             artifacts.append(contentsOf: runArtifacts)

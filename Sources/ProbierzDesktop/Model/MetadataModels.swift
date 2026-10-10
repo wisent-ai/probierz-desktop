@@ -156,6 +156,7 @@ struct RunRecord: Identifiable, Sendable {
     let sourceRepositories: [SourceIdentityRecord]
     let failure: RunFailure?
     let preflight: PreflightRecord?
+    let platformDiagnostics: ManifestPlatformDiagnostics?
     let hasProtectedBundle: Bool
 }
 

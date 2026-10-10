@@ -233,6 +233,13 @@ struct RunsView: View {
                 if let failure = run.failure {
                     failureSection(run: run, failure: failure)
                 }
+                if let diagnostics = run.platformDiagnostics, diagnostics.ok == false {
+                    WisentAlertPanel(
+                        tone: .warning,
+                        title: "Platform diagnostics unavailable",
+                        detail: diagnostics.failureDetail
+                    )
+                }
                 WisentField(label: "Product", value: run.appID)
                 WisentField(label: "Target", value: run.target)
                 WisentField(label: "Kind", value: run.kind)

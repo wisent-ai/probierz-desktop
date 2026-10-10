@@ -19,6 +19,7 @@ struct RunManifest: Decodable {
     let cleanupError: String?
     let plaintextArtifactsRemovedAt: String?
     let reportValidation: ManifestReportValidation?
+    let platformDiagnostics: ManifestPlatformDiagnostics?
     let spawnFailure: ManifestSpawnFailure?
     let resourceLock: ManifestResourceLock?
     let preflight: ManifestPreflight?
@@ -36,6 +37,43 @@ struct RunManifest: Decodable {
 struct ManifestReportValidation: Decodable {
     let ok: Bool?
     let error: String?
+}
+
+struct ManifestPlatformDiagnostics: Decodable, Sendable {
+    struct Collector: Decodable, Sendable {
+        let command: String?
+        let args: [String]?
+        let exitCode: Int?
+        let error: String?
+        let stderr: String?
+    }
+
+    let supported: Bool?
+    let file: String?
+    let attemptedFile: String?
+    let ok: Bool?
+    let exitCode: Int?
+    let error: String?
+    let collector: Collector?
+
+    var failureDetail: String {
+        var lines: [String] = []
+        if let error, !error.isEmpty { lines.append(error) }
+        if let attemptedFile { lines.append("Attempted file: \(attemptedFile)") }
+        if let file { lines.append("Recorded file: \(file)") }
+        if let exitCode { lines.append("Collector exit: \(exitCode)") }
+        if let collector {
+            if let command = collector.command { lines.append("Collector: \(command)") }
+            if let args = collector.args { lines.append("Arguments: \(args)") }
+            if let exitCode = collector.exitCode { lines.append("Collector exit: \(exitCode)") }
+            if let error = collector.error, !error.isEmpty { lines.append(error) }
+            if let stderr = collector.stderr, !stderr.isEmpty { lines.append(stderr) }
+        }
+        if lines.isEmpty {
+            return "The run recorded platformDiagnostics.ok=false without a diagnostic reason."
+        }
+        return lines.joined(separator: "\n")
+    }
 }
 
 struct ManifestSpawnFailure: Decodable {
