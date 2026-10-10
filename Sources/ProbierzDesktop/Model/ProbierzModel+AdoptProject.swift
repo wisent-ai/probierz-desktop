@@ -14,7 +14,9 @@ extension ProbierzModel {
         isAdopting = true
         projectAdoption = nil
         adoptionOutcome = .working("Validating the complete Probierz project before writing…")
-        defer { isAdopting = false }
+        defer {
+            if generation == currentGeneration { isAdopting = false }
+        }
         do {
             let result = try await adoptionClient.adopt(
                 repositoryRoot: repositoryRoot,
@@ -212,6 +214,8 @@ extension ProbierzModel {
             return
         }
         generation &+= 1
+        isRefreshing = false
+        isAdopting = false
         workspaceRoot = standardized
         snapshot = nil
         applyScope()
