@@ -48,6 +48,10 @@ final class ProbierzModel: ObservableObject {
     @Published var projectAdoptions: ProjectAdoptionIndex?
     /// Why the adopted-project list could not be read; the previous list is kept.
     @Published var projectAdoptionsError: String?
+    /// The adopted-project read whose answer may still be published: refresh
+    /// and the reload after an adoption can both be reading, and an older
+    /// answer must not replace a newer list or error.
+    var adoptionListRequest = UUID()
     @Published var isAdopting = false
 
     @Published var destination: ProbierzDestination = .posture

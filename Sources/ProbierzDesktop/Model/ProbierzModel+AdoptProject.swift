@@ -47,6 +47,8 @@ extension ProbierzModel {
         adoptionOutcome = .idle
     }
     func reloadProjectAdoptions() async {
+        let request = UUID()
+        adoptionListRequest = request
         guard let repositoryRoot = snapshot?.repositoryRoot else {
             projectAdoptions = nil
             projectAdoptionsError = nil
@@ -55,11 +57,13 @@ extension ProbierzModel {
         let currentGeneration = generation
         do {
             let adoptions = try await adoptionClient.list(repositoryRoot: repositoryRoot)
-            guard generation == currentGeneration, !Task.isCancelled else { return }
+            guard generation == currentGeneration, request == adoptionListRequest, !Task.isCancelled
+            else { return }
             projectAdoptions = adoptions
             projectAdoptionsError = nil
         } catch {
-            guard generation == currentGeneration, !Task.isCancelled else { return }
+            guard generation == currentGeneration, request == adoptionListRequest, !Task.isCancelled
+            else { return }
             projectAdoptionsError =
                 (error as? LocalizedError)?.errorDescription ?? String(describing: error)
         }
