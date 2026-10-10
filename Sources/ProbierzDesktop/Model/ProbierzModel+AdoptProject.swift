@@ -45,10 +45,14 @@ extension ProbierzModel {
             projectAdoptionsError = nil
             return
         }
+        let currentGeneration = generation
         do {
-            projectAdoptions = try await adoptionClient.list(repositoryRoot: repositoryRoot)
+            let adoptions = try await adoptionClient.list(repositoryRoot: repositoryRoot)
+            guard generation == currentGeneration, !Task.isCancelled else { return }
+            projectAdoptions = adoptions
             projectAdoptionsError = nil
         } catch {
+            guard generation == currentGeneration, !Task.isCancelled else { return }
             projectAdoptionsError =
                 (error as? LocalizedError)?.errorDescription ?? String(describing: error)
         }
@@ -193,6 +197,7 @@ extension ProbierzModel {
         }
         applyScope()
         await reloadProjectAdoptions()
+        guard generation == currentGeneration, !Task.isCancelled else { return }
         errorMessage = nil
     }
     func selectWorkspace(_ url: URL) {
