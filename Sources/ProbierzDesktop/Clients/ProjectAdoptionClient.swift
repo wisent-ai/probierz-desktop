@@ -67,20 +67,25 @@ struct ProjectAdoptionClient: Sendable {
             repositoryRoot: repositoryRoot, arguments: arguments)
         // A conflict is an answer: the command prints the result, names every
         // conflicting definition, and exits 1 without writing.
-        if let result = try? JSONDecoder().decode(ProjectAdoptionResult.self, from: outcome.stdout)
-        {
-            return result
+        do {
+            return try JSONDecoder().decode(ProjectAdoptionResult.self, from: outcome.stdout)
+        } catch {
+            guard outcome.status == 0 else { throw ProbierzCLI.refusal(outcome) }
+            throw ProbierzCLI.Failure.invalidResponse(
+                operation: "project adopt", cause: String(describing: error)
+            )
         }
-        guard outcome.status == 0 else { throw ProbierzCLI.refusal(outcome) }
-        throw ProbierzCLI.Failure.invalidResponse
     }
 
     func list(repositoryRoot: URL) async throws -> ProjectAdoptionIndex {
         let data = try await ProbierzCLI.answer(
             repositoryRoot: repositoryRoot, arguments: ["project", "adoptions"])
-        guard let index = try? JSONDecoder().decode(ProjectAdoptionIndex.self, from: data) else {
-            throw ProbierzCLI.Failure.invalidResponse
+        do {
+            return try JSONDecoder().decode(ProjectAdoptionIndex.self, from: data)
+        } catch {
+            throw ProbierzCLI.Failure.invalidResponse(
+                operation: "project adoptions", cause: String(describing: error)
+            )
         }
-        return index
     }
 }

@@ -16,7 +16,7 @@ enum ProbierzCLI {
         case missingCLI
         case launch(String)
         case refused(String)
-        case invalidResponse
+        case invalidResponse(operation: String, cause: String)
 
         var errorDescription: String? {
             switch self {
@@ -26,8 +26,8 @@ enum ProbierzCLI {
                 "Probierz could not start: \(detail)"
             case .refused(let detail):
                 detail
-            case .invalidResponse:
-                "Probierz returned an invalid response."
+            case .invalidResponse(let operation, let cause):
+                "Probierz \(operation) returned an invalid response: \(cause)"
             }
         }
     }
