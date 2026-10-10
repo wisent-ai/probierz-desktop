@@ -56,12 +56,8 @@ final class ProbierzOnboarding: ObservableObject {
             defaults: defaults
         )
 
-        guard let bundled = Self.fallbackBundle() else {
-            client = nil
-            errorMessage = "The first-use walkthrough bundled with Probierz could not be read."
-            return
-        }
         do {
+            let bundled = try Self.fallbackBundle()
             client = try JourneyClient(
                 productId: Self.productID,
                 journeyId: Self.journeyID,
@@ -205,9 +201,9 @@ final class ProbierzOnboarding: ObservableObject {
         while isWorking {
             await withCheckedContinuation { operationWaiters.append($0) }
         }
-        guard !Task.isCancelled, generation == attemptGeneration, status == .inProgress else {
-            return
-        }
+        guard !Task.isCancelled, generation == attemptGeneration, status == .inProgress,
+            screen?.transitions.isEmpty == true
+        else { return }
         isWorking = true
         defer { finishOperation() }
 
@@ -270,18 +266,24 @@ final class ProbierzOnboarding: ObservableObject {
     /// `bundleURL` — instead of SwiftPM's `Bundle.module` accessor, which
     /// resolves an absolute `.build` path that exists only on the machine that
     /// compiled the binary and traps on everyone else's Mac.
-    private static func fallbackBundle() -> JourneyBundle? {
+    private static func fallbackBundle() throws -> JourneyBundle {
         guard let versionID = UUID(uuidString: "C8498F19-AD2A-4E7E-93F2-C173BE84256E"),
-            let data = try? JourneyResource.definitionData(
+            case let data = try JourneyResource.definitionData(
                 resource: resourceName,
                 bundleName: resourceBundleName
             )
         else {
-            return nil
+            throw BundledVersionUnreadable()
         }
-        return try? JourneyRouter.makeBundle(
+        return try JourneyRouter.makeBundle(
             canonicalDefinition: String(decoding: data, as: UTF8.self),
             journeyVersionId: versionID
         )
+    }
+
+    private struct BundledVersionUnreadable: LocalizedError {
+        var errorDescription: String? {
+            "The bundled first-use version identifier is not a UUID."
+        }
     }
 }
