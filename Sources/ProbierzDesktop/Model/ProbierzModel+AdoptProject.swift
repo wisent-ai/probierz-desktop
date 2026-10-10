@@ -10,6 +10,7 @@ extension ProbierzModel {
             adoptionOutcome = .failed("Select a Probierz workspace before adopting definitions.")
             return false
         }
+        let currentGeneration = generation
         isAdopting = true
         projectAdoption = nil
         adoptionOutcome = .working("Validating the complete Probierz project before writing…")
@@ -20,16 +21,20 @@ extension ProbierzModel {
                 sourceRoot: sourceRoot,
                 replace: replace
             )
+            guard generation == currentGeneration, !Task.isCancelled else { return false }
             projectAdoption = result
             if result.accepted {
                 adoptionOutcome = .succeeded(result.summary)
-                projectAdoptions = try await adoptionClient.list(repositoryRoot: repositoryRoot)
+                await reloadProjectAdoptions()
+                guard generation == currentGeneration, !Task.isCancelled else { return false }
                 await refresh()
+                guard generation == currentGeneration, !Task.isCancelled else { return false }
                 return true
             }
             adoptionOutcome = .failed(result.summary)
             return false
         } catch {
+            guard generation == currentGeneration, !Task.isCancelled else { return false }
             adoptionOutcome = .failed(
                 (error as? LocalizedError)?.errorDescription ?? String(describing: error)
             )
