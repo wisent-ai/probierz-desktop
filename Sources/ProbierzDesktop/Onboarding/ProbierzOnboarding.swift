@@ -31,6 +31,8 @@ final class ProbierzOnboarding: ObservableObject {
     private let client: JourneyClient?
     private var didStart = false
     private var exposedScreenID: String?
+    private var operationWaiters: [CheckedContinuation<Void, Never>] = []
+    private var attemptGeneration = UUID()
 
     init(defaults: UserDefaults = .standard) {
         let installationID: String
@@ -77,10 +79,10 @@ final class ProbierzOnboarding: ObservableObject {
     }
 
     func start() async {
-        guard !didStart, let client else { return }
+        guard !isWorking, !didStart, let client else { return }
         didStart = true
         isWorking = true
-        defer { isWorking = false }
+        defer { finishOperation() }
 
         do {
             let (bundle, progress) = try await client.start(evidenceRevision: Self.evidenceRevision)
@@ -104,7 +106,7 @@ final class ProbierzOnboarding: ObservableObject {
     }
 
     func performPrimaryAction() async -> PrimaryActionResult {
-        guard let screen else { return .unavailable }
+        guard !isWorking, let screen else { return .unavailable }
         if screen.screenId == "adopt-existing-project" {
             return .adoptExistingProject
         }
@@ -124,13 +126,13 @@ final class ProbierzOnboarding: ObservableObject {
     private func advanceCurrentScreen(
         evidence: [String: JSONValue] = ["evidence_bundle_inspected": .boolean(false)]
     ) async -> PrimaryActionResult {
-        guard let client, let screen, status == .inProgress else { return .unavailable }
+        guard !isWorking, let client, let screen, status == .inProgress else { return .unavailable }
         if screen.transitions.isEmpty {
             return .showEvidenceBundles
         }
 
         isWorking = true
-        defer { isWorking = false }
+        defer { finishOperation() }
         do {
             guard
                 try await client.advance(
@@ -148,32 +150,18 @@ final class ProbierzOnboarding: ObservableObject {
         }
     }
 
-    /// Shows the walkthrough again, now, for an operator who asked for it.
-    ///
-    /// The shared client owns the semantics. `reset` closes the finished
-    /// attempt, opens a fresh one on the entry screen, and emits
-    /// `onboarding_reset` followed by `onboarding_started`, so a second viewing
-    /// is a second attempt in the funnel rather than a completed journey that
-    /// silently reappears. Republishing `screen` is the whole of the
-    /// presentation: `ProbierzRootView` stacks the card above whatever
-    /// destination is open the moment a screen exists, so the walkthrough
-    /// returns to the window already on screen and the operator keeps the
-    /// screen they asked from.
-    ///
-    /// `exposedScreenID` is cleared because the replayed entry screen is a view
-    /// of a new attempt: leaving the old id in place would suppress its
-    /// `onboarding_step_viewed` and lose the first step of every replay.
-    ///
-    /// A journey that never loaded its progress — the root task failed, or the
-    /// operator reached this control first — is started here rather than
-    /// refused, because a dead control is worse than a slow one.
+    /// Starts a new attempt without allowing pending observations from the old attempt to complete it.
     func replay() async -> WisentMutationOutcome {
+        guard !isWorking else {
+            return .failed("The current walkthrough operation is still running.")
+        }
         guard let client else {
             return .failed("Onboarding did not load in this session, so there is nothing to show.")
         }
 
+        attemptGeneration = UUID()
         isWorking = true
-        defer { isWorking = false }
+        defer { finishOperation() }
         do {
             if await client.progress == nil {
                 _ = try await client.start(evidenceRevision: Self.evidenceRevision)
@@ -190,12 +178,7 @@ final class ProbierzOnboarding: ObservableObject {
         }
     }
 
-    /// Why a replay failed, in a sentence an operator can act on.
-    ///
-    /// `JourneyClientError` carries no localization, so `localizedDescription`
-    /// renders it as "error 3" and names nothing. Its cases are spelled out
-    /// here; anything else keeps the words its own type gives, exactly as
-    /// `ProbierzModel` reports a failed repair.
+    /// Preserves the shared client's actionable failure reason.
     private static func failureSentence(_ error: Error) -> String {
         guard let journeyError = error as? JourneyClientError else {
             return (error as? LocalizedError)?.errorDescription ?? String(describing: error)
@@ -218,6 +201,15 @@ final class ProbierzOnboarding: ObservableObject {
             let client,
             status == .inProgress
         else { return }
+        let generation = attemptGeneration
+        while isWorking {
+            await withCheckedContinuation { operationWaiters.append($0) }
+        }
+        guard !Task.isCancelled, generation == attemptGeneration, status == .inProgress else {
+            return
+        }
+        isWorking = true
+        defer { finishOperation() }
 
         let revision = "evidence_bundle_inspected:\(artifact.id)"
         let completed: Bool
@@ -244,6 +236,13 @@ final class ProbierzOnboarding: ObservableObject {
             errorMessage =
                 "Evidence inspection was recorded, but its events could not be sent. \(Self.failureSentence(error))"
         }
+    }
+
+    private func finishOperation() {
+        isWorking = false
+        let waiters = operationWaiters
+        operationWaiters.removeAll()
+        for waiter in waiters { waiter.resume() }
     }
 
     private func synchronize(using client: JourneyClient) async {
