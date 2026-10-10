@@ -220,17 +220,29 @@ final class ProbierzOnboarding: ObservableObject {
         else { return }
 
         let revision = "evidence_bundle_inspected:\(artifact.id)"
+        let completed: Bool
         do {
-            let completed = try await client.complete(
+            completed = try await client.complete(
                 evidence: ["evidence_bundle_inspected": .boolean(true)],
                 evidenceRevision: revision
             )
-            guard completed else { return }
-            await synchronize(using: client)
-            try await client.flush()
         } catch {
             errorMessage =
                 "Opening the evidence bundle could not be recorded. \(Self.failureSentence(error))"
+            return
+        }
+        guard completed else {
+            errorMessage =
+                "The journey did not accept the inspected evidence bundle as completion evidence."
+            return
+        }
+        await synchronize(using: client)
+        errorMessage = nil
+        do {
+            try await client.flush()
+        } catch {
+            errorMessage =
+                "Evidence inspection was recorded, but its events could not be sent. \(Self.failureSentence(error))"
         }
     }
 
