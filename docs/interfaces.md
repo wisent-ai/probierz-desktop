@@ -85,6 +85,18 @@ a configured regular file or symbolic link at that root is instead a named
 refusal with its observed directory and symbolic-link flags. Such a root is
 not evidence that the run inventory is empty.
 
+`tests/history/HistoryJourneyTests.swift` exercises the native history reader
+against the real filesystem using `PROBIERZ_TEST_RUN_MANIFEST`, an unchanged
+manifest retained from an actual run. Set `PROBIERZ_TEST_SOURCE_REVISION` to
+the exact checkout revision being qualified and run
+`swift test --filter HistoryJourneyTests` through the qualification runner.
+The journey creates only an isolated `.build/history-journeys` directory,
+checks absent history, a configured file instead of a directory, a readable
+manifest, malformed manifest refusal and recovery, and preserves the original
+fixture. Retain the command, exit status and test output with the source
+revision. This reader journey does not replace observing the shared warning
+on the native workspace screens.
+
 ### First-use walkthrough
 
 A step that returns no next screen displays the current screen identifier and
