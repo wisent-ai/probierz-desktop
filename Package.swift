@@ -29,6 +29,11 @@ let package = Package(
             // definition and the identity a published definition is checked
             // against.
             resources: [.process("Resources")]
-        )
+        ),
+        .testTarget(
+            name: "FirstUseJourneyTests",
+            dependencies: ["ProbierzDesktop"],
+            path: "tests/onboarding"
+        ),
     ]
 )

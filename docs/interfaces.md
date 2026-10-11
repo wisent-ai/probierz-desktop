@@ -68,6 +68,24 @@ states that progress did not advance. A successful replay clears the previous
 walkthrough error only after reset, screen synchronization and event flush
 complete; a failed replay remains a failure rather than displaying success.
 
+The source-owned `tests/onboarding/FirstUseJourneyTests.swift` journey uses the
+real native controller, storage and configured Stado transport. On the dedicated
+qualification host, declare `PROBIERZ_TEST_WORKSPACE` as an actual retained
+Probierz workspace, `PROBIERZ_TEST_PROTECTED_ARTIFACT_ID` as its available
+protected bundle's native identity and `PROBIERZ_TEST_SOURCE_REVISION` as the
+exact revision of the matching test bundle. Retain the release evidence binding
+that revision to the bundle, plus the command, exit status and XCTest output.
+
+Run the already-built target with
+`swift test --skip-build --filter FirstUseJourneyTests`.
+It rejects an inspection before the terminal screen, completes after reaching
+that screen, reads completion through a new controller, replays, and checks that
+the new entry step remains incomplete after the earlier artifact is observed.
+Only its isolated UserDefaults suite is removed; retained run evidence and
+operator defaults are unchanged. Missing real artifacts or transport failures
+fail the journey. This native-client integration does not replace graphical
+verification of the first-use screens, refusal messages or recording.
+
 ### Run manifest projection
 
 A manifest may contribute:
