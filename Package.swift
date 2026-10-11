@@ -35,5 +35,10 @@ let package = Package(
             dependencies: ["ProbierzDesktop"],
             path: "tests/onboarding"
         ),
+        .testTarget(
+            name: "FailureIntakeJourneyTests",
+            dependencies: ["ProbierzDesktop"],
+            path: "tests/failures"
+        ),
     ]
 )

@@ -63,6 +63,18 @@ or contents cannot be read are listed in a danger panel
 path also reports its observed directory and symbolic-link flags. The screen
 does not claim that nothing has reported while one is unreadable.
 
+Real configured-path refusal and recovery are covered by
+`swift test --skip-build --filter FailureIntakeJourneyTests` on the dedicated
+qualification host. Declare `PROBIERZ_FAILURES_DIR` as a new isolated path
+under this checkout's `.build`, `PROBIERZ_TEST_FAILURE_ENVELOPE` as one genuine
+intake envelope, and `PROBIERZ_TEST_SOURCE_REVISION` as the matching native
+test bundle revision. Retain the release evidence binding and XCTest output.
+The journey checks missing intake, refuses a regular file used as the intake
+directory, then reads the genuine envelope after creating the correct
+directory. Source envelope and reported file bytes remain unchanged; only the
+isolated intake is removed. This does not replace graphical verification or
+qualification of a real metadata-read failure.
+
 ### First-use walkthrough
 
 A step that returns no next screen displays the current screen identifier and
