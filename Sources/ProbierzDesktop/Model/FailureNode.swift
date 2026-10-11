@@ -125,7 +125,12 @@ enum FailureIntakeStore {
         do {
             let rootValues = try root.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
             guard rootValues.isDirectory == true, rootValues.isSymbolicLink != true else {
-                return ([], [])
+                return (
+                    [],
+                    [
+                        "\(root.path): failure intake must be a non-symbolic directory; isDirectory=\(String(describing: rootValues.isDirectory)), isSymbolicLink=\(String(describing: rootValues.isSymbolicLink))"
+                    ]
+                )
             }
             files = try FileManager.default.contentsOfDirectory(
                 at: root,
@@ -142,11 +147,17 @@ enum FailureIntakeStore {
         let decoder = JSONDecoder()
         var parsed: [(modified: Date, file: String, line: Int, entry: FailureEntry)] = []
         for file in files where file.pathExtension == "jsonl" {
-            guard
-                let values = try? file.resourceValues(
+            let values: URLResourceValues
+            do {
+                values = try file.resourceValues(
                     forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .contentModificationDateKey]
-                ), values.isRegularFile == true, values.isSymbolicLink != true
-            else { continue }
+                )
+            } catch {
+                unreadable.append(
+                    "\(file.path): cannot inspect metadata: \(error.localizedDescription)")
+                continue
+            }
+            guard values.isRegularFile == true, values.isSymbolicLink != true else { continue }
             let content: String
             do {
                 content = try String(contentsOf: file, encoding: .utf8)

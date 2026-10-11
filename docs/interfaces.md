@@ -56,10 +56,12 @@ bundle ID, and workspace-root variables used by local Probierz surfaces.
 
 Failures reads every `*.jsonl` file in the failure intake directory
 (`PROBIERZ_FAILURES_DIR`, else `~/.probierz/failures`). A missing directory is
-nothing reported. A directory that cannot be inspected or listed, and a
-service's file that cannot be read, are listed in a danger panel
-**Some reported failures cannot be read** as `path: cause`, and the screen does
-not claim that nothing has reported while one is unreadable.
+nothing reported. A directory that cannot be inspected or listed, a configured
+path that is not a non-symbolic directory, and a service file whose metadata
+or contents cannot be read are listed in a danger panel
+**Some reported failures cannot be read** as `path: cause`. A rejected intake
+path also reports its observed directory and symbolic-link flags. The screen
+does not claim that nothing has reported while one is unreadable.
 
 ### First-use walkthrough
 
