@@ -168,8 +168,14 @@ enum FailureIntakeStore {
             let modified = values.contentModificationDate ?? .distantPast
             let name = file.lastPathComponent
             for (index, line) in content.split(separator: "\n").enumerated() {
-                guard let envelope = try? decoder.decode(FailureNode.self, from: Data(line.utf8))
-                else {
+                // A line that is not a failure envelope is reported with the
+                // unreadable files, never left out of the list unseen.
+                let envelope: FailureNode
+                do {
+                    envelope = try decoder.decode(FailureNode.self, from: Data(line.utf8))
+                } catch {
+                    unreadable.append(
+                        "\(file.path) line \(index + 1): \(error.localizedDescription)")
                     continue
                 }
                 parsed.append(
