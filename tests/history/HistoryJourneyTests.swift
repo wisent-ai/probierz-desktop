@@ -45,9 +45,19 @@ final class HistoryJourneyTests: XCTestCase {
         XCTAssertEqual(malformed.popLast(), "}")
         let damaged = Data(malformed.utf8)
         try damaged.write(to: manifest)
+        let decodingCause: String
+        do {
+            _ = try JSONDecoder().decode(RunManifest.self, from: damaged)
+            XCTFail("The damaged real manifest must fail decoding")
+            return
+        } catch {
+            decodingCause = error.localizedDescription
+        }
         let invalid = loader.loadHistory(repositoryRoot: root)
         XCTAssertTrue(invalid.runs.isEmpty)
-        XCTAssertTrue(invalid.unreadable.contains { $0.contains(manifest.path) })
+        XCTAssertTrue(invalid.unreadable.contains {
+            $0.contains(manifest.path) && $0.contains(decodingCause)
+        })
         XCTAssertEqual(try Data(contentsOf: manifest), damaged)
         try original.write(to: manifest)
         let recovered = loader.loadHistory(repositoryRoot: root)
