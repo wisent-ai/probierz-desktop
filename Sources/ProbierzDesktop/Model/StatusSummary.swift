@@ -79,6 +79,9 @@ struct ProbierzSnapshot: Sendable {
     let surfaces: [SurfaceRecord]
     let conditions: [ConditionRecord]
     let runs: [RunRecord]
+    /// Run manifests and results entries that could not be read, each with its
+    /// cause: these runs are missing from `runs`, not absent.
+    let unreadableRuns: [String]
     let artifacts: [ArtifactMetadata]
     let journeys: [JourneyRecord]
     let verdicts: [VerdictRecord]

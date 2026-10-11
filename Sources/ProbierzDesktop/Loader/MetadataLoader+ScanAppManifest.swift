@@ -73,33 +73,54 @@ extension MetadataLoader {
             && value.allSatisfy { $0.isLetter || $0.isNumber || "-_.:".contains($0) }
     }
     /// Every run manifest under test-results, read whole: no count, entry or size ceiling.
-    func loadHistory(repositoryRoot: URL) -> (runs: [RunRecord], artifacts: [ArtifactMetadata]) {
+    /// A manifest that cannot be read or decoded, and a results folder or entry
+    /// that cannot be read, is named in `unreadable` with its cause: skipped, a
+    /// failed latest run with a damaged manifest vanished from the history and
+    /// the gate evidence, and an unreadable folder showed no runs at all.
+    func loadHistory(repositoryRoot: URL) -> (
+        runs: [RunRecord], artifacts: [ArtifactMetadata], unreadable: [String]
+    ) {
         let resultsRoot = repositoryRoot.appendingPathComponent("test-results", isDirectory: true)
-        guard
-            let rootValues = try? resultsRoot.resourceValues(forKeys: [
+        var unreadable: [String] = []
+        let rootValues: URLResourceValues
+        do {
+            rootValues = try resultsRoot.resourceValues(forKeys: [
                 .isDirectoryKey, .isSymbolicLinkKey,
-            ]),
-            rootValues.isDirectory == true,
-            rootValues.isSymbolicLink != true,
+            ])
+        } catch CocoaError.fileReadNoSuchFile {
+            return ([], [], [])
+        } catch {
+            return ([], [], ["\(resultsRoot.path): \(error.localizedDescription)"])
+        }
+        guard rootValues.isDirectory == true, rootValues.isSymbolicLink != true else {
+            return ([], [], [])
+        }
+        guard
             let enumerator = FileManager.default.enumerator(
                 at: resultsRoot,
                 includingPropertiesForKeys: [
                     .isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey,
                     .contentModificationDateKey,
                 ],
-                options: [.skipsHiddenFiles, .skipsPackageDescendants]
+                options: [.skipsHiddenFiles, .skipsPackageDescendants],
+                errorHandler: { url, error in
+                    unreadable.append("\(url.path): \(error.localizedDescription)")
+                    return true
+                }
             )
         else {
-            return ([], [])
+            return ([], [], ["\(resultsRoot.path): cannot be walked"])
         }
 
         var manifestURLs: [URL] = []
         while let url = enumerator.nextObject() as? URL {
-            guard
-                let values = try? url.resourceValues(forKeys: [
+            let values: URLResourceValues
+            do {
+                values = try url.resourceValues(forKeys: [
                     .isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey,
                 ])
-            else {
+            } catch {
+                unreadable.append("\(url.path): \(error.localizedDescription)")
                 continue
             }
             if values.isSymbolicLink == true {
@@ -116,14 +137,20 @@ extension MetadataLoader {
         var artifacts: [ArtifactMetadata] = []
         runs.reserveCapacity(manifestURLs.count)
         for manifestURL in manifestURLs {
-            guard
-                let attributes = try? manifestURL.resourceValues(forKeys: [
+            let attributes: URLResourceValues
+            let manifest: RunManifest
+            do {
+                attributes = try manifestURL.resourceValues(forKeys: [
                     .fileSizeKey, .contentModificationDateKey,
-                ]),
-                let data = try? Data(contentsOf: manifestURL, options: [.mappedIfSafe]),
-                let manifest = try? JSONDecoder().decode(RunManifest.self, from: data),
-                let runID = normalizedIdentifier(manifest.runId)
-            else {
+                ])
+                let data = try Data(contentsOf: manifestURL, options: [.mappedIfSafe])
+                manifest = try JSONDecoder().decode(RunManifest.self, from: data)
+            } catch {
+                unreadable.append("\(manifestURL.path): \(error.localizedDescription)")
+                continue
+            }
+            guard let runID = normalizedIdentifier(manifest.runId) else {
+                unreadable.append("\(manifestURL.path): names no run id")
                 continue
             }
             let runDirectory = manifestURL.deletingLastPathComponent()
@@ -205,18 +232,22 @@ extension MetadataLoader {
         }
         runs.sort { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) }
         artifacts.sort { ($0.modifiedAt ?? .distantPast) > ($1.modifiedAt ?? .distantPast) }
-        return (runs, artifacts)
+        return (runs, artifacts, unreadable)
+    }
+    /// The statuses a run manifest records, as Probierz writes them.
+    private enum ManifestStatus: String {
+        case passed, executed, failed, blocked, canceled, cancelled
     }
     /// Mirrors `normalizedStatus` in `probierz/agent/history.mjs`, including the
     /// fallback: a manifest that names an unknown status is failed once it has a
     /// completion timestamp and incomplete until then.
     static func normalizedStatus(_ value: String?, completedAt: Date?) -> RunStatus {
-        switch value?.lowercased() {
-        case "passed", "executed": .passed
-        case "failed": .failed
-        case "blocked": .blocked
-        case "canceled", "cancelled": .canceled
-        default: completedAt == nil ? .incomplete : .failed
+        switch value.flatMap({ ManifestStatus(rawValue: $0.lowercased()) }) {
+        case .passed?, .executed?: .passed
+        case .failed?: .failed
+        case .blocked?: .blocked
+        case .canceled?, .cancelled?: .canceled
+        case nil: completedAt == nil ? .incomplete : .failed
         }
     }
     /// Mirrors `evidenceLevel` in `gate.mjs`, `status.mjs`, `receipt.mjs` and

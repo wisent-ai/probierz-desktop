@@ -107,6 +107,7 @@ struct MetadataLoader: Sendable {
             surfaces: surfaces,
             conditions: conditions,
             runs: history.runs,
+            unreadableRuns: history.unreadable,
             artifacts: history.artifacts,
             journeys: journeys,
             verdicts: verdicts,
