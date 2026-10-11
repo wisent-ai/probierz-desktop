@@ -133,25 +133,40 @@ struct MetadataLoader: Sendable {
         }
         let isPresent = packageValues?.isDirectory == true && packageValues?.isSymbolicLink != true
         var specPaths: [String] = []
+        var listingFailures: [String] = []
         if isPresent {
             for directory in Self.specDirectories {
                 let relative = "\(spec.packagePath)/\(directory)"
-                guard let url = safeURL(relative, root: repositoryRoot),
-                    let entries = try? FileManager.default.contentsOfDirectory(
+                guard let url = safeURL(relative, root: repositoryRoot) else { continue }
+                let entries: [URL]
+                do {
+                    entries = try FileManager.default.contentsOfDirectory(
                         at: url,
                         includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey],
                         options: [.skipsHiddenFiles]
                     )
-                else { continue }
+                } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
+                    continue
+                } catch {
+                    listingFailures.append("\(relative): \(error.localizedDescription)")
+                    continue
+                }
                 for entry in entries {
                     let name = entry.lastPathComponent
-                    guard Self.specSuffixes.contains(where: name.hasSuffix),
-                        let values = try? entry.resourceValues(forKeys: [
+                    guard Self.specSuffixes.contains(where: name.hasSuffix) else { continue }
+                    let values: URLResourceValues
+                    do {
+                        values = try entry.resourceValues(forKeys: [
                             .isRegularFileKey, .isSymbolicLinkKey,
-                        ]),
-                        values.isRegularFile == true,
-                        values.isSymbolicLink != true
-                    else { continue }
+                        ])
+                    } catch {
+                        listingFailures.append(
+                            "\(relative)/\(name): \(error.localizedDescription)")
+                        continue
+                    }
+                    guard values.isRegularFile == true, values.isSymbolicLink != true else {
+                        continue
+                    }
                     specPaths.append("\(relative)/\(name)")
                 }
             }
@@ -168,6 +183,7 @@ struct MetadataLoader: Sendable {
             conditionNames: spec.conditionNames,
             isPackagePresent: isPresent,
             specPaths: specPaths,
+            specListingFailures: listingFailures,
             runCount: surfaceRuns.count,
             lastStatus: latest?.status,
             lastEvidenceLevel: latest?.evidenceLevel,

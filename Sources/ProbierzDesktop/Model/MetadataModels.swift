@@ -228,6 +228,9 @@ struct SurfaceRecord: Identifiable, Sendable {
     let conditionNames: [String]
     let isPackagePresent: Bool
     let specPaths: [String]
+    /// Spec directories or files that exist but could not be read, with the
+    /// cause; they used to be skipped and the surface showed fewer specs.
+    var specListingFailures: [String] = []
     let runCount: Int
     let lastStatus: RunStatus?
     let lastEvidenceLevel: EvidenceLevel?

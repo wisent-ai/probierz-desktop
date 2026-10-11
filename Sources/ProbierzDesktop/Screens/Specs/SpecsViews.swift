@@ -174,6 +174,13 @@ struct SurfacesView: View {
                         value: "\(surface.specPaths.count.formatted(.number)) available"
                     )
                 }
+                if !surface.specListingFailures.isEmpty {
+                    WisentField(
+                        label: "Specs not readable",
+                        value: surface.specListingFailures.joined(separator: "\n"),
+                        tone: .warning
+                    )
+                }
             }
         } else {
             WisentInspector(eyebrow: "Surface details", title: "No surface selected") {
