@@ -5,7 +5,7 @@ struct ProbierzCommandClient: Sendable {
         case missingCLI
         case launch(String)
         case refused(String)
-        case invalidResponse
+        case invalidResponse(String)
 
         var errorDescription: String? {
             switch self {
@@ -15,8 +15,8 @@ struct ProbierzCommandClient: Sendable {
                 "Probierz could not start: \(detail)"
             case .refused(let detail):
                 detail
-            case .invalidResponse:
-                "Probierz returned an invalid repair response."
+            case .invalidResponse(let detail):
+                "Probierz returned an invalid repair response: \(detail)"
             }
         }
     }
@@ -31,7 +31,7 @@ struct ProbierzCommandClient: Sendable {
         let appID = appID.trimmingCharacters(in: .whitespacesAndNewlines)
         let runID = runID.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !appID.isEmpty, !runID.isEmpty else {
-            throw CommandError.invalidResponse
+            throw CommandError.refused("A repair needs both an app id and a run id.")
         }
 
         let process = Process()
@@ -68,10 +68,25 @@ struct ProbierzCommandClient: Sendable {
                 ?? "Probierz repair exited \(process.terminationStatus)."
             throw CommandError.refused(detail)
         }
-        guard let payload = try? JSONSerialization.jsonObject(with: stdoutData) as? [String: Any],
-            payload["ok"] as? Bool == true
-        else {
-            throw CommandError.invalidResponse
+        // The parser's reason, or what the payload said instead of ok, is the
+        // diagnostic; "invalid repair response" alone named neither.
+        let payload: [String: Any]
+        do {
+            guard let object = try JSONSerialization.jsonObject(with: stdoutData) as? [String: Any]
+            else {
+                throw CommandError.invalidResponse(
+                    "stdout is JSON but not an object: \(String(decoding: stdoutData, as: UTF8.self))")
+            }
+            payload = object
+        } catch let error as CommandError {
+            throw error
+        } catch {
+            throw CommandError.invalidResponse(
+                "stdout is not JSON (\(error)): \(String(decoding: stdoutData, as: UTF8.self))")
+        }
+        guard payload["ok"] as? Bool == true else {
+            throw CommandError.invalidResponse(
+                "ok is not true: \(String(decoding: stdoutData, as: UTF8.self))")
         }
         if let pullRequest = payload["pullRequest"] as? String, !pullRequest.isEmpty {
             return "Repair published: \(pullRequest)"
