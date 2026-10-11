@@ -116,23 +116,28 @@ enum FailureIntakeStore {
             .appendingPathComponent(".probierz/failures", isDirectory: true)
     }
 
-    static func load(workspaceRoot: URL) -> [FailureEntry] {
+    /// Every reported failure, newest first, and every intake directory or
+    /// file that exists but could not be read, as `path: cause`, so an
+    /// unreadable intake is not shown as nothing having reported.
+    static func load(workspaceRoot: URL) -> (entries: [FailureEntry], unreadable: [String]) {
         let root = directory(workspaceRoot: workspaceRoot)
-        guard
-            let rootValues = try? root.resourceValues(forKeys: [
-                .isDirectoryKey, .isSymbolicLinkKey,
-            ]),
-            rootValues.isDirectory == true,
-            rootValues.isSymbolicLink != true
-        else { return [] }
-        guard
-            let files = try? FileManager.default.contentsOfDirectory(
+        let files: [URL]
+        do {
+            let rootValues = try root.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+            guard rootValues.isDirectory == true, rootValues.isSymbolicLink != true else {
+                return ([], [])
+            }
+            files = try FileManager.default.contentsOfDirectory(
                 at: root,
                 includingPropertiesForKeys: [
                     .isRegularFileKey, .isSymbolicLinkKey, .contentModificationDateKey,
                 ]
             )
-        else { return [] }
+        } catch {
+            let missing = (error as? CocoaError)?.code == .fileReadNoSuchFile
+            return ([], missing ? [] : ["\(root.path): \(error.localizedDescription)"])
+        }
+        var unreadable: [String] = []
 
         let decoder = JSONDecoder()
         var parsed: [(modified: Date, file: String, line: Int, entry: FailureEntry)] = []
@@ -142,7 +147,13 @@ enum FailureIntakeStore {
                     forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .contentModificationDateKey]
                 ), values.isRegularFile == true, values.isSymbolicLink != true
             else { continue }
-            guard let content = try? String(contentsOf: file, encoding: .utf8) else { continue }
+            let content: String
+            do {
+                content = try String(contentsOf: file, encoding: .utf8)
+            } catch {
+                unreadable.append("\(file.path): \(error.localizedDescription)")
+                continue
+            }
             let modified = values.contentModificationDate ?? .distantPast
             let name = file.lastPathComponent
             for (index, line) in content.split(separator: "\n").enumerated() {
@@ -163,7 +174,7 @@ enum FailureIntakeStore {
         // Newest first: within a service file the last appended line is the
         // newest; the envelope carries no timestamp, so across services the
         // file's modification date is the only honest ordering.
-        return
+        let entries =
             parsed
             .sorted { lhs, rhs in
                 if lhs.modified != rhs.modified { return lhs.modified > rhs.modified }
@@ -171,6 +182,7 @@ enum FailureIntakeStore {
                 return lhs.line > rhs.line
             }
             .map(\.entry)
+        return (entries, unreadable)
     }
 }
 

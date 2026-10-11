@@ -107,6 +107,13 @@ struct FailuresView: View {
     @ViewBuilder
     private func centre(visible: [FailureEntry]) -> some View {
         VStack(alignment: .leading, spacing: WisentDesign.Space.x4) {
+            if !model.failuresUnreadable.isEmpty {
+                WisentAlertPanel(
+                    tone: .danger,
+                    title: "Some reported failures cannot be read",
+                    detail: model.failuresUnreadable.joined(separator: "\n")
+                )
+            }
             if model.workspaceRoot == nil {
                 WisentEmptyPanel(
                     title: "No workspace selected",
@@ -122,11 +129,13 @@ struct FailuresView: View {
                     rows: 6, columns: 5, header: true, label: "Loading reported failures")
                 Spacer(minLength: 0)
             } else if model.failures.isEmpty {
-                WisentEmptyPanel(
-                    title: "Nothing has reported",
-                    detail: "No desktop app has reported a failure to Probierz yet.",
-                    symbol: "checkmark.shield"
-                )
+                if model.failuresUnreadable.isEmpty {
+                    WisentEmptyPanel(
+                        title: "Nothing has reported",
+                        detail: "No desktop app has reported a failure to Probierz yet.",
+                        symbol: "checkmark.shield"
+                    )
+                }
                 Spacer(minLength: 0)
             } else if visible.isEmpty {
                 WisentEmptyPanel(

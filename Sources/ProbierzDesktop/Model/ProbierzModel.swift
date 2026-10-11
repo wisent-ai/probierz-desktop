@@ -76,6 +76,8 @@ final class ProbierzModel: ObservableObject {
     /// from probierz/test-results/failures — a local file read, no backend.
     @Published var failures: [FailureEntry] = []
     @Published var failuresLoadedAt: Date?
+    /// Intake directories or files that exist but could not be read, as `path: cause`.
+    @Published var failuresUnreadable: [String] = []
     @Published var failureServiceFilter: String?
     @Published var failureCodeFilter: String?
     @Published var selectedFailureID: FailureEntry.ID?
@@ -179,6 +181,7 @@ final class ProbierzModel: ObservableObject {
     func refreshFailures() async {
         guard let workspaceRoot else {
             failures = []
+            failuresUnreadable = []
             failuresLoadedAt = nil
             selectedFailureID = nil
             return
@@ -187,9 +190,10 @@ final class ProbierzModel: ObservableObject {
             FailureIntakeStore.load(workspaceRoot: workspaceRoot)
         }.value
         guard !Task.isCancelled else { return }
-        failures = loaded
+        failures = loaded.entries
+        failuresUnreadable = loaded.unreadable
         failuresLoadedAt = Date()
-        if let selectedFailureID, !loaded.contains(where: { $0.id == selectedFailureID }) {
+        if let selectedFailureID, !loaded.entries.contains(where: { $0.id == selectedFailureID }) {
             self.selectedFailureID = nil
         }
     }

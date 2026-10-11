@@ -228,6 +228,7 @@ extension ProbierzModel {
         projectAdoptionsError = nil
         adoptionOutcome = .idle
         failures = []
+        failuresUnreadable = []
         failuresLoadedAt = nil
         selectedFailureID = nil
         failureServiceFilter = nil

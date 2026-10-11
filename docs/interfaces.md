@@ -52,6 +52,15 @@ The viewer reports presence—not values—for Android SDK, iOS app/device/versi
 Appium, browser path, artifact-encryption key file, color scheme, locale, release,
 bundle ID, and workspace-root variables used by local Probierz surfaces.
 
+### Reported failures
+
+Failures reads every `*.jsonl` file in the failure intake directory
+(`PROBIERZ_FAILURES_DIR`, else `~/.probierz/failures`). A missing directory is
+nothing reported. A directory that cannot be inspected or listed, and a
+service's file that cannot be read, are listed in a danger panel
+**Some reported failures cannot be read** as `path: cause`, and the screen does
+not claim that nothing has reported while one is unreadable.
+
 ### Run manifest projection
 
 A manifest may contribute:
