@@ -135,7 +135,11 @@ final class ProbierzOnboarding: ObservableObject {
                     evidence: evidence,
                     evidenceRevision: Self.evidenceRevision
                 ) != nil
-            else { return .unavailable }
+            else {
+                errorMessage =
+                    "The walkthrough did not save a next step from \(screen.screenId). Its current progress has not advanced."
+                return .unavailable
+            }
             await synchronize(using: client)
             try await exposeCurrentScreenIfNeeded(using: client)
             errorMessage = nil
@@ -168,6 +172,7 @@ final class ProbierzOnboarding: ObservableObject {
             await synchronize(using: client)
             try await exposeCurrentScreenIfNeeded(using: client)
             try await client.flush()
+            errorMessage = nil
             return .succeeded("Started. The walkthrough is at the top of this screen.")
         } catch {
             return .failed(Self.failureSentence(error))

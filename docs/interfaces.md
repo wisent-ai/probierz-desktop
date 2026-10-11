@@ -61,6 +61,13 @@ service's file that cannot be read, are listed in a danger panel
 **Some reported failures cannot be read** as `path: cause`, and the screen does
 not claim that nothing has reported while one is unreadable.
 
+### First-use walkthrough
+
+A step that returns no next screen displays the current screen identifier and
+states that progress did not advance. A successful replay clears the previous
+walkthrough error only after reset, screen synchronization and event flush
+complete; a failed replay remains a failure rather than displaying success.
+
 ### Run manifest projection
 
 A manifest may contribute:
