@@ -93,7 +93,9 @@ extension MetadataLoader {
             return ([], [], ["\(resultsRoot.path): \(error.localizedDescription)"])
         }
         guard rootValues.isDirectory == true, rootValues.isSymbolicLink != true else {
-            return ([], [], [])
+            return ([], [], [
+                "\(resultsRoot.path): expected a non-symbolic-link directory; isDirectory=\(String(describing: rootValues.isDirectory)), isSymbolicLink=\(String(describing: rootValues.isSymbolicLink))",
+            ])
         }
         guard
             let enumerator = FileManager.default.enumerator(
