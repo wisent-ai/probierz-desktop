@@ -75,7 +75,8 @@ struct MetadataLoader: Sendable {
     static let specDirectories = ["test/specs", "tests", "specs"]
     static let specSuffixes = [".e2e.ts", ".spec.ts", ".spec.mjs"]
 
-    /// `status.mjs` falls back to E2 when an app manifest names no floor.
+    /// `status.mjs` falls back to E2 when an app manifest names no floor; a
+    /// manifest that cannot be read is not one that names no floor.
     static let defaultMinimumEvidence = EvidenceLevel.e2
 
     func load() -> ProbierzSnapshot {
@@ -83,7 +84,8 @@ struct MetadataLoader: Sendable {
             workspaceRoot
             .appendingPathComponent(Self.repositoryName, isDirectory: true)
             .standardizedFileURL
-        let apps = scanAppManifests(repositoryRoot: repositoryRoot)
+        let manifests = scanAppManifests(repositoryRoot: repositoryRoot)
+        let apps = manifests.scans
         let history = loadHistory(repositoryRoot: repositoryRoot)
         let surfaces = Self.surfaceSpecs.map {
             inspectSurface($0, repositoryRoot: repositoryRoot, runs: history.runs)
@@ -108,6 +110,7 @@ struct MetadataLoader: Sendable {
             conditions: conditions,
             runs: history.runs,
             unreadableRuns: history.unreadable,
+            unreadableManifests: manifests.unreadable,
             artifacts: history.artifacts,
             journeys: journeys,
             verdicts: verdicts,
@@ -205,16 +208,28 @@ struct MetadataLoader: Sendable {
         var minimumEvidence: EvidenceLevel = MetadataLoader.defaultMinimumEvidence
     }
 
-    func scanAppManifests(repositoryRoot: URL) -> [String: AppManifestScan] {
-        guard let appsRoot = safeURL("apps", root: repositoryRoot),
-            let entries = try? FileManager.default.contentsOfDirectory(
+    /// Each app's manifest scan, and the manifests (or the apps folder) that
+    /// exist but could not be read, each with its cause: such an app is not
+    /// one whose manifest names no floor, so it is reported, not defaulted.
+    func scanAppManifests(repositoryRoot: URL) -> (
+        scans: [String: AppManifestScan], unreadable: [String]
+    ) {
+        guard let appsRoot = safeURL("apps", root: repositoryRoot) else { return ([:], []) }
+        let entries: [URL]
+        do {
+            entries = try FileManager.default.contentsOfDirectory(
                 at: appsRoot,
                 includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
                 options: [.skipsHiddenFiles]
             )
-        else { return [:] }
+        } catch CocoaError.fileReadNoSuchFile {
+            return ([:], [])
+        } catch {
+            return ([:], ["\(appsRoot.path): \(error.localizedDescription)"])
+        }
 
         var scans: [String: AppManifestScan] = [:]
+        var unreadable: [String] = []
         for entry in entries {
             guard
                 let values = try? entry.resourceValues(forKeys: [
@@ -227,12 +242,16 @@ struct MetadataLoader: Sendable {
                 let attributes = try? manifestURL.resourceValues(forKeys: [
                     .isRegularFileKey, .fileSizeKey,
                 ]),
-                attributes.isRegularFile == true,
-                let text = try? String(contentsOf: manifestURL, encoding: .utf8)
+                attributes.isRegularFile == true
             else { continue }
-            scans[entry.lastPathComponent] = Self.scanAppManifest(text)
+            do {
+                let text = try String(contentsOf: manifestURL, encoding: .utf8)
+                scans[entry.lastPathComponent] = Self.scanAppManifest(text)
+            } catch {
+                unreadable.append("\(manifestURL.path): \(error.localizedDescription)")
+            }
         }
-        return scans
+        return (scans, unreadable)
     }
 
     // MARK: - History

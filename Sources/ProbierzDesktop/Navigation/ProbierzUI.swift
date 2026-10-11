@@ -257,6 +257,13 @@ struct ProbierzSnapshotGate<Content: View>: View {
                     detail: snapshot.unreadableRuns.joined(separator: "\n")
                 )
             }
+            if !snapshot.unreadableManifests.isEmpty {
+                WisentAlertPanel(
+                    tone: .warning,
+                    title: "Unreadable app manifests: their verdicts lack what they declare",
+                    detail: snapshot.unreadableManifests.joined(separator: "\n")
+                )
+            }
             content()
         } else if model.isRefreshing {
             readingShape.skeleton(label: readingLabel)

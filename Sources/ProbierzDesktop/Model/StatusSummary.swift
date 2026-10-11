@@ -82,6 +82,10 @@ struct ProbierzSnapshot: Sendable {
     /// Run manifests and results entries that could not be read, each with its
     /// cause: these runs are missing from `runs`, not absent.
     let unreadableRuns: [String]
+    /// App manifests (`apps/<app>/probierz.yaml`) that exist but could not be
+    /// read, each with its cause: those apps' journeys and verdicts are judged
+    /// without what the manifest declares, so the screen names them.
+    let unreadableManifests: [String]
     let artifacts: [ArtifactMetadata]
     let journeys: [JourneyRecord]
     let verdicts: [VerdictRecord]
