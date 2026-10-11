@@ -70,10 +70,13 @@ under this checkout's `.build`, `PROBIERZ_TEST_FAILURE_ENVELOPE` as one genuine
 intake envelope, and `PROBIERZ_TEST_SOURCE_REVISION` as the matching native
 test bundle revision. Retain the release evidence binding and XCTest output.
 The journey checks missing intake, refuses a regular file used as the intake
-directory, then reads the genuine envelope after creating the correct
-directory. Source envelope and reported file bytes remain unchanged; only the
-isolated intake is removed. This does not replace graphical verification or
-qualification of a real metadata-read failure.
+directory. It then removes access permissions from only that isolated
+directory, compares the reported refusal with the actual directory-listing
+cause, restores the original permissions and reads the same envelope again.
+The runner must not bypass filesystem permissions. Source envelope and
+reported file bytes remain unchanged; only the isolated intake is removed.
+This does not replace graphical verification or qualification of a
+per-entry metadata-read failure.
 
 ### Run history read failures
 

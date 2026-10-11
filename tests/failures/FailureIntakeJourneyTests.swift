@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import XCTest
 @testable import ProbierzDesktop
@@ -44,6 +45,37 @@ final class FailureIntakeJourneyTests: XCTestCase {
         XCTAssertEqual(recovered.entries.map(\.envelope.failurePoint), [envelope.failurePoint])
         XCTAssertEqual(recovered.entries.map(\.envelope.errorCode), [envelope.errorCode])
         XCTAssertEqual(recovered.entries.map(\.envelope.service), [envelope.service])
+        XCTAssertEqual(try Data(contentsOf: item), compact)
+        let attributes = try manager.attributesOfItem(atPath: root.path)
+        let permissions = try XCTUnwrap(attributes[.posixPermissions] as? NSNumber)
+        let inaccessible = permissions.uint16Value & ~UInt16(S_IRWXU | S_IRWXG | S_IRWXO)
+        try manager.setAttributes([.posixPermissions: NSNumber(value: inaccessible)], ofItemAtPath: root.path)
+        defer {
+            do { try manager.setAttributes([.posixPermissions: permissions], ofItemAtPath: root.path) }
+            catch { XCTFail("Cannot restore isolated intake permissions \(root.path): \(error)") }
+        }
+        let listingCause: String
+        do {
+            _ = try manager.contentsOfDirectory(
+                at: root,
+                includingPropertiesForKeys: [
+                    .isRegularFileKey, .isSymbolicLinkKey, .contentModificationDateKey,
+                ]
+            )
+            XCTFail("Qualification requires a process that cannot bypass the isolated directory permissions")
+            return
+        } catch {
+            listingCause = error.localizedDescription
+        }
+        let inaccessibleIntake = FailureIntakeStore.load(workspaceRoot: checkout)
+        XCTAssertTrue(inaccessibleIntake.entries.isEmpty)
+        XCTAssertTrue(inaccessibleIntake.unreadable.contains {
+            $0.contains(root.path) && $0.contains(listingCause)
+        })
+        try manager.setAttributes([.posixPermissions: permissions], ofItemAtPath: root.path)
+        let readableAgain = FailureIntakeStore.load(workspaceRoot: checkout)
+        XCTAssertTrue(readableAgain.unreadable.isEmpty)
+        XCTAssertEqual(readableAgain.entries.map(\.envelope.failurePoint), [envelope.failurePoint])
         XCTAssertEqual(try Data(contentsOf: item), compact)
         XCTAssertEqual(try Data(contentsOf: fixture), original, "The real source envelope stays unchanged")
         print("failure-intake source=\(revision) fixture=\(fixture.path) isolated=\(root.path)")
