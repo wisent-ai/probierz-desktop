@@ -249,7 +249,14 @@ struct ProbierzSnapshotGate<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        if model.snapshot != nil {
+        if let snapshot = model.snapshot {
+            if !snapshot.unreadableRuns.isEmpty {
+                WisentAlertPanel(
+                    tone: .warning,
+                    title: "Some runs could not be read and are not listed",
+                    detail: snapshot.unreadableRuns.joined(separator: "\n")
+                )
+            }
             content()
         } else if model.isRefreshing {
             readingShape.skeleton(label: readingLabel)

@@ -142,13 +142,6 @@ struct RunsView: View {
                 // The runs table's own five columns and header row.
                 readingShape: .table(columns: 5)
             ) {
-                if let unreadable = model.snapshot?.unreadableRuns, !unreadable.isEmpty {
-                    WisentAlertPanel(
-                        tone: .warning,
-                        title: "Some runs could not be read and are not listed",
-                        detail: unreadable.joined(separator: "\n")
-                    )
-                }
                 if model.runs.isEmpty {
                     WisentEmptyPanel(
                         title: "No runs available",

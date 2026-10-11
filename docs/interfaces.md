@@ -77,9 +77,10 @@ qualification of a real metadata-read failure.
 
 ### Run history read failures
 
-Runs retains each unreadable history path and its read or decoding cause
-alongside successfully loaded runs, and displays **Some runs could not be read
-and are not listed**. A missing `test-results` root means no recorded runs;
+Every workspace screen using the shared snapshot gate retains each unreadable
+history path and its read or decoding cause alongside successfully loaded runs,
+and displays **Some runs could not be read and are not listed**.
+A missing `test-results` root means no recorded runs;
 a configured regular file or symbolic link at that root is instead a named
 refusal with its observed directory and symbolic-link flags. Such a root is
 not evidence that the run inventory is empty.
