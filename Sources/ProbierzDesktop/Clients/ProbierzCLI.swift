@@ -134,16 +134,19 @@ enum ProbierzCLI {
         }
         // A request that could not be written is kept beside the command's own
         // stderr, so a refusal that follows names the input it never got.
-        var inputError: String?
+        var inputError = ""
         if let input {
             do {
                 try stdin.fileHandleForWriting.write(contentsOf: input)
             } catch {
-                inputError =
-                    "the request could not be written to the command: \(error.localizedDescription)\n"
+                inputError += "request not written: \(error.localizedDescription)\n"
             }
         }
-        try? stdin.fileHandleForWriting.close()
+        do {
+            try stdin.fileHandleForWriting.close()
+        } catch {
+            inputError += "request input not closed: \(error.localizedDescription)\n"
+        }
         // stderr drains beside stdout, so neither pipe fills while the other
         // is read.
         let errors = DataBox()
@@ -158,9 +161,7 @@ enum ProbierzCLI {
         drained.wait()
         process.waitUntilExit()
         var said = errors.data
-        if let inputError {
-            said.append(Data(inputError.utf8))
-        }
+        said.append(Data(inputError.utf8))
         return Outcome(status: process.terminationStatus, stdout: output, stderr: said)
     }
 }
