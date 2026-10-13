@@ -69,12 +69,22 @@ extension MetadataLoader {
             status == .blocked
             ? "Run blocked before the suite started"
             : "Run failed"
-        let sentence =
-            reasons.first
-            ?? [
-                "The run manifest records status \"\(manifest.status ?? "unknown")\" without a reason sentence:",
+        let sentence: String
+        if let first = reasons.first {
+            sentence = first
+        } else {
+            let opening: String
+            if let recordedStatus = manifest.status {
+                opening =
+                    "The run manifest records status \"\(recordedStatus)\" without a reason sentence:"
+            } else {
+                opening = "The run manifest records neither a status nor a reason sentence:"
+            }
+            sentence = [
+                opening,
                 "evidence.errors, reportValidation.error, setupError, spawnFailure, resourceLock and preflight are all absent or empty.",
             ].joined(separator: " ")
+        }
 
         return RunFailure(
             headline: headline,
