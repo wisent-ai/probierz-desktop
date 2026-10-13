@@ -37,8 +37,10 @@ enum ProbierzFormat {
         ByteCountFormatter.string(fromByteCount: value, countStyle: .file)
     }
 
-    static func duration(_ milliseconds: Double) -> String {
-        guard milliseconds > 0 else { return "—" }
+    /// A run's recorded duration; a run that recorded none says so rather
+    /// than standing a dash or zero in for it.
+    static func duration(_ milliseconds: Double?) -> String {
+        guard let milliseconds else { return "Not recorded" }
         let seconds = milliseconds / millisecondsPerSecond
         if seconds < Double(secondsPerMinute) {
             return seconds.formatted(.number.precision(.fractionLength(1))) + " s"
@@ -49,7 +51,7 @@ enum ProbierzFormat {
     }
 
     static func shortTimestamp(_ date: Date?) -> String {
-        guard let date else { return "—" }
+        guard let date else { return "Not recorded" }
         return date.formatted(.dateTime.month(.twoDigits).day(.twoDigits).hour().minute())
     }
 

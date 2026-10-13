@@ -135,7 +135,8 @@ struct RunRecord: Identifiable, Sendable {
     let evidenceLevel: EvidenceLevel
     let startedAt: Date?
     let completedAt: Date?
-    let durationMilliseconds: Double
+    /// Nil when the run's manifest recorded no duration.
+    let durationMilliseconds: Double?
     let manifestModifiedAt: Date?
     let artifactCount: Int
     let artifactBytes: Int64
