@@ -1,8 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-UPDATER_SHA256="1f3c919e7e15ef6736a7c9c841ca185cb487e502c0da39be68aa1aa8b487af47"
-SWIFTPM_SHA256="1afb0215091d97ef0a1c05ce93035d91e83af8b09eaaa48d369ba1f3c7c769f4"
 PRODUCT="Probierz"
 PRODUCT_SLUG="probierz-desktop"
 
@@ -11,7 +9,7 @@ load_contract() {
   : "${WISENT_SOURCE_DIR:?WISENT_SOURCE_DIR is required}"
   : "${WISENT_OUTPUT_DIR:?WISENT_OUTPUT_DIR is required}"
   : "${WISENT_PLATFORM:?WISENT_PLATFORM is required}"
-  : "${WISENT_INPUTS_DIR:?WISENT_INPUTS_DIR is required}"
+  : "${WISENT_INPUT_SWIFTPM_CACHE_DIR:?WISENT_INPUT_SWIFTPM_CACHE_DIR is required}"
   [ "$WISENT_PLATFORM" = "darwin-arm64" ] || { printf 'unsupported platform: %s\n' "$WISENT_PLATFORM" >&2; exit 1; }
 }
 
@@ -21,9 +19,12 @@ verify_input() {
 }
 
 prepare_source() {
-  updater="$WISENT_INPUTS_DIR/wisent-desktop-update.tar.gz"
-  swiftpm="$WISENT_INPUTS_DIR/swiftpm-cache.tar.gz"
-  verify_input "$updater" "$UPDATER_SHA256"
+  # The one dependency input is the SwiftPM resolution Stado published for
+  # this source; its digest is the manifest's pin, so a re-pin changes nothing
+  # here. The updater is a Swift package dependency Package.resolved pins,
+  # not an archive input.
+  swiftpm="$WISENT_INPUT_SWIFTPM_CACHE_DIR"
+  SWIFTPM_SHA256="$(plutil -extract inputs.swiftpm-cache.sha256 raw -o - "$WISENT_SOURCE_DIR/.wisent-release.json")"
   verify_input "$swiftpm" "$SWIFTPM_SHA256"
   work="$WISENT_OUTPUT_DIR/work"
   source="$work/source"
@@ -33,7 +34,7 @@ prepare_source() {
   trap 'rm -rf "$work"' EXIT
   mkdir -p "$source"
   rsync -a --exclude .git --exclude .build "$WISENT_SOURCE_DIR/" "$source/"
-  tar -xzf "$swiftpm" -C "$source"
+  stado product swift --package-path "$source" --archive "$swiftpm" restore
 }
 
 compile_source() {
@@ -115,7 +116,7 @@ build_release() {
   archive_sha="$(shasum -a 256 "$archive" | awk '{print $1}')"
   appcast_sha="$(shasum -a 256 "$release/appcast.xml" | awk '{print $1}')"
   signature_sha="$(shasum -a 256 "$archive.sparkle-signature" | awk '{print $1}')"
-  printf '{"schema_version":1,"product":"%s","version":"%s","platform":"%s","archive_sha256":"%s","appcast_sha256":"%s","signature_sha256":"%s","updater_source_sha256":"%s","swiftpm_cache_sha256":"%s","notarized":true}\n' "$PRODUCT_SLUG" "$WISENT_VERSION" "$WISENT_PLATFORM" "$archive_sha" "$appcast_sha" "$signature_sha" "$UPDATER_SHA256" "$SWIFTPM_SHA256" > "$evidence/release.json"
+  printf '{"schema_version":1,"product":"%s","version":"%s","platform":"%s","archive_sha256":"%s","appcast_sha256":"%s","signature_sha256":"%s","swiftpm_cache_sha256":"%s","notarized":true}\n' "$PRODUCT_SLUG" "$WISENT_VERSION" "$WISENT_PLATFORM" "$archive_sha" "$appcast_sha" "$signature_sha" "$SWIFTPM_SHA256" > "$evidence/release.json"
   shasum -a 256 "$archive" "$archive.sparkle-signature" "$release/appcast.xml" > "$evidence/DIGESTS"
 }
 

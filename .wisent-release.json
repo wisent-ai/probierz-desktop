@@ -11,7 +11,15 @@
     "darwin-arm64": {
       "runner_platform": "darwin-arm64",
       "quality": [
-        {"name": "fmt", "argv": ["bash", "release/fmt.sh", "--check"], "kind": "format"},
+        {
+          "name": "fmt",
+          "argv": [
+            "bash",
+            "release/fmt.sh",
+            "--check"
+          ],
+          "kind": "format"
+        },
         {
           "name": "compile",
           "argv": [
@@ -19,7 +27,8 @@
             "release/stado-release.sh",
             "compile"
           ],
-          "kind": "lint"
+          "kind": "lint",
+          "inputs": ["swiftpm-cache"]
         }
       ],
       "build": {
@@ -51,15 +60,9 @@
     }
   },
   "inputs": {
-    "wisent-desktop-update": {
-      "uri": "stado://sources/wisent-desktop-update/sha256/1f3c919e7e15ef6736a7c9c841ca185cb487e502c0da39be68aa1aa8b487af47/source.tar.gz",
-      "sha256": "1f3c919e7e15ef6736a7c9c841ca185cb487e502c0da39be68aa1aa8b487af47",
-      "mount": "wisent-desktop-update.tar.gz",
-      "extract": false
-    },
     "swiftpm-cache": {
-      "uri": "stado://sources/probierz-swiftpm-cache/sha256/1afb0215091d97ef0a1c05ce93035d91e83af8b09eaaa48d369ba1f3c7c769f4/source.tar.gz",
-      "sha256": "1afb0215091d97ef0a1c05ce93035d91e83af8b09eaaa48d369ba1f3c7c769f4",
+      "uri": "stado://sources/probierz-desktop/dependencies/swiftpm-cache/sha256/854071f6f98ce4c294cedde459928e21fd8b0a1e8df97ee9e64467152e6d79f0/source.tar.gz",
+      "sha256": "854071f6f98ce4c294cedde459928e21fd8b0a1e8df97ee9e64467152e6d79f0",
       "mount": "swiftpm-cache.tar.gz",
       "extract": false
     }
