@@ -65,8 +65,14 @@ enum ProbierzFormat {
         return value
     }
 
+    /// A failure's detail sentence, or that its reporter sent none.
+    static func failureDetail(_ value: String?) -> String {
+        guard let value, !value.isEmpty else { return "No detail reported" }
+        return value
+    }
+
     static func percent(_ value: Double?) -> String {
-        guard let value else { return "—" }
+        guard let value else { return "Not recorded" }
         return (value * percent).formatted(.number.precision(.fractionLength(0))) + "%"
     }
 }

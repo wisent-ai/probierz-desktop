@@ -191,7 +191,7 @@ struct FailuresView: View {
                 }
                 .width(min: 110, ideal: 140)
                 TableColumn("DETAIL") { entry in
-                    Text(entry.envelope.detail ?? "—")
+                    Text(ProbierzFormat.failureDetail(entry.envelope.detail))
                         .font(WisentTypeScale.body())
                         .foregroundStyle(WisentDesign.secondary)
                         .lineLimit(1)
@@ -266,7 +266,8 @@ struct FailuresView: View {
                 ForEach(Array(envelope.causeChain.enumerated()), id: \.offset) { index, cause in
                     WisentField(
                         label: "Cause \(index + 1) · \(cause.service)",
-                        value: "\(cause.failurePoint) [\(cause.errorCode)] \(cause.detail ?? "—")",
+                        value:
+                            "\(cause.failurePoint) [\(cause.errorCode)] \(ProbierzFormat.failureDetail(cause.detail))",
                         tone: cause.severityTone
                     )
                 }
