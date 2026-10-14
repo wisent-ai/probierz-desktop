@@ -123,10 +123,7 @@ struct BenchmarkView: View {
             Text("SUITES").font(WisentTypeScale.identifierSmall()).foregroundStyle(
                 WisentDesign.secondary)
             ForEach(store.suites) { suite in
-                Text(
-                    suite.refused.map { "\(suite.id): \($0)" }
-                        ?? "\(suite.id) \(suite.version ?? "") — \(suite.cases ?? 0) cases"
-                )
+                Text(Self.line(for: suite))
                 .font(WisentTypeScale.body())
                 .foregroundStyle(suite.refused == nil ? WisentDesign.ink : WisentDesign.danger)
                 .textSelection(.enabled)
@@ -138,6 +135,18 @@ struct BenchmarkView: View {
             )
             .font(WisentTypeScale.body()).foregroundStyle(WisentDesign.ink)
         }
+    }
+
+    /// A suite as the manifest declares it: its refusal, or its id with the
+    /// version and case count it states. One it does not state is said as
+    /// such, never shown as an empty version or zero cases.
+    private static func line(for suite: BenchmarkSuite) -> String {
+        if let refused = suite.refused { return "\(suite.id): \(refused)" }
+        let version: String
+        if let stated = suite.version { version = stated } else { version = "(version not stated)" }
+        let cases: String
+        if let stated = suite.cases { cases = "\(stated) cases" } else { cases = "case count not stated" }
+        return "\(suite.id) \(version) — \(cases)"
     }
 
     private var runsTable: some View {
