@@ -9,12 +9,18 @@ The viewer tries, in order:
 2. `WISENT_WORKSPACE_ROOT`;
 3. current directory;
 4. `~/Documents/CodingProjects/Wisent`;
-5. bounded ancestors of the application bundle.
+5. the application bundle and each ancestor up to the filesystem root.
 
-A valid workspace contains regular, non-symlink files at:
+A valid workspace contains the Probierz repository with regular, non-symlink files at:
 
-- `probierz/package.json`;
-- `probierz/agent/history.mjs`.
+- `probierz/.wisent-release.json`, whose `product` is `probierz`;
+- `probierz/probierz-rs/Cargo.toml`.
+
+The retained workspace-selection journey runs with
+`PROBIERZ_TEST_WORKSPACE=<parent-of-real-probierz-checkout> swift test --skip-build --filter FirstUseJourneyTests.testRealProbierzWorkspaceSelectionUsesCurrentReleaseIdentity`.
+It accepts the current checkout without the retired Node history file and refuses
+the repository directory itself as a workspace parent. Automatic discovery
+continues to the next candidate when one is not a valid workspace.
 
 ### Project adoption and the incident register
 
@@ -39,12 +45,10 @@ Swift.
 
 | Contract | Relative path |
 |---|---|
-| Node package | `probierz/package.json` |
-| Las MCP surface | `probierz/agent/mcp.mjs` |
-| history boundary | `probierz/agent/history.mjs` |
+| Release identity | `probierz/.wisent-release.json` |
+| Rust CLI crate | `probierz/probierz-rs/Cargo.toml` |
 | application surfaces | `probierz/apps/` |
 | result store | `probierz/test-results/` |
-| shared configuration | `probierz/tsconfig.base.json` |
 
 ### Configuration presence
 

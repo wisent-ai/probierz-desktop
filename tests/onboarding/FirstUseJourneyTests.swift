@@ -87,6 +87,21 @@ final class FirstUseJourneyTests: XCTestCase {
         print("first-use source=\(sourceRevision) run=\(artifact.runID) artifact=\(artifact.id) suite=\(suite)")
     }
 
+    func testRealProbierzWorkspaceSelectionUsesCurrentReleaseIdentity() throws {
+        let workspace = try XCTUnwrap(
+            ProcessInfo.processInfo.environment["PROBIERZ_TEST_WORKSPACE"],
+            "PROBIERZ_TEST_WORKSPACE must name the parent of an actual Probierz checkout"
+        )
+        let root = URL(fileURLWithPath: workspace, isDirectory: true)
+        XCTAssertNil(WorkspaceLocator.workspaceProblem(root))
+        XCTAssertTrue(WorkspaceLocator.isWorkspace(root))
+
+        let repository = root.appendingPathComponent("probierz", isDirectory: true)
+        let refusal = try XCTUnwrap(WorkspaceLocator.workspaceProblem(repository))
+        XCTAssertTrue(refusal.contains(".wisent-release.json"), refusal)
+        XCTAssertFalse(WorkspaceLocator.isWorkspace(repository))
+    }
+
     @MainActor
     private func requireStarted(_ onboarding: ProbierzOnboarding) throws {
         XCTAssertNil(onboarding.errorMessage, "Use the actual configured journey dependency")
