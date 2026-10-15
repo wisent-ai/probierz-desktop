@@ -112,8 +112,8 @@ struct FailureEntry: Identifiable, Sendable {
 /// the store lives outside TCC-protected directories so a launchd listener
 /// can write it), caps the line at 64 KB
 /// and rotates the file at 10 MB, so reading a whole file is bounded by the
-/// writer's own rules. A malformed line is skipped, never reported: a failure
-/// index must never fail either.
+/// writer's own rules. A malformed line is reported as unreadable with its
+/// file, line, and decoder cause; valid lines remain visible.
 enum FailureIntakeStore {
     static func directory(workspaceRoot: URL) -> URL {
         // workspaceRoot stays in the signature for the caller's sake; the store
