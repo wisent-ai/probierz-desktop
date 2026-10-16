@@ -41,6 +41,15 @@ this checkout's `probierz-rs/target/{release,debug}/probierz`, then
 transactions rather than maintaining separate parsers or copying files in
 Swift.
 
+On **Runs**, a failed run's **Repair Run** action calls
+`probierz --harness <repository> repair <app-id> --run <run-id> --rounds <count>`
+through that same CLI selection. A positive round count is required. The
+screen displays the published pull request or branch, or the returned repair
+verdict; a refusal shows the CLI's failed operation and cause. The action does
+not invoke the retired Node CLI. The CLI may refuse missing failure evidence,
+an unsafe patch, an unverified fix, or publication failure; no such refusal is
+shown as a completed repair.
+
 ### Contract inventory
 
 | Contract | Relative path |

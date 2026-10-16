@@ -55,7 +55,8 @@ enum WorkspaceLocator {
                 return "Cannot inspect \(file.path): \(error.localizedDescription)"
             }
             guard values.isRegularFile == true, values.isSymbolicLink != true else {
-                return "The Probierz workspace requires a regular, non-symlink file at \(file.path)."
+                return
+                    "The Probierz workspace requires a regular, non-symlink file at \(file.path)."
             }
         }
         let data: Data

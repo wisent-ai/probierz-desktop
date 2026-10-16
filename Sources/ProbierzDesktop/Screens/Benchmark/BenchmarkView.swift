@@ -124,9 +124,9 @@ struct BenchmarkView: View {
                 WisentDesign.secondary)
             ForEach(store.suites) { suite in
                 Text(Self.line(for: suite))
-                .font(WisentTypeScale.body())
-                .foregroundStyle(suite.refused == nil ? WisentDesign.ink : WisentDesign.danger)
-                .textSelection(.enabled)
+                    .font(WisentTypeScale.body())
+                    .foregroundStyle(suite.refused == nil ? WisentDesign.ink : WisentDesign.danger)
+                    .textSelection(.enabled)
             }
             Text("CONTENDERS").font(WisentTypeScale.identifierSmall()).foregroundStyle(
                 WisentDesign.secondary)
@@ -145,7 +145,11 @@ struct BenchmarkView: View {
         let version: String
         if let stated = suite.version { version = stated } else { version = "(version not stated)" }
         let cases: String
-        if let stated = suite.cases { cases = "\(stated) cases" } else { cases = "case count not stated" }
+        if let stated = suite.cases {
+            cases = "\(stated) cases"
+        } else {
+            cases = "case count not stated"
+        }
         return "\(suite.id) \(version) — \(cases)"
     }
 
