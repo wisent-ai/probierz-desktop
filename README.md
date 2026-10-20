@@ -227,9 +227,10 @@ open .build/Probierz.app
 ```
 
 `release/bundle/build-app.sh` requires an Apple Development signing identity (or
-`WISENT_CODESIGN_IDENTITY`) and refuses ad-hoc signing. By default it restarts the
-app only when already running; set `WISENT_RESTART_AFTER_BUILD=0` to disable that
-step.
+`WISENT_CODESIGN_IDENTITY`) and refuses ad-hoc signing. It restarts nothing:
+`stado product install probierz --surface desktop` restarts the app it places when
+it runs, and `stado product restart --if-running <bundle>` restarts a bundle placed
+any other way.
 
 ## Primary interfaces
 
