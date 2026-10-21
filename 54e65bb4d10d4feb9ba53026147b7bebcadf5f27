@@ -1,0 +1,49 @@
+Workspace selection recognises the current Probierz checkout by its release identity
+
+Probierz Desktop accepted a workspace only when probierz/package.json and
+probierz/agent/history.mjs were present, files the Rust Probierz no longer
+has, so every current checkout was refused and discovery found none.
+A workspace is now a parent holding probierz/.wisent-release.json whose
+product is probierz and probierz/probierz-rs/Cargo.toml, each a regular file
+and not a symlink. workspaceProblem names which file is missing, unreadable
+or names another product, and isWorkspace reads it. The README and the
+interfaces page state the new requirement and how the retained journey is
+run against a real checkout, which accepts the parent and refuses the
+repository directory itself.
+
+I read every message and every patch this push adds over the remote, line by line, as a principal engineer who assumes an AI agent wrote every line.
+No pushed line carries a defect: every path I traced does what its caller and the documentation say.
+The push adds no needless abstraction and no second copy of something that already exists.
+No error is swallowed and no missing or failed value is answered with one nobody stated.
+No number is guessed: each comes from a declaration, a caller's argument refused by name when missing, or a measurement.
+No code hides a failure by pausing, waiting or trying again.
+No comment narrates the change or an incident, and no host, account, date or internal id is written into the repository.
+Every test added runs the real product and checks its behaviour, not a mock, a copy or the source text.
+No commit only reformats or patches another commit of this push.
+The documentation this push touches, or should touch, says exactly what the code does.
+No line and no message of this commit carries private information of ours: no host, account, person, address, secret, token, session or defect id, and no detail of an incident; what it says would be the same in a repository anyone can read.
+This commit solves no problem of ours alone: it adds or repairs a general primitive a user outside Wisent could run for their own case, not a fix shaped to one of our machines, accounts, runs or incidents.
+As a very strict, grumpy senior engineer who hates AI, I tried with everything I have to refuse this push: what I attacked, what I checked, and why each attack failed.
+
+Attacks. Does a current checkout carry both files? probierz has
+.wisent-release.json naming product probierz and probierz-rs/Cargo.toml.
+Does discovery still walk past a non-workspace? isWorkspace is false for
+it and the ancestor walk continues. Is the journey a real one? It reads
+the checkout PROBIERZ_TEST_WORKSPACE names and refuses to run without it.
+
+I read this commit's message and every line of its patch, as a principal engineer who assumes an AI agent wrote every line.
+The claims about the lines this commit adds hold for them as the push leaves them: a defect that a later commit of the push repairs, naming this commit by its subject on a Repairs: line, is a repaired defect, never one left in place.
+No line this commit adds carries a defect: every path I traced does what its caller and the documentation say.
+This commit adds no needless abstraction and no second copy of something that already exists.
+No error is swallowed and no missing or failed value is answered with one nobody stated.
+No number is guessed: each comes from a declaration, a caller's argument refused by name when missing, or a measurement.
+No code hides a failure by pausing, waiting or trying again.
+No comment narrates the change or an incident, and no host, account, date or internal id is written into the repository.
+Every test added runs the real product and checks its behaviour, not a mock, a copy or the source text.
+This commit does not only reformat, and every commit the remote does not have yet whose lines it removes or replaces is named by its subject on a Repairs: line of its message or attestation note, with the defect it repairs there.
+The documentation this commit touches, or should touch, says exactly what the code does.
+No line and no message of this commit carries private information of ours: no host, account, person, address, secret, token, session or defect id, and no detail of an incident; what it says would be the same in a repository anyone can read.
+This commit solves no problem of ours alone: it adds or repairs a general primitive a user outside Wisent could run for their own case, not a fix shaped to one of our machines, accounts, runs or incidents.
+As a very strict, grumpy senior engineer who hates AI, I tried with everything I have to refuse this commit: what I attacked, what I checked, and why each attack failed.
+
+Harsh-Review-Attacked: a directory taken as the workspace by a file name alone; checked that both files must be regular and not symbolic links, the release manifest must decode and name the probierz product, and each failure is returned with its path and cause.
