@@ -22,7 +22,6 @@ No number is guessed: each comes from a declaration, a caller's argument refused
 No code hides a failure by pausing, waiting or trying again.
 No comment narrates the change or an incident, and no host, account, date or internal id is written into the repository.
 Every test added runs the real product and checks its behaviour, not a mock, a copy or the source text.
-No commit only reformats or patches another commit of this push.
 The documentation this push touches, or should touch, says exactly what the code does.
 No line and no message of this commit carries private information of ours: no host, account, person, address, secret, token, session or defect id, and no detail of an incident; what it says would be the same in a repository anyone can read.
 This commit solves no problem of ours alone: it adds or repairs a general primitive a user outside Wisent could run for their own case, not a fix shaped to one of our machines, accounts, runs or incidents.
