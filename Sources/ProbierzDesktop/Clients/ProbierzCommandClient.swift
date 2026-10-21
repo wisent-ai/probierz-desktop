@@ -18,7 +18,9 @@ struct ProbierzCommandClient: Sendable {
             else {
                 throw ProbierzCLI.Failure.invalidResponse(
                     operation: "repair",
-                    cause: "stdout is JSON but not an object: \(String(decoding: stdout, as: UTF8.self))")
+                    cause:
+                        "stdout is JSON but not an object: \(String(decoding: stdout, as: UTF8.self))"
+                )
             }
             payload = object
         } catch let error as ProbierzCLI.Failure {
