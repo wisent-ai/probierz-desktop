@@ -1,8 +1,11 @@
+import CryptoKit
 import Foundation
 
 struct MetadataLoader: Sendable {
-    /// A SHA-256 digest is 64 hexadecimal characters.
-    static let sha256HexLength = 64
+    /// The length of a SHA-256 digest in hexadecimal, measured from one
+    /// CryptoKit digest written as records write it, one hex pair a byte.
+    static let sha256HexLength = SHA256.hash(data: Data()).map { String(format: "%02x", $0) }
+        .joined().count
     let workspaceRoot: URL
 
     static let repositoryName = "probierz"
@@ -96,7 +99,7 @@ struct MetadataLoader: Sendable {
                 ConditionRecord(
                     surface: spec.name,
                     name: name,
-                    isPresentForViewer: !(environment[name] ?? "").isEmpty
+                    isPresentForViewer: environment[name]?.isEmpty == false
                 )
             }
         }
@@ -127,13 +130,23 @@ struct MetadataLoader: Sendable {
         repositoryRoot: URL,
         runs: [RunRecord]
     ) -> SurfaceRecord {
-        let packageURL = safeURL(spec.packagePath, root: repositoryRoot)
-        let packageValues = packageURL.flatMap {
-            try? $0.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
-        }
-        let isPresent = packageValues?.isDirectory == true && packageValues?.isSymbolicLink != true
         var specPaths: [String] = []
         var listingFailures: [String] = []
+        // A package folder that does not exist is absent; a path outside the
+        // repository or attributes that cannot be read are listed with the cause.
+        var isPresent = false
+        if let url = safeURL(spec.packagePath, root: repositoryRoot) {
+            do {
+                let values = try url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+                isPresent = values.isDirectory == true && values.isSymbolicLink != true
+            } catch CocoaError.fileReadNoSuchFile {
+                isPresent = false
+            } catch {
+                listingFailures.append("\(spec.packagePath): \(error.localizedDescription)")
+            }
+        } else {
+            listingFailures.append("\(spec.packagePath): the path leaves the repository")
+        }
         if isPresent {
             for directory in Self.specDirectories {
                 let relative = "\(spec.packagePath)/\(directory)"
@@ -212,11 +225,8 @@ struct MetadataLoader: Sendable {
 
     // MARK: - App manifests
 
-    /// The declared journey inventory and merge policy for one product.
-    ///
-    /// A journey declared here but never named by a run manifest is the
-    /// `untested` set `probierz status` reports, and the only way this viewer
-    /// can show a journey that has no evidence at all.
+    /// The journeys and merge policy one product declares; a journey declared here but
+    /// never named by a run manifest is the `untested` set `probierz status` reports.
     struct AppManifestScan: Sendable {
         var journeyOrder: [String] = []
         var journeyOwners: [String: String] = [:]
@@ -247,19 +257,36 @@ struct MetadataLoader: Sendable {
         var scans: [String: AppManifestScan] = [:]
         var unreadable: [String] = []
         for entry in entries {
+            let values: URLResourceValues
+            do {
+                values = try entry.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+            } catch {
+                unreadable.append("\(entry.path): \(error.localizedDescription)")
+                continue
+            }
+            guard values.isDirectory == true, values.isSymbolicLink != true else { continue }
             guard
-                let values = try? entry.resourceValues(forKeys: [
-                    .isDirectoryKey, .isSymbolicLinkKey,
-                ]),
-                values.isDirectory == true,
-                values.isSymbolicLink != true,
                 let manifestURL = safeURL(
-                    "\(entry.lastPathComponent)/probierz.yaml", root: appsRoot),
-                let attributes = try? manifestURL.resourceValues(forKeys: [
-                    .isRegularFileKey, .fileSizeKey,
-                ]),
-                attributes.isRegularFile == true
-            else { continue }
+                    "\(entry.lastPathComponent)/probierz.yaml", root: appsRoot)
+            else {
+                unreadable.append("\(entry.path): its manifest path leaves the apps folder")
+                continue
+            }
+            // An app folder without a manifest has none to read; anything else
+            // that stops the manifest from being read is reported.
+            let attributes: URLResourceValues
+            do {
+                attributes = try manifestURL.resourceValues(forKeys: [.isRegularFileKey])
+            } catch CocoaError.fileReadNoSuchFile {
+                continue
+            } catch {
+                unreadable.append("\(manifestURL.path): \(error.localizedDescription)")
+                continue
+            }
+            guard attributes.isRegularFile == true else {
+                unreadable.append("\(manifestURL.path): exists but is not a regular file")
+                continue
+            }
             do {
                 let text = try String(contentsOf: manifestURL, encoding: .utf8)
                 scans[entry.lastPathComponent] = Self.scanAppManifest(text)
@@ -269,23 +296,4 @@ struct MetadataLoader: Sendable {
         }
         return (scans, unreadable)
     }
-
-    // MARK: - History
-
-    // MARK: - Verdict normalization
-
-    // MARK: - Failure reason
-
-    // MARK: - Artifacts
-
-    // MARK: - Journeys
-
-    // MARK: - Merge verdicts
-
-    // MARK: - Counters
-
-    // MARK: - Boundary
-
 }
-
-// MARK: - Manifest projection
