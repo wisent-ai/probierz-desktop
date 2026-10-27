@@ -20,6 +20,8 @@ extension ProbierzRootView {
             VerdictsView(model: model)
         case .benchmark:
             BenchmarkView(model: model)
+        case .security:
+            SecurityView(model: model)
         case .surfaces:
             SurfacesView(model: model)
         case .journeys:

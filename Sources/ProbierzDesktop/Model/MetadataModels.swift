@@ -42,14 +42,16 @@ enum RunStatus: String, CaseIterable, Identifiable, Sendable {
 
 /// The evidence strength Probierz assigns to a run.
 ///
-/// The scale is the product's, not this viewer's: `gate.mjs`, `status.mjs`,
-/// `receipt.mjs` and `matrix.mjs` all compute it from the same three manifest
-/// facts, and all four only ever produce E0, E2 or E3. Nothing here invents a
-/// level the backend cannot emit.
+/// The run result levels are distinct from a policy's declared evidence minimum.
 enum EvidenceLevel: String, CaseIterable, Identifiable, Sendable {
     case e0
     case e2
     case e3
+
+    /// Verified evidence rank: <https://probierz.wisent.com/docs/cli/gate/evaluate>.
+    static let verifiedRank = 2
+    /// Recorded evidence rank: <https://probierz.wisent.com/docs/cli/gate/evaluate>.
+    static let recordedRank = 3
 
     var id: String { rawValue }
 
@@ -72,9 +74,9 @@ enum EvidenceLevel: String, CaseIterable, Identifiable, Sendable {
     /// Comparison order used by `probierz status` when a policy names a floor.
     var ordinal: Int {
         switch self {
-        case .e0: 0
-        case .e2: 2
-        case .e3: 3
+        case .e0: .zero
+        case .e2: Self.verifiedRank
+        case .e3: Self.recordedRank
         }
     }
 }
@@ -147,7 +149,6 @@ struct RunRecord: Identifiable, Sendable {
     let isCapturePresent: Bool
     let exitCode: Int?
     let signalName: String?
-    let didTimeOut: Bool
     let hostPlatform: String?
     let hostName: String?
     let deviceName: String?
@@ -268,7 +269,7 @@ struct JourneyRecord: Identifiable, Sendable {
 
     var passRate: Double? {
         let decided = passed + failed
-        return decided > 0 ? Double(passed) / Double(decided) : nil
+        return decided > .zero ? Double(passed) / Double(decided) : nil
     }
 }
 
@@ -285,7 +286,7 @@ struct VerdictRecord: Identifiable, Sendable {
     var id: String { "\(appID)/\(journey)" }
     let appID: String
     let journey: String
-    let minimumEvidence: EvidenceLevel
+    let minimumEvidence: EvidenceMinimum
     let latestRunID: String?
     let latestStatus: RunStatus?
     let latestEvidenceLevel: EvidenceLevel?
@@ -297,4 +298,3 @@ struct VerdictRecord: Identifiable, Sendable {
     var isBlocking: Bool { !blockingReasons.isEmpty }
 }
 
-// MARK: - Aggregates

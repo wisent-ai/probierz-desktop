@@ -14,6 +14,7 @@ let package = Package(
         // the bundled journey definition out of a packaged app.
         .package(url: "https://github.com/wisent-ai/echo.git", exact: "0.3.0"),
         .package(url: "https://github.com/wisent-ai/wisent-components.git", exact: "0.9.1"),
+        .package(url: "https://github.com/jpsim/Yams.git", exact: "6.2.2"),
     ],
     targets: [
         .executableTarget(
@@ -23,6 +24,7 @@ let package = Package(
                 .product(name: "WisentDesktopUpdate", package: "wisent-desktop-update"),
                 .product(name: "WisentOnboarding", package: "echo"),
                 .product(name: "WisentDesignSystem", package: "wisent-components"),
+                .product(name: "Yams", package: "Yams"),
             ],
             path: "Sources/ProbierzDesktop",
             // `probierz-desktop-first-use.json` is the offline journey
@@ -42,8 +44,13 @@ let package = Package(
         ),
         .testTarget(
             name: "HistoryJourneyTests",
-            dependencies: ["ProbierzDesktop"],
+            dependencies: ["ProbierzDesktop", .product(name: "Yams", package: "Yams")],
             path: "tests/history"
+        ),
+        .testTarget(
+            name: "SecurityJourneyTests",
+            dependencies: ["ProbierzDesktop"],
+            path: "tests/security"
         ),
     ]
 )

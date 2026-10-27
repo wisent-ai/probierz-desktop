@@ -1,6 +1,8 @@
 import Foundation
 
 extension MetadataLoader {
+    /// Each artifact contributes one entry: <https://probierz.wisent.com/docs>.
+    private static let artifactIncrement = 1
     func computeVerdicts(
         journeys: [JourneyRecord],
         runs: [RunRecord],
@@ -9,19 +11,27 @@ extension MetadataLoader {
         let runsByID = Dictionary(
             runs.map { ($0.runID, $0) }, uniquingKeysWith: { first, _ in first })
         return journeys.map { journey in
-            let minimum = apps[journey.appID]?.minimumEvidence ?? Self.defaultMinimumEvidence
+            let minimum: EvidenceMinimum = switch apps[journey.appID] {
+            case .some(let app): app.minimumEvidence
+            case .none: .unavailable("App \(journey.appID) has no readable probierz.yaml policy; see manifest diagnostics")
+            }
             let latest = journey.latestRunID.flatMap { runsByID[$0] }
             var reasons: [String] = []
+            if let cause = minimum.failure { reasons.append(cause) }
             if let latest {
                 if latest.status != .passed {
                     reasons.append("\(journey.name): last run is \(latest.status.rawValue)")
                 }
-                if latest.evidenceLevel.ordinal < minimum.ordinal {
+                if case .declared(_, let rank) = minimum, latest.evidenceLevel.ordinal < Int(rank) {
                     reasons.append(
                         "\(journey.name): \(latest.evidenceLevel.title) is below \(minimum.title)")
                 }
             } else {
                 reasons.append("\(journey.name): no runs recorded")
+            }
+            let sources: [SourceIdentityRecord] = switch latest {
+            case .some(let run): run.sourceRepositories
+            case .none: []
             }
             return VerdictRecord(
                 appID: journey.appID,
@@ -31,7 +41,7 @@ extension MetadataLoader {
                 latestStatus: latest?.status,
                 latestEvidenceLevel: latest?.evidenceLevel,
                 latestStartedAt: latest?.startedAt,
-                recordedSources: latest?.sourceRepositories ?? [],
+                recordedSources: sources,
                 blockingReasons: reasons,
                 headFreshnessUnknown: latest != nil
             )
@@ -70,10 +80,10 @@ extension MetadataLoader {
         for artifact in artifacts {
             for key in [ProbierzSnapshot.allProducts, artifact.appID] {
                 update(key) { summary in
-                    summary.artifactCount += 1
+                    summary.artifactCount += Self.artifactIncrement
                     summary.artifactBytes += artifact.bytes
-                    if artifact.kind == .protectedBundle { summary.protectedBundleCount += 1 }
-                    if !artifact.hasSHA256 { summary.missingIntegrityCount += 1 }
+                    if artifact.kind == .protectedBundle { summary.protectedBundleCount += Self.artifactIncrement }
+                    if !artifact.hasSHA256 { summary.missingIntegrityCount += Self.artifactIncrement }
                 }
             }
         }
@@ -114,7 +124,10 @@ extension MetadataLoader {
         standard.formatOptions = [.withInternetDateTime]
         return standard.date(from: value)
     }
-    func safeURL(_ relativePath: String, root: URL) -> URL? {
+    func safeURL(
+        _ relativePath: String, root: URL,
+        onFailure: (String) -> Void = { NSLog("%@", $0) }
+    ) -> URL? {
         let components = relativePath.split(separator: "/", omittingEmptySubsequences: false)
         guard !relativePath.hasPrefix("/"),
             !components.isEmpty,
@@ -127,9 +140,14 @@ extension MetadataLoader {
         var candidate = root
         for component in components {
             candidate.appendPathComponent(String(component))
-            if (try? candidate.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink
-                == true
-            {
+            do {
+                if try candidate.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink == true {
+                    return nil
+                }
+            } catch CocoaError.fileReadNoSuchFile {
+                continue
+            } catch {
+                onFailure("\(candidate.path): symbolic-link attributes cannot be read: \(error.localizedDescription)")
                 return nil
             }
         }

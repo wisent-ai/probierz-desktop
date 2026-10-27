@@ -50,6 +50,84 @@ not invoke the retired Node CLI. The CLI may refuse missing failure evidence,
 an unsafe patch, an unverified fix, or publication failure; no such refusal is
 shown as a completed repair.
 
+### Owned-system security evaluation
+
+**Evidence → Security** invokes `probierz evaluate security --app <id>
+--model <route> --out <new-report.json>` against the selected repository.
+The application manifest's `security` block is the ownership boundary:
+the owner must match the manifest owner, authorization must be explicit,
+and the exact origin, approved IP addresses and checks must be declared.
+The screen does not accept a model-supplied destination or shell command.
+
+An explicit Brama model route can name an unrestricted or abliterated model.
+Brama still enforces its bearer, signed agent identity and provider entitlement.
+The optional URL and agent fields override their environment settings.
+Bearer and signing secret are passed together on stdin, never command arguments,
+and cleared from the form after the command ends. Leaving both empty uses
+the configured environment.
+
+**Deterministic checks only — no model calls** replaces `--model` with
+`--deterministic`. The model and credential controls are hidden and their
+values are not passed to the CLI. Checks run against the same owned target
+in declaration order; inherited model credentials are ignored. The report
+labels this mode explicitly and does not claim a model assessment.
+Model-assisted failures never switch to this mode automatically.
+
+The screen displays the same stdout report, exit status and stderr diagnostics
+as the CLI, including incomplete assessments. It separately labels completed
+findings and incomplete execution. Each check shows its declared identity, GET
+path, observed HTTP status, verdict and failed header assertions. **Show failing
+checks only** filters the display without rerunning or changing the report.
+Raw JSON remains available below the structured findings.
+Header assertion causes distinguish a missing required header, an unexpected
+forbidden header, repeated exact-value headers and a different single value.
+The report also retains the corresponding machine-readable `reason`; neither
+the structured display nor these diagnostics exposes response header values.
+Cookie checks show each declared cookie the response did not set as required:
+missing, set more than once, lacking Secure or HttpOnly, or with a SameSite
+value other than the declared one. Cookie values are never shown or retained.
+
+**Open retained report** reads an existing `probierz-security-evaluation` JSON
+document without rerunning anything. Reports with duplicate identities,
+out-of-scope observations, missing completed checks or contradictory passing
+verdicts are refused with their actual interpretation error. This consistency
+check is not a cryptographic authenticity claim. Existing report paths are
+never overwritten by the evaluator.
+
+**Open operation journal** reads `<report-path>.events.jsonl`, including while
+an assessment is still running. It shows the last recorded operation, check,
+observed HTTP status and actual failure. The evaluator syncs each complete
+event before later network work, so observations remain available if the
+process stops before writing its final report. A partial final line is
+explicitly marked and not interpreted; malformed complete lines and events
+after a terminal record are refused. Journal progress is never displayed as
+a passing assessment. Opening a journal does not rerun checks or follow paths
+embedded in the journal. Incomplete final reports also show `failedOperation`
+and `failedCheck`, and the retained journal path.
+
+The equivalent read-only command is `probierz journal <path>`;
+MCP exposes `probierz_security_journal`. Neither requires model credentials.
+The CLI contract and real journey prerequisites are documented at
+https://probierz.wisent.com/docs/cli/evaluate/security.
+Checks cover header presence, explicit header presence/absence/exact-value
+policies, unauthenticated access denials and declared denied-origin CORS GETs.
+The CORS origin is only a request-header value: it is never contacted.
+These checks do not authorize exploitation, interpret CSP directive semantics,
+exercise browser preflight or establish that the whole system is secure.
+
+The native command-client journey is `SecurityJourneyTests`.
+Run `swift test --filter SecurityJourneyTests` on the dedicated qualification
+host with the same real harness, application, model, independently declared
+`PROBIERZ_SECURITY_TEST_EXPECTATIONS` and Brama credentials as the CLI journey,
+plus `PROBIERZ_TEST_SOURCE_REVISION` naming the tested native revision.
+The deterministic test can run alone using
+`--filter SecurityJourneyTests/testRealDeterministicSecurityAssessmentAndImmutableReportRefusal`;
+it does not require the model variable or Brama credentials.
+Both modes compare actual check outcomes with the target expectations and
+retain the command, exit status, report and overwrite refusal
+under the harness's `.build/security-desktop-results/`. This command-client
+journey does not replace observing the Security screen and its diagnostics.
+
 ### Contract inventory
 
 | Contract | Relative path |

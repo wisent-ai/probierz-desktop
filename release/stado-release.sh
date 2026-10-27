@@ -4,18 +4,23 @@ set -euo pipefail
 PRODUCT="Probierz"
 PRODUCT_SLUG="probierz-desktop"
 
+# Digests are SHA-256 (https://csrc.nist.gov/pubs/fips/180-4/upd1/final), the
+# algorithm every release receipt in the fleet records.
+sha256() { shasum -a 256 "$@"; }
+
 load_contract() {
   : "${WISENT_VERSION:?WISENT_VERSION is required}"
   : "${WISENT_SOURCE_DIR:?WISENT_SOURCE_DIR is required}"
   : "${WISENT_OUTPUT_DIR:?WISENT_OUTPUT_DIR is required}"
   : "${WISENT_PLATFORM:?WISENT_PLATFORM is required}"
   : "${WISENT_INPUT_SWIFTPM_CACHE_DIR:?WISENT_INPUT_SWIFTPM_CACHE_DIR is required}"
-  [ "$WISENT_PLATFORM" = "darwin-arm64" ] || { printf 'unsupported platform: %s\n' "$WISENT_PLATFORM" >&2; exit 1; }
+  [ "$WISENT_PLATFORM" = "darwin-arm64" ] || { printf 'unsupported platform: %s\n' "$WISENT_PLATFORM" >&2; false; }
 }
 
 verify_input() {
-  [ -f "$1" ] || { printf 'missing immutable input: %s\n' "$1" >&2; exit 1; }
-  [ "$(shasum -a 256 "$1" | awk '{print $1}')" = "$2" ] || { printf 'immutable input digest mismatch: %s\n' "$1" >&2; exit 1; }
+  [ -f "$1" ] || { printf 'missing immutable input: %s\n' "$1" >&2; false; }
+  read -r digest _ < <(sha256 "$1")
+  [ "$digest" = "$2" ] || { printf 'immutable input digest mismatch: %s\n' "$1" >&2; false; }
 }
 
 prepare_source() {
@@ -53,7 +58,7 @@ build_release() {
   : "${AC_API_KEY_P8:?AC_API_KEY_P8 is required}"
   : "${SPARKLE_PRIVATE_KEY:?SPARKLE_PRIVATE_KEY is required}"
   : "${SPARKLE_PUBLIC_KEY:?SPARKLE_PUBLIC_KEY is required}"
-  case "$MACOS_SIGN_IDENTITY" in 'Developer ID Application:'*) ;; *) printf 'Developer ID Application identity required\n' >&2; exit 1 ;; esac
+  case "$MACOS_SIGN_IDENTITY" in 'Developer ID Application:'*) ;; *) printf 'Developer ID Application identity required\n' >&2; false ;; esac
   prepare_source
   release="$WISENT_OUTPUT_DIR/release"
   evidence="$WISENT_OUTPUT_DIR/evidence"
@@ -63,16 +68,20 @@ build_release() {
   sparkle_key="$work/sparkle-private-key"
   keychain_password="$(uuidgen)"
   cleanup() {
-    security delete-keychain "$keychain" >/dev/null 2>&1 || true
+    if [ -e "$keychain" ]; then
+      security delete-keychain "$keychain"
+    fi
     rm -f "$cert" "$sparkle_key"
     rm -rf "$work"
   }
   trap cleanup EXIT
   printf '%s' "$MACOS_CERT_P12" | base64 -D > "$cert"
   printf '%s' "$SPARKLE_PRIVATE_KEY" > "$sparkle_key"
-  chmod 600 "$sparkle_key"
+  chmod u=rw,go= "$sparkle_key"
   security create-keychain -p "$keychain_password" "$keychain"
-  security set-keychain-settings -lut 21600 "$keychain"
+  # No automatic lock: the keychain lives only as long as this run, and
+  # cleanup deletes it whichever way the run ends.
+  security set-keychain-settings "$keychain"
   security unlock-keychain -p "$keychain_password" "$keychain"
   security import "$cert" -k "$keychain" -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
   security list-keychains -d user -s "$keychain"
@@ -85,43 +94,55 @@ build_release() {
   WISENT_BUILD_NUMBER="$WISENT_VERSION" \
   WISENT_UPDATE_FEED_URL="$feed_url" \
   WISENT_CODESIGN_IDENTITY="$MACOS_SIGN_IDENTITY" \
-  WISENT_RESTART_AFTER_BUILD=0 \
+  PROBIERZ_INSTALL_AFTER_BUILD=no \
     "$source/release/bundle/build-app.sh"
 
   app="$source/.build/$PRODUCT.app"
-  [ -d "$app" ] || { printf 'release bundle was not produced: %s\n' "$app" >&2; exit 1; }
+  [ -d "$app" ] || { printf 'release bundle was not produced: %s\n' "$app" >&2; false; }
+  info="$app/Contents/Info.plist"
+  # The oldest macOS the feed offers this release to is the one the app
+  # itself declares it runs on; an app that declares none is refused here.
+  minimum_system="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$info")"
   # Installed copies trust only the SUPublicEDKey they carry, so an app whose
   # key is not the public half of the key this release signs with could never update.
-  [ "$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$app/Contents/Info.plist")" = "$SPARKLE_PUBLIC_KEY" ] || { printf 'SUPublicEDKey is not the public half of the Sparkle key this release signs with\n' >&2; exit 1; }
+  [ "$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$info")" = "$SPARKLE_PUBLIC_KEY" ] || { printf 'SUPublicEDKey is not the public half of the Sparkle key this release signs with\n' >&2; false; }
   stado product signing notarize --app "$app" --evidence "$evidence/notary.json"
 
   staged_app="$release/$PRODUCT.app"
   archive="$release/$PRODUCT.zip"
   ditto "$app" "$staged_app"
-  find "$staged_app" -exec touch -h -t 200001010000 {} +
+  # copyfile(3) writes no AppleDouble ._ entries into the archive while
+  # COPYFILE_DISABLE is set (https://keith.github.io/xcode-man-pages/copyfile.3.html);
+  # the archive layout is the one Sparkle documents for app updates
+  # (https://sparkle-project.org/documentation/publishing/).
   COPYFILE_DISABLE=1 ditto -c -k --sequesterRsrc --keepParent "$staged_app" "$archive"
   signer="$(find "$source/.build" -type f -path '*/Sparkle/bin/sign_update' -print -quit)"
-  [ -x "$signer" ] || { printf 'Sparkle sign_update was not resolved\n' >&2; exit 1; }
+  [ -x "$signer" ] || { printf 'Sparkle sign_update was not resolved\n' >&2; false; }
   signature_line="$("$signer" --ed-key-file "$sparkle_key" "$archive")"
-  case "$signature_line" in *'sparkle:edSignature='*) ;; *) printf 'Sparkle signature was not produced\n' >&2; exit 1 ;; esac
+  case "$signature_line" in *'sparkle:edSignature='*) ;; *) printf 'Sparkle signature was not produced\n' >&2; false ;; esac
   printf '%s\n' "$signature_line" > "$archive.sparkle-signature"
   # The enclosure is the update archive inside this very release, from the
   # fleet's declared public origin; the XML attribute needs its query
   # separators escaped.
   archive_url="$(stado web origin url /api/release/sparkle --query "product=$PRODUCT_SLUG" --query "version=$WISENT_VERSION" --query "file=$PRODUCT.zip" | sed 's/&/\&amp;/g')"
-  printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' "<rss version=\"2.0\" xmlns:sparkle=\"http://www.andymatuschak.org/xml-namespaces/sparkle\"><channel><title>$PRODUCT updates</title><item><title>$PRODUCT $WISENT_VERSION</title><sparkle:version>$WISENT_VERSION</sparkle:version><sparkle:shortVersionString>$WISENT_VERSION</sparkle:shortVersionString><sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion><enclosure url=\"$archive_url\" $signature_line type=\"application/octet-stream\"/></item></channel></rss>" > "$release/appcast.xml"
+  # The appcast is an XML document (https://www.w3.org/TR/xml/) carrying an
+  # RSS channel (https://www.rssboard.org/rss-specification) with Sparkle's
+  # item elements (https://sparkle-project.org/documentation/publishing/).
+  printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' "<rss version=\"2.0\" xmlns:sparkle=\"http://www.andymatuschak.org/xml-namespaces/sparkle\"><channel><title>$PRODUCT updates</title><item><title>$PRODUCT $WISENT_VERSION</title><sparkle:version>$WISENT_VERSION</sparkle:version><sparkle:shortVersionString>$WISENT_VERSION</sparkle:shortVersionString><sparkle:minimumSystemVersion>$minimum_system</sparkle:minimumSystemVersion><enclosure url=\"$archive_url\" $signature_line type=\"application/octet-stream\"/></item></channel></rss>" > "$release/appcast.xml"
   # Apps that set SURequireSignedFeed accept a feed only with the EdDSA
   # signature sign_update embeds in the appcast itself.
   "$signer" --ed-key-file "$sparkle_key" "$release/appcast.xml"
-  archive_sha="$(shasum -a 256 "$archive" | awk '{print $1}')"
-  appcast_sha="$(shasum -a 256 "$release/appcast.xml" | awk '{print $1}')"
-  signature_sha="$(shasum -a 256 "$archive.sparkle-signature" | awk '{print $1}')"
-  printf '{"schema_version":1,"product":"%s","version":"%s","platform":"%s","archive_sha256":"%s","appcast_sha256":"%s","signature_sha256":"%s","swiftpm_cache_sha256":"%s","notarized":true}\n' "$PRODUCT_SLUG" "$WISENT_VERSION" "$WISENT_PLATFORM" "$archive_sha" "$appcast_sha" "$signature_sha" "$SWIFTPM_SHA256" > "$evidence/release.json"
-  shasum -a 256 "$archive" "$archive.sparkle-signature" "$release/appcast.xml" > "$evidence/DIGESTS"
+  read -r archive_sha _ < <(sha256 "$archive")
+  read -r appcast_sha _ < <(sha256 "$release/appcast.xml")
+  read -r signature_sha _ < <(sha256 "$archive.sparkle-signature")
+  printf '{"product":"%s","version":"%s","platform":"%s","archive_sha256":"%s","appcast_sha256":"%s","signature_sha256":"%s","swiftpm_cache_sha256":"%s","notarized":true}\n' "$PRODUCT_SLUG" "$WISENT_VERSION" "$WISENT_PLATFORM" "$archive_sha" "$appcast_sha" "$signature_sha" "$SWIFTPM_SHA256" > "$evidence/release.json"
+  sha256 "$archive" "$archive.sparkle-signature" "$release/appcast.xml" > "$evidence/DIGESTS"
 }
 
-case "${1:-}" in
+# `$*` is the one mode this script was asked for; set -u leaves it defined
+# when none was given, and that is the usage error below.
+case "$*" in
   compile) compile_source ;;
   build) build_release ;;
-  *) printf 'usage: %s {compile|build}\n' "$0" >&2; exit 64 ;;
+  *) printf 'usage: %s {compile|build}\n' "$0" >&2; false ;;
 esac

@@ -1,77 +1,6 @@
 import Foundation
 
 extension MetadataLoader {
-    /// A narrow reader for the one block mapping and one policy this viewer needs.
-    ///
-    /// `probierz.yaml` is schema-validated at `schemaVersion: 1` by
-    /// `agent/apps.mjs`: top-level scalars, `journeys:` keyed at one indent
-    /// level, journey bodies at two. Reading those keys needs none of a YAML
-    /// engine, and anything unrecognised is skipped rather than guessed.
-    static func scanAppManifest(_ text: String) -> AppManifestScan {
-        var scan = AppManifestScan()
-        enum Block { case other, journeys, policy }
-        var block = Block.other
-        var currentJourney: String?
-
-        for rawLine in text.split(separator: "\n", omittingEmptySubsequences: false) {
-            let line = String(rawLine)
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.isEmpty || trimmed.hasPrefix("#") { continue }
-            guard let entry = keyValue(trimmed) else { continue }
-            let indent = line.prefix { $0 == " " }.count
-
-            if indent == 0 {
-                currentJourney = nil
-                block =
-                    switch entry.key {
-                    case "journeys": .journeys
-                    case "pullRequestPolicy": .policy
-                    default: .other
-                    }
-                continue
-            }
-
-            switch (block, indent) {
-            case (.journeys, 2):
-                guard entry.value == nil, isIdentifier(entry.key) else { continue }
-                currentJourney = entry.key
-                if !scan.journeyOrder.contains(entry.key) { scan.journeyOrder.append(entry.key) }
-            case (.journeys, 4):
-                guard let journey = currentJourney, let value = entry.value else { continue }
-                if entry.key == "owner" { scan.journeyOwners[journey] = value }
-                if entry.key == "description" { scan.journeyDescriptions[journey] = value }
-            case (.policy, 2):
-                guard entry.key == "minimumEvidence",
-                    let value = entry.value,
-                    let level = EvidenceLevel(rawValue: value.lowercased())
-                else { continue }
-                scan.minimumEvidence = level
-            default:
-                continue
-            }
-        }
-        return scan
-    }
-    /// A block key ends with a colon; a scalar splits at its first one. Target
-    /// names such as `desktop:mac` and descriptions containing a colon make that
-    /// the only rule that separates them correctly.
-    static func keyValue(_ trimmed: String) -> (key: String, value: String?)? {
-        if trimmed.hasSuffix(":") {
-            let key = String(trimmed.dropLast())
-            return key.isEmpty ? nil : (key, nil)
-        }
-        guard let separator = trimmed.firstIndex(of: ":") else { return nil }
-        let key = String(trimmed[trimmed.startIndex..<separator])
-        var value = trimmed[trimmed.index(after: separator)...].trimmingCharacters(in: .whitespaces)
-        if value.hasPrefix("\""), value.hasSuffix("\""), value.count >= 2 {
-            value = String(value.dropFirst().dropLast())
-        }
-        return key.isEmpty || value.isEmpty ? nil : (key, value)
-    }
-    static func isIdentifier(_ value: String) -> Bool {
-        !value.isEmpty
-            && value.allSatisfy { $0.isLetter || $0.isNumber || "-_.:".contains($0) }
-    }
     /// Every run manifest under test-results, read whole: no count, entry or size ceiling.
     /// A manifest that cannot be read or decoded, and a results folder or entry
     /// that cannot be read, is named in `unreadable` with its cause: skipped, a
@@ -162,7 +91,11 @@ extension MetadataLoader {
             let appID = normalizedLabel(manifest.appId, fallback: "unspecified-product")
             let target = normalizedLabel(manifest.target, fallback: "unspecified-target")
             let wasPlaintextRemoved = manifest.plaintextArtifactsRemovedAt != nil
-            var runArtifacts = (manifest.artifacts ?? []).enumerated().map { index, artifact in
+            guard let descriptors = manifest.artifacts else {
+                unreadable.append("\(manifestURL.path): artifacts is missing; record an array")
+                continue
+            }
+            var runArtifacts = descriptors.enumerated().map { index, artifact in
                 artifactMetadata(
                     artifact,
                     index: index,
@@ -189,6 +122,21 @@ extension MetadataLoader {
             let preflight = preflightRecord(
                 manifest.preflight, runID: runID, target: target,
                 observedAt: completedAt ?? startedAt)
+            let journeyNames: [String] = switch manifest.appManifest?.journeys {
+            case .some(let names): names.compactMap(normalizedIdentifier)
+            case .none: []
+            }
+            let sources: [SourceIdentityRecord] = switch manifest.source?.repositories {
+            case .some(let repositories): repositories.compactMap { repository in
+                guard let name = normalizedIdentifier(repository.name) else { return nil }
+                return SourceIdentityRecord(
+                    name: name,
+                    gitSHA: normalizedIdentifier(repository.gitSha),
+                    isDirty: repository.dirty == true
+                )
+            }
+            case .none: []
+            }
             runs.append(
                 RunRecord(
                     runID: runID,
@@ -203,31 +151,21 @@ extension MetadataLoader {
                     durationMilliseconds: manifest.durationMs,
                     manifestModifiedAt: attributes.contentModificationDate,
                     artifactCount: runArtifacts.count,
-                    artifactBytes: runArtifacts.reduce(0) { $0 + $1.bytes },
-                    journeys: (manifest.appManifest?.journeys ?? []).compactMap(
-                        normalizedIdentifier),
+                    artifactBytes: runArtifacts.reduce(.zero) { $0 + $1.bytes },
+                    journeys: journeyNames,
                     isRecorded: manifest.conditions?.record == true,
                     hasReportEvidence: manifest.evidence?.report == true,
                     hasAnalysisEvidence: manifest.evidence?.analysis == true,
                     isCapturePresent: manifest.evidence?.capturePresent == true,
                     exitCode: manifest.exitCode,
                     signalName: normalizedIdentifier(manifest.signal),
-                    didTimeOut: manifest.timedOut == true,
                     hostPlatform: normalizedIdentifier(manifest.host?.platform),
                     hostName: normalizedIdentifier(manifest.host?.hostname),
                     deviceName: normalizedIdentifier(manifest.device?.name),
                     deviceRuntime: normalizedIdentifier(manifest.device?.runtime),
                     harnessGitSHA: normalizedIdentifier(manifest.harness?.gitSha),
                     harnessIsDirty: manifest.harness?.dirty == true,
-                    sourceRepositories: (manifest.source?.repositories ?? []).compactMap {
-                        repository in
-                        guard let name = normalizedIdentifier(repository.name) else { return nil }
-                        return SourceIdentityRecord(
-                            name: name,
-                            gitSHA: normalizedIdentifier(repository.gitSha),
-                            isDirty: repository.dirty == true
-                        )
-                    },
+                    sourceRepositories: sources,
                     failure: Self.failure(manifest, status: status, preflight: preflight),
                     preflight: preflight,
                     platformDiagnostics: manifest.platformDiagnostics,

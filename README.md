@@ -65,6 +65,9 @@ Probierz Desktop serves:
 - run filtering/search and artifact type, size, modification, and hash-presence
   metadata;
 - stable Apple Development-signed local app-bundle script.
+- **Verdicts** displays the policy's declared evidence minimum. Missing or malformed
+  policies show **Unknown**, keep the journey blocking, and name the manifest and
+  failed field in the inspector and shared manifest warning.
 - one-click repair dispatch for failed runs through the canonical Probierz CLI;
 - first-use and Workspace actions that adopt validated definitions from an
   existing Probierz repository through Probierz core's `project adopt` command;
@@ -86,7 +89,7 @@ Probierz Desktop serves:
 
 - Probierz Desktop does not execute tests, specs, journeys, probes, or device
   actions itself. Repairs and project adoption go through Probierz core.
-- It does not author or approve a quality policy or return a gate verdict.
+- It does not author or approve a quality policy or activate a release gate.
 - It does not open, decrypt, render, upload, delete, or verify artifact bytes.
 - `hasSHA256` means the manifest contains a non-empty hash field; the viewer does
   not recompute or verify that hash.
@@ -94,8 +97,8 @@ Probierz Desktop serves:
   runner, target, evidence, or result was trustworthy.
 - Unknown completed statuses normalize to failed; unknown incomplete statuses
   normalize to incomplete. Consult the canonical manifest for ambiguous cases.
-- Traversal is bounded at 100,000 entries and 2,000 manifests and skips symlinks.
-  Older or external evidence can be omitted, with truncation surfaced in the UI.
+- History discovery reads every run manifest under the result root and skips
+  symlinks; read and decoding failures remain visible with their affected paths.
 - Configuration display reports whether named environment variables are present,
   not whether their values are correct, safe, reachable, or authorized.
 - The app runs no local control plane. Adoption, the incident register and the
@@ -172,6 +175,15 @@ The local Probierz repository and run manifests remain authoritative. Probierz
 core owns execution, evidence, repair dispatch, receipts, and gate evaluation.
 The desktop client owns the projection and the explicit repair action only.
 
+The manifest viewer uses YAML structure rather than fixed indentation.
+`pullRequestPolicy.minimumEvidence` is required to assess a journey; absent
+policies and mistyped requirement lists or booleans never become weaker defaults.
+`tests/history/PolicyJourneyTests.swift` exercises the real snapshot loader with
+`PROBIERZ_TEST_APP_MANIFEST` and `PROBIERZ_TEST_RUN_MANIFEST` from a genuine passing
+journey and `PROBIERZ_TEST_SOURCE_REVISION` bound by the qualification runner. It
+retains each observed baseline, refusal and recovery under `.build/policy-journeys/`
+before assertions; supplied fixtures remain unchanged and app IDs cannot escape isolation.
+
 ## Quick start
 
 The simplest development path runs the desktop client directly from Swift
@@ -226,8 +238,10 @@ sh release/bundle/build-app.sh
 open .build/Probierz.app
 ```
 
-`release/bundle/build-app.sh` requires an Apple Development signing identity (or
-`WISENT_CODESIGN_IDENTITY`) and refuses ad-hoc signing. It restarts nothing:
+`release/bundle/build-app.sh` signs through `stado product signing sign`: with the
+certificate `WISENT_CODESIGN_IDENTITY` names, or else the Skarbiec certificate
+Stado selects itself; a missing certificate is Stado's refusal, never an ad-hoc
+signature. It restarts nothing:
 `stado product install probierz --surface desktop` restarts the app it places when
 it runs, and `stado product restart --if-running <bundle>` restarts a bundle placed
 any other way.

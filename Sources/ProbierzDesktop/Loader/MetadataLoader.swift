@@ -78,10 +78,6 @@ struct MetadataLoader: Sendable {
     static let specDirectories = ["test/specs", "tests", "specs"]
     static let specSuffixes = [".e2e.ts", ".spec.ts", ".spec.mjs"]
 
-    /// `status.mjs` falls back to E2 when an app manifest names no floor; a
-    /// manifest that cannot be read is not one that names no floor.
-    static let defaultMinimumEvidence = EvidenceLevel.e2
-
     func load() -> ProbierzSnapshot {
         let repositoryRoot =
             workspaceRoot
@@ -135,7 +131,7 @@ struct MetadataLoader: Sendable {
         // A package folder that does not exist is absent; a path outside the
         // repository or attributes that cannot be read are listed with the cause.
         var isPresent = false
-        if let url = safeURL(spec.packagePath, root: repositoryRoot) {
+        if let url = safeURL(spec.packagePath, root: repositoryRoot, onFailure: { listingFailures.append($0) }) {
             do {
                 let values = try url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
                 isPresent = values.isDirectory == true && values.isSymbolicLink != true
@@ -145,12 +141,12 @@ struct MetadataLoader: Sendable {
                 listingFailures.append("\(spec.packagePath): \(error.localizedDescription)")
             }
         } else {
-            listingFailures.append("\(spec.packagePath): the path leaves the repository")
+            listingFailures.append("\(spec.packagePath): could not safely resolve the package path")
         }
         if isPresent {
             for directory in Self.specDirectories {
                 let relative = "\(spec.packagePath)/\(directory)"
-                guard let url = safeURL(relative, root: repositoryRoot) else { continue }
+                guard let url = safeURL(relative, root: repositoryRoot, onFailure: { listingFailures.append($0) }) else { listingFailures.append("\(relative): could not safely resolve the specification path"); continue }
                 let entries: [URL]
                 do {
                     entries = try FileManager.default.contentsOfDirectory(
@@ -231,7 +227,7 @@ struct MetadataLoader: Sendable {
         var journeyOrder: [String] = []
         var journeyOwners: [String: String] = [:]
         var journeyDescriptions: [String: String] = [:]
-        var minimumEvidence: EvidenceLevel = MetadataLoader.defaultMinimumEvidence
+        var minimumEvidence: EvidenceMinimum = .unavailable("pullRequestPolicy has not been read")
     }
 
     /// Each app's manifest scan, and the manifests (or the apps folder) that
@@ -240,7 +236,8 @@ struct MetadataLoader: Sendable {
     func scanAppManifests(repositoryRoot: URL) -> (
         scans: [String: AppManifestScan], unreadable: [String]
     ) {
-        guard let appsRoot = safeURL("apps", root: repositoryRoot) else { return ([:], []) }
+        var unreadable: [String] = []
+        guard let appsRoot = safeURL("apps", root: repositoryRoot, onFailure: { unreadable.append($0) }) else { return ([:], unreadable + ["apps: could not safely resolve the manifest directory"]) }
         let entries: [URL]
         do {
             entries = try FileManager.default.contentsOfDirectory(
@@ -255,7 +252,6 @@ struct MetadataLoader: Sendable {
         }
 
         var scans: [String: AppManifestScan] = [:]
-        var unreadable: [String] = []
         for entry in entries {
             let values: URLResourceValues
             do {
@@ -267,9 +263,9 @@ struct MetadataLoader: Sendable {
             guard values.isDirectory == true, values.isSymbolicLink != true else { continue }
             guard
                 let manifestURL = safeURL(
-                    "\(entry.lastPathComponent)/probierz.yaml", root: appsRoot)
+                    "\(entry.lastPathComponent)/probierz.yaml", root: appsRoot, onFailure: { unreadable.append($0) })
             else {
-                unreadable.append("\(entry.path): its manifest path leaves the apps folder")
+                unreadable.append("\(entry.path): could not safely resolve its manifest path")
                 continue
             }
             // An app folder without a manifest has none to read; anything else
@@ -289,7 +285,9 @@ struct MetadataLoader: Sendable {
             }
             do {
                 let text = try String(contentsOf: manifestURL, encoding: .utf8)
-                scans[entry.lastPathComponent] = Self.scanAppManifest(text)
+                let scan = try Self.scanAppManifest(text, file: manifestURL)
+                scans[entry.lastPathComponent] = scan
+                if let cause = scan.minimumEvidence.failure { unreadable.append(cause) }
             } catch {
                 unreadable.append("\(manifestURL.path): \(error.localizedDescription)")
             }
