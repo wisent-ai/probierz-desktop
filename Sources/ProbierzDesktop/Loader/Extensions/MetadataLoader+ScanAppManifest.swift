@@ -103,7 +103,8 @@ extension MetadataLoader {
                     appID: appID,
                     target: target,
                     runDirectory: runDirectory,
-                    wasPlaintextRemoved: wasPlaintextRemoved
+                    wasPlaintextRemoved: wasPlaintextRemoved,
+                    onFailure: { unreadable.append($0) }
                 )
             }
             if let bundle = protectedBundle(
@@ -111,7 +112,8 @@ extension MetadataLoader {
                 runID: runID,
                 appID: appID,
                 target: target,
-                resultsRoot: resultsRoot
+                resultsRoot: resultsRoot,
+                onFailure: { unreadable.append($0) }
             ) {
                 runArtifacts.append(bundle)
             }

@@ -133,6 +133,25 @@ extension MetadataLoader {
         }
         return byTarget.values.sorted { $0.target < $1.target }
     }
+    /// The file facts the artifact list shows. A file that is not there is
+    /// an artifact not on disk; one whose facts cannot be read is said
+    /// through `onFailure` with its path and cause, never shown as absent.
+    static func artifactFileValues(_ url: URL?, onFailure: (String) -> Void) -> URLResourceValues? {
+        guard let url else { return nil }
+        do {
+            return try url.resourceValues(forKeys: [
+                .isRegularFileKey,
+                .isSymbolicLinkKey,
+                .fileSizeKey,
+                .contentModificationDateKey,
+            ])
+        } catch CocoaError.fileReadNoSuchFile, CocoaError.fileNoSuchFile {
+            return nil
+        } catch {
+            onFailure("\(url.path): \(error.localizedDescription)")
+            return nil
+        }
+    }
     func artifactMetadata(
         _ artifact: ManifestArtifact,
         index: Int,
@@ -140,16 +159,12 @@ extension MetadataLoader {
         appID: String,
         target: String,
         runDirectory: URL,
-        wasPlaintextRemoved: Bool
+        wasPlaintextRemoved: Bool,
+        onFailure: (String) -> Void
     ) -> ArtifactMetadata {
         let fileExtension = URL(fileURLWithPath: artifact.file ?? "").pathExtension.lowercased()
         let artifactURL = artifact.file.flatMap { safeURL($0, root: runDirectory) }
-        let values = try? artifactURL?.resourceValues(forKeys: [
-            .isRegularFileKey,
-            .isSymbolicLinkKey,
-            .fileSizeKey,
-            .contentModificationDateKey,
-        ])
+        let values = Self.artifactFileValues(artifactURL, onFailure: onFailure)
         let isSafeFile = values?.isRegularFile == true && values?.isSymbolicLink != true
         let diskBytes = isSafeFile ? Int64(values?.fileSize ?? 0) : 0
         return ArtifactMetadata(
@@ -175,18 +190,12 @@ extension MetadataLoader {
         runID: String,
         appID: String,
         target: String,
-        resultsRoot: URL
+        resultsRoot: URL,
+        onFailure: (String) -> Void
     ) -> ArtifactMetadata? {
         guard let protection, let file = Self.trimmed(protection.file) else { return nil }
         let url = containedURL(absolutePath: file, within: resultsRoot)
-        let values = url.flatMap {
-            try? $0.resourceValues(forKeys: [
-                .isRegularFileKey,
-                .isSymbolicLinkKey,
-                .fileSizeKey,
-                .contentModificationDateKey,
-            ])
-        }
+        let values = Self.artifactFileValues(url, onFailure: onFailure)
         let isSafeFile = values?.isRegularFile == true && values?.isSymbolicLink != true
         return ArtifactMetadata(
             id: "\(runID)-protection",
