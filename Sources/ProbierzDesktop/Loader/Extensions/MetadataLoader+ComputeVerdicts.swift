@@ -11,10 +11,14 @@ extension MetadataLoader {
         let runsByID = Dictionary(
             runs.map { ($0.runID, $0) }, uniquingKeysWith: { first, _ in first })
         return journeys.map { journey in
-            let minimum: EvidenceMinimum = switch apps[journey.appID] {
-            case .some(let app): app.minimumEvidence
-            case .none: .unavailable("App \(journey.appID) has no readable probierz.yaml policy; see manifest diagnostics")
-            }
+            let minimum: EvidenceMinimum =
+                switch apps[journey.appID] {
+                case .some(let app): app.minimumEvidence
+                case .none:
+                    .unavailable(
+                        "App \(journey.appID) has no readable probierz.yaml policy; see manifest diagnostics"
+                    )
+                }
             let latest = journey.latestRunID.flatMap { runsByID[$0] }
             var reasons: [String] = []
             if let cause = minimum.failure { reasons.append(cause) }
@@ -29,10 +33,11 @@ extension MetadataLoader {
             } else {
                 reasons.append("\(journey.name): no runs recorded")
             }
-            let sources: [SourceIdentityRecord] = switch latest {
-            case .some(let run): run.sourceRepositories
-            case .none: []
-            }
+            let sources: [SourceIdentityRecord] =
+                switch latest {
+                case .some(let run): run.sourceRepositories
+                case .none: []
+                }
             return VerdictRecord(
                 appID: journey.appID,
                 journey: journey.name,
@@ -82,8 +87,12 @@ extension MetadataLoader {
                 update(key) { summary in
                     summary.artifactCount += Self.artifactIncrement
                     summary.artifactBytes += artifact.bytes
-                    if artifact.kind == .protectedBundle { summary.protectedBundleCount += Self.artifactIncrement }
-                    if !artifact.hasSHA256 { summary.missingIntegrityCount += Self.artifactIncrement }
+                    if artifact.kind == .protectedBundle {
+                        summary.protectedBundleCount += Self.artifactIncrement
+                    }
+                    if !artifact.hasSHA256 {
+                        summary.missingIntegrityCount += Self.artifactIncrement
+                    }
                 }
             }
         }
@@ -141,13 +150,17 @@ extension MetadataLoader {
         for component in components {
             candidate.appendPathComponent(String(component))
             do {
-                if try candidate.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink == true {
+                if try candidate.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink
+                    == true
+                {
                     return nil
                 }
             } catch CocoaError.fileReadNoSuchFile {
                 continue
             } catch {
-                onFailure("\(candidate.path): symbolic-link attributes cannot be read: \(error.localizedDescription)")
+                onFailure(
+                    "\(candidate.path): symbolic-link attributes cannot be read: \(error.localizedDescription)"
+                )
                 return nil
             }
         }

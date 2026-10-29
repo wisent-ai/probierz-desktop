@@ -131,7 +131,9 @@ struct MetadataLoader: Sendable {
         // A package folder that does not exist is absent; a path outside the
         // repository or attributes that cannot be read are listed with the cause.
         var isPresent = false
-        if let url = safeURL(spec.packagePath, root: repositoryRoot, onFailure: { listingFailures.append($0) }) {
+        if let url = safeURL(
+            spec.packagePath, root: repositoryRoot, onFailure: { listingFailures.append($0) })
+        {
             do {
                 let values = try url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
                 isPresent = values.isDirectory == true && values.isSymbolicLink != true
@@ -146,7 +148,14 @@ struct MetadataLoader: Sendable {
         if isPresent {
             for directory in Self.specDirectories {
                 let relative = "\(spec.packagePath)/\(directory)"
-                guard let url = safeURL(relative, root: repositoryRoot, onFailure: { listingFailures.append($0) }) else { listingFailures.append("\(relative): could not safely resolve the specification path"); continue }
+                guard
+                    let url = safeURL(
+                        relative, root: repositoryRoot, onFailure: { listingFailures.append($0) })
+                else {
+                    listingFailures.append(
+                        "\(relative): could not safely resolve the specification path")
+                    continue
+                }
                 let entries: [URL]
                 do {
                     entries = try FileManager.default.contentsOfDirectory(
@@ -237,7 +246,12 @@ struct MetadataLoader: Sendable {
         scans: [String: AppManifestScan], unreadable: [String]
     ) {
         var unreadable: [String] = []
-        guard let appsRoot = safeURL("apps", root: repositoryRoot, onFailure: { unreadable.append($0) }) else { return ([:], unreadable + ["apps: could not safely resolve the manifest directory"]) }
+        guard
+            let appsRoot = safeURL(
+                "apps", root: repositoryRoot, onFailure: { unreadable.append($0) })
+        else {
+            return ([:], unreadable + ["apps: could not safely resolve the manifest directory"])
+        }
         let entries: [URL]
         do {
             entries = try FileManager.default.contentsOfDirectory(
@@ -263,7 +277,8 @@ struct MetadataLoader: Sendable {
             guard values.isDirectory == true, values.isSymbolicLink != true else { continue }
             guard
                 let manifestURL = safeURL(
-                    "\(entry.lastPathComponent)/probierz.yaml", root: appsRoot, onFailure: { unreadable.append($0) })
+                    "\(entry.lastPathComponent)/probierz.yaml", root: appsRoot,
+                    onFailure: { unreadable.append($0) })
             else {
                 unreadable.append("\(entry.path): could not safely resolve its manifest path")
                 continue

@@ -12,11 +12,13 @@ extension MetadataLoader {
         if let journeys = root["journeys"] {
             for (key, value) in try manifestMapping(journeys, location: "\(file.path) journeys") {
                 guard key.tag == Tag(.str), let name = key.string, !name.isEmpty else {
-                    throw ManifestPolicy.Invalid(message: "\(file.path) journeys contains a key that is not a name: \(key)")
+                    throw ManifestPolicy.Invalid(
+                        message: "\(file.path) journeys contains a key that is not a name: \(key)")
                 }
                 let fields = try manifestMapping(value, location: "\(file.path) journeys.\(name)")
                 scan.journeyOrder.append(name)
-                let reader = ManifestPolicy(node: .mapping(fields), location: "\(file.path) journeys.\(name)")
+                let reader = ManifestPolicy(
+                    node: .mapping(fields), location: "\(file.path) journeys.\(name)")
                 scan.journeyOwners[name] = try reader.text("owner")
                 scan.journeyDescriptions[name] = try reader.text("description")
             }
@@ -25,12 +27,14 @@ extension MetadataLoader {
         if let policy = root["pullRequestPolicy"] {
             do {
                 _ = try manifestMapping(policy, location: location)
-                scan.minimumEvidence = try ManifestPolicy(node: policy, location: location).minimum()
+                scan.minimumEvidence = try ManifestPolicy(node: policy, location: location)
+                    .minimum()
             } catch {
                 scan.minimumEvidence = .unavailable(error.localizedDescription)
             }
         } else {
-            scan.minimumEvidence = .unavailable("\(location) is missing; declare the policy before evaluating this mode")
+            scan.minimumEvidence = .unavailable(
+                "\(location) is missing; declare the policy before evaluating this mode")
         }
         return scan
     }
@@ -42,7 +46,8 @@ extension MetadataLoader {
         var keys = Set<String>()
         for (key, _) in mapping {
             guard key.tag == Tag(.str), let name = key.string else {
-                throw ManifestPolicy.Invalid(message: "\(location) contains a key that is not text: \(key)")
+                throw ManifestPolicy.Invalid(
+                    message: "\(location) contains a key that is not text: \(key)")
             }
             guard keys.insert(name).inserted else {
                 throw ManifestPolicy.Invalid(message: "\(location) repeats key \(name)")

@@ -62,7 +62,8 @@ struct DestinationGroup: Identifiable, Sendable {
     /// metadata happens to live in.
     static let all: [DestinationGroup] = [
         DestinationGroup(title: "Work", destinations: [.posture, .runs, .failures, .register]),
-        DestinationGroup(title: "Evidence", destinations: [.artifacts, .verdicts, .benchmark, .security]),
+        DestinationGroup(
+            title: "Evidence", destinations: [.artifacts, .verdicts, .benchmark, .security]),
         DestinationGroup(title: "Specs", destinations: [.surfaces, .journeys]),
         DestinationGroup(title: "System", destinations: [.preflight, .workspace]),
     ]

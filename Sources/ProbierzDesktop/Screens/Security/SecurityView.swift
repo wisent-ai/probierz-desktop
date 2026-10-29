@@ -22,8 +22,10 @@ struct SecurityView: View {
     var body: some View {
         Form {
             Text("Owned-system security assessment").font(.title2)
-            Text("Only the application's security declaration authorizes targets. The model orders declared GET checks and explains results; it cannot execute commands, add targets or follow redirects.")
-                .foregroundStyle(.secondary)
+            Text(
+                "Only the application's security declaration authorizes targets. The model orders declared GET checks and explains results; it cannot execute commands, add targets or follow redirects."
+            )
+            .foregroundStyle(.secondary)
             TextField("Registered application ID", text: $appID)
                 .accessibilityIdentifier("security.app")
             Toggle("Deterministic checks only — no model calls", isOn: $deterministic)
@@ -39,13 +41,18 @@ struct SecurityView: View {
                 TextField("Brama URL (empty: configured environment)", text: $routerURL)
                 TextField("Agent ID (empty: configured environment)", text: $agentID)
                 SecureField("Router bearer (empty: configured environment)", text: $bearer)
-                SecureField("Agent signing secret (empty: configured environment)", text: $signingSecret)
+                SecureField(
+                    "Agent signing secret (empty: configured environment)", text: $signingSecret)
             }
-            Text("The declaration is the security block in apps/<application>/probierz.yaml. Its owner must match the registered owner; every resolved address must be explicitly approved. Existing reports are never overwritten.")
-                .foregroundStyle(.secondary)
+            Text(
+                "The declaration is the security block in apps/<application>/probierz.yaml. Its owner must match the registered owner; every resolved address must be explicitly approved. Existing reports are never overwritten."
+            )
+            .foregroundStyle(.secondary)
             Button(running ? "Assessing…" : "Assess owned system") { assess() }
                 .accessibilityIdentifier("security.run")
-                .disabled(running || appID.isEmpty || (!deterministic && route.isEmpty) || output.isEmpty || model.snapshot?.repositoryRoot == nil)
+                .disabled(
+                    running || appID.isEmpty || (!deterministic && route.isEmpty) || output.isEmpty
+                        || model.snapshot?.repositoryRoot == nil)
             Button("Open retained report…") { openReport() }.disabled(running)
             Button("Open operation journal…") { openJournal() }
                 .accessibilityIdentifier("security.openJournal")
@@ -66,13 +73,19 @@ struct SecurityView: View {
                 }
             }
             if let assessment {
-                Text(assessment.complete ? (assessment.pass ? "Declared checks passed" : "Security findings")
-                    : "Assessment incomplete")
-                    .font(.headline)
-                    .accessibilityIdentifier("security.verdict")
-                Text(assessment.mode == .deterministic ? "Deterministic checks — no model assessment"
-                    : "Model-assisted assessment")
-                    .accessibilityIdentifier("security.mode")
+                Text(
+                    assessment.complete
+                        ? (assessment.pass ? "Declared checks passed" : "Security findings")
+                        : "Assessment incomplete"
+                )
+                .font(.headline)
+                .accessibilityIdentifier("security.verdict")
+                Text(
+                    assessment.mode == .deterministic
+                        ? "Deterministic checks — no model assessment"
+                        : "Model-assisted assessment"
+                )
+                .accessibilityIdentifier("security.mode")
                 if let failure = assessment.error {
                     Text(failure).foregroundStyle(.red).textSelection(.enabled)
                     if let operation = assessment.failedOperation {
@@ -85,18 +98,24 @@ struct SecurityView: View {
                 }
                 Toggle("Show failing checks only", isOn: $failuresOnly)
                     .accessibilityIdentifier("security.failuresOnly")
-                ForEach(assessment.observations.filter { !failuresOnly || !$0.pass }) { observation in
+                ForEach(assessment.observations.filter { !failuresOnly || !$0.pass }) {
+                    observation in
                     VStack(alignment: .leading) {
                         Text("\(observation.id): \(observation.pass ? "Passed" : "Finding")")
                             .font(.headline)
-                        Text("\(observation.method) \(observation.path) — HTTP \(observation.status)")
+                        Text(
+                            "\(observation.method) \(observation.path) — HTTP \(observation.status)"
+                        )
                         if !observation.missingHeaders.isEmpty {
-                            Text("Missing headers: \(observation.missingHeaders.joined(separator: ", "))")
+                            Text(
+                                "Missing headers: \(observation.missingHeaders.joined(separator: ", "))"
+                            )
                         }
                         ForEach(observation.failedAssertions, id: \.header) { assertion in
                             Text("\(assertion.header): \(assertion.cause)")
                         }
-                        ForEach(Array(observation.failedCookies.enumerated()), id: \.offset) { _, finding in
+                        ForEach(Array(observation.failedCookies.enumerated()), id: \.offset) {
+                            _, finding in
                             Text("Cookie \(finding.cookie): \(finding.cause)")
                         }
                     }
@@ -134,8 +153,10 @@ struct SecurityView: View {
         var input: Data?
         if !deterministic && (!bearer.isEmpty || !signingSecret.isEmpty) {
             guard !bearer.isEmpty, !signingSecret.isEmpty,
-                !bearer.contains("\n"), !signingSecret.contains("\n") else {
-                diagnostics = "Supply both bearer and signing secret as single lines, or leave both empty for the configured environment."
+                !bearer.contains("\n"), !signingSecret.contains("\n")
+            else {
+                diagnostics =
+                    "Supply both bearer and signing secret as single lines, or leave both empty for the configured environment."
                 return
             }
             arguments.append("--router-token-stdin")
@@ -145,20 +166,29 @@ struct SecurityView: View {
         report = ""
         assessment = nil
         progress = nil
-        diagnostics = deterministic ? "Waiting for the declared owned-target checks."
+        diagnostics =
+            deterministic
+            ? "Waiting for the declared owned-target checks."
             : "Waiting for the owned-target checks and Brama's assessment."
         Task {
-            defer { running = false; bearer = ""; signingSecret = "" }
+            defer {
+                running = false
+                bearer = ""
+                signingSecret = ""
+            }
             do {
-                let result = try await ProbierzCLI.run(repositoryRoot: root, arguments: arguments, input: input)
+                let result = try await ProbierzCLI.run(
+                    repositoryRoot: root, arguments: arguments, input: input)
                 progress = nil
                 report = String(decoding: result.stdout, as: UTF8.self)
-                diagnostics = "CLI exit status: \(result.status)\n\(String(decoding: result.stderr, as: UTF8.self))"
+                diagnostics =
+                    "CLI exit status: \(result.status)\n\(String(decoding: result.stderr, as: UTF8.self))"
                 if !result.stdout.isEmpty {
                     do {
                         assessment = try SecurityReport.decode(result.stdout)
                     } catch {
-                        diagnostics += "\nReport interpretation failed: \(error.localizedDescription)"
+                        diagnostics +=
+                            "\nReport interpretation failed: \(error.localizedDescription)"
                     }
                 }
             } catch {
@@ -177,7 +207,8 @@ struct SecurityView: View {
             progress = try SecurityJournal.decode(Data(contentsOf: url))
             assessment = nil
             report = ""
-            diagnostics = "Retained operation journal: \(url.path). Progress is not a final assessment."
+            diagnostics =
+                "Retained operation journal: \(url.path). Progress is not a final assessment."
         } catch {
             progress = nil
             diagnostics = "Could not read \(url.path): \(error.localizedDescription)"
@@ -195,7 +226,9 @@ struct SecurityView: View {
             let data = try Data(contentsOf: url)
             let decoded = try SecurityReport.decode(data)
             let value = try JSONSerialization.jsonObject(with: data)
-            report = String(decoding: try JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .sortedKeys]), as: UTF8.self)
+            report = String(
+                decoding: try JSONSerialization.data(
+                    withJSONObject: value, options: [.prettyPrinted, .sortedKeys]), as: UTF8.self)
             assessment = decoded
             diagnostics = "Retained report: \(url.path)"
         } catch {

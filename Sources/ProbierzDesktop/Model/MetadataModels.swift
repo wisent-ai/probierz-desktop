@@ -297,4 +297,3 @@ struct VerdictRecord: Identifiable, Sendable {
 
     var isBlocking: Bool { !blockingReasons.isEmpty }
 }
-

@@ -34,22 +34,29 @@ struct SecurityJournal {
         for row in rows.dropLast() {
             let event = try JSONDecoder().decode(Event.self, from: Data(row))
             guard event.kind == "probierz-security-event", !event.operation.isEmpty else {
-                throw ProbierzCLI.Failure.refused("This file contains an invalid security journal event.")
+                throw ProbierzCLI.Failure.refused(
+                    "This file contains an invalid security journal event.")
             }
             guard events.last?.state != .finished && events.last?.state != .failed else {
-                throw ProbierzCLI.Failure.refused("The security journal contains events after a terminal record.")
+                throw ProbierzCLI.Failure.refused(
+                    "The security journal contains events after a terminal record.")
             }
             if event.state == .observed {
                 guard event.operation == "check", event.check != nil,
-                    event.detail?.path != nil, event.detail?.status != nil, event.detail?.pass != nil else {
-                    throw ProbierzCLI.Failure.refused("A security observation lacks its check, path, status or verdict.")
+                    event.detail?.path != nil, event.detail?.status != nil,
+                    event.detail?.pass != nil
+                else {
+                    throw ProbierzCLI.Failure.refused(
+                        "A security observation lacks its check, path, status or verdict.")
                 }
             }
             events.append(event)
         }
         guard let first = events.first, first.operation == "initialize", first.state == .started,
-            first.detail?.appId != nil else {
-            throw ProbierzCLI.Failure.refused("The journal has no complete security run initialization record.")
+            first.detail?.appId != nil
+        else {
+            throw ProbierzCLI.Failure.refused(
+                "The journal has no complete security run initialization record.")
         }
         return SecurityJournal(events: events, hasPartialRecord: partial)
     }

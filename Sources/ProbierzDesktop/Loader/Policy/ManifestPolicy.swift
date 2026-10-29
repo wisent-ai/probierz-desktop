@@ -37,11 +37,16 @@ struct ManifestPolicy {
 
     func text(_ key: String, required: Bool = false) throws -> String? {
         guard let value = node[key] else {
-            if required { throw Invalid(message: "\(location).\(key) is missing; declare the required E<n> evidence level") }
+            if required {
+                throw Invalid(
+                    message:
+                        "\(location).\(key) is missing; declare the required E<n> evidence level")
+            }
             return nil
         }
         guard value.tag == Tag(.str), let text = value.string,
-              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
             throw Invalid(message: "\(location).\(key) must be non-empty text, found \(value)")
         }
         return text
@@ -50,12 +55,17 @@ struct ManifestPolicy {
     func validateTexts(_ key: String) throws {
         guard let value = node[key] else { return }
         guard let list = value.sequence else {
-            throw Invalid(message: "\(location).\(key) must be a list of non-empty text values, found \(value)")
+            throw Invalid(
+                message:
+                    "\(location).\(key) must be a list of non-empty text values, found \(value)")
         }
         for item in list {
             guard item.tag == Tag(.str), let text = item.string,
-                  !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                throw Invalid(message: "\(location).\(key) must be a list of non-empty text values, found \(item)")
+                !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            else {
+                throw Invalid(
+                    message:
+                        "\(location).\(key) must be a list of non-empty text values, found \(item)")
             }
         }
     }
@@ -76,9 +86,13 @@ struct ManifestPolicy {
         }
         let digits = level.dropFirst()
         guard level.first == "E", !digits.isEmpty,
-              digits.unicodeScalars.allSatisfy({ $0.isASCII && CharacterSet.decimalDigits.contains($0) }),
-              let rank = UInt8(digits) else {
-            throw Invalid(message: "\(location).minimumEvidence is not an E<n> evidence level: \(level)")
+            digits.unicodeScalars.allSatisfy({
+                $0.isASCII && CharacterSet.decimalDigits.contains($0)
+            }),
+            let rank = UInt8(digits)
+        else {
+            throw Invalid(
+                message: "\(location).minimumEvidence is not an E<n> evidence level: \(level)")
         }
         try validateTexts("requiredTargets")
         try validateTexts("requiredJourneys")

@@ -124,21 +124,24 @@ extension MetadataLoader {
             let preflight = preflightRecord(
                 manifest.preflight, runID: runID, target: target,
                 observedAt: completedAt ?? startedAt)
-            let journeyNames: [String] = switch manifest.appManifest?.journeys {
-            case .some(let names): names.compactMap(normalizedIdentifier)
-            case .none: []
-            }
-            let sources: [SourceIdentityRecord] = switch manifest.source?.repositories {
-            case .some(let repositories): repositories.compactMap { repository in
-                guard let name = normalizedIdentifier(repository.name) else { return nil }
-                return SourceIdentityRecord(
-                    name: name,
-                    gitSHA: normalizedIdentifier(repository.gitSha),
-                    isDirty: repository.dirty == true
-                )
-            }
-            case .none: []
-            }
+            let journeyNames: [String] =
+                switch manifest.appManifest?.journeys {
+                case .some(let names): names.compactMap(normalizedIdentifier)
+                case .none: []
+                }
+            let sources: [SourceIdentityRecord] =
+                switch manifest.source?.repositories {
+                case .some(let repositories):
+                    repositories.compactMap { repository in
+                        guard let name = normalizedIdentifier(repository.name) else { return nil }
+                        return SourceIdentityRecord(
+                            name: name,
+                            gitSHA: normalizedIdentifier(repository.gitSha),
+                            isDirty: repository.dirty == true
+                        )
+                    }
+                case .none: []
+                }
             runs.append(
                 RunRecord(
                     runID: runID,
