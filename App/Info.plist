@@ -9,7 +9,7 @@
     <key>CFBundleExecutable</key>
     <string>ProbierzDesktop</string>
     <key>CFBundleIdentifier</key>
-    <string>ai.wisent.probierz.desktop</string>
+    <string>com.wisent.probierz.desktop</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
@@ -17,7 +17,7 @@
             <string>Wisent Identity</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>ai.wisent.probierz.desktop</string>
+                <string>com.wisent.probierz.desktop</string>
             </array>
         </dict>
     </array>

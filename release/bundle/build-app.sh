@@ -116,7 +116,7 @@ SIGN_IDENTIFIER=ai.wisent.identity.keychain-helper
 SIGN_PREVIOUS="$INSTALLED_BUNDLE/Contents/Helpers/WisentIdentityKeychainHelper"
 sign_target
 SIGN_TARGET=$BUNDLE
-SIGN_IDENTIFIER=ai.wisent.probierz.desktop
+SIGN_IDENTIFIER=com.wisent.probierz.desktop
 SIGN_PREVIOUS=$INSTALLED_BUNDLE
 sign_target
 codesign --verify --strict --deep "$BUNDLE"
@@ -139,7 +139,7 @@ mv "$STAGING/$APP_NAME.app" "$INSTALLED_BUNDLE"
 rm -rf "$STAGING"
 trap - EXIT INT TERM
 # A bundle left in .build is not what the operator launches, and while it stays
-# registered it competes for the ai.wisent.*.desktop sign-in URL scheme, so it
+# registered it competes for the com.wisent.*.desktop sign-in URL scheme, so it
 # is unregistered. `lsregister -u` also exits non-zero over the Spotlight
 # importer's own failure to scan the .build copy, after the installed copy is
 # already in place; that failure is said, with lsregister's own output left

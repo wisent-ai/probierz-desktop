@@ -1,7 +1,7 @@
 {
   "$schema": "https://github.com/wisent-ai/wisent-desktop-update/raw/main/release-manifest.schema.json",
   "product": "Probierz",
-  "bundle_id": "ai.wisent.probierz.desktop",
+  "bundle_id": "com.wisent.probierz.desktop",
   "bundle_path": ".build/Probierz.app",
   "build_command": "PROBIERZ_INSTALL_AFTER_BUILD=no ./release/bundle/build-app.sh",
   "archive_name": "Probierz-{version}.zip"
