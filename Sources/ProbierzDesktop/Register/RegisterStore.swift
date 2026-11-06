@@ -60,6 +60,13 @@ struct RegisterEntry: Identifiable, Decodable, Sendable {
     }
 }
 
+/// Which incidents the register lists, as `probierz incident list --state`
+/// names them; no filter lists everything recorded.
+enum RegisterStateFilter: String, Sendable {
+    case open
+    case resolved
+}
+
 /// `probierz incident` owns validation, file locking and resolution state.
 /// Desktop never parses the register file or implements a second write path:
 /// each operation is one finite CLI call and reads that command's JSON answer.
@@ -70,7 +77,7 @@ final class RegisterStore: ObservableObject {
     @Published private(set) var problem: String?
     @Published private(set) var isWorking = false
     @Published private(set) var detail: String?
-    @Published var stateFilter: String?
+    @Published var stateFilter: RegisterStateFilter?
     @Published var selectedID: String?
     @Published var limit = 20
     private var generation = 0
@@ -99,7 +106,7 @@ final class RegisterStore: ObservableObject {
             let data = try await request(
                 workspaceRoot,
                 [
-                    "list", "--state=\(stateFilter ?? "all")", "--limit=\(limit)",
+                    "list", "--state=\(stateFilter?.rawValue ?? "all")", "--limit=\(limit)",
                 ])
             struct List: Decodable { let incidents: [RegisterEntry] }
             let response = try JSONDecoder().decode(List.self, from: data)

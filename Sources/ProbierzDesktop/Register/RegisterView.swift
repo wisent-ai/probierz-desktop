@@ -66,12 +66,12 @@ struct RegisterView: View {
                     ) { store.stateFilter = nil },
                     WisentFacet(
                         id: "state.open", label: "Open", count: store.openCount,
-                        isSelected: store.stateFilter == "open"
-                    ) { store.stateFilter = "open" },
+                        isSelected: store.stateFilter == .open
+                    ) { store.stateFilter = .open },
                     WisentFacet(
                         id: "state.resolved", label: "Resolved", count: store.resolvedCount,
-                        isSelected: store.stateFilter == "resolved"
-                    ) { store.stateFilter = "resolved" },
+                        isSelected: store.stateFilter == .resolved
+                    ) { store.stateFilter = .resolved },
                 ])
         ]
     }
